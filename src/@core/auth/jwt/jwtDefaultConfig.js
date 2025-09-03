@@ -4,16 +4,16 @@ export default {
   /*
   * user EendPoints 
   */
-  registerEndpoint: '/auth/register',
-  loginEndpoint: '/auth/login',
-  otpVerifyEndPoint: '/auth/otp/verify-otp',
+  registerEndpoint: '/api/auth/register',
+  loginEndpoint: '/api/auth/login',
+  otpVerifyEndPoint: '/api/auth/otp/verify-otp',
 getUserByMobileEndPoint : '/user/byNumber',
   /*
   * Doctor EndPoints
   */
- updateDpctorEndPoint: '/auth/doctor/create',
+ updateDpctorEndPoint: '/api/auth/doctor/create',
  getDoctorByIdEndPoint : 'api/doctors',
- getAllDoctorEndPoint : 'auth/doctors/available',
+ getAllDoctorEndPoint : '/api/auth/doctors/available',
  getDoctorBySpecialityEndPoint:'api/doctors/specialization',
  getAllSpecializationEndPoint : 'api/doctors/specializations/available',
  getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
