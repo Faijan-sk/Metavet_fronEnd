@@ -152,5 +152,10 @@ createDoctor(payload) {
   getAllPets(userId) {
     return axios.get(`${this.jwtConfig.getAllPets}${userId}`)
   }
-
+  
+  getUserByMobile(mobileNumber) {
+  return axios.get(`${this.jwtConfig.getUserByMobileEndPoint}`, {
+    params: { phoneNumber: mobileNumber }, // matches @RequestParam
+  });
+}
   }

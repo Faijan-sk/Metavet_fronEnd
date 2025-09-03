@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import JwtService from "./../../../../@core/auth/jwt/jwtService";
+import { useLocation, useNavigate } from "react-router-dom"; // Add this importimport JwtService from "./../../../../@core/auth/jwt/jwtService";
+import { useParams } from 'react-router-dom';
+import useJwt from '../../../../enpoints/jwt/useJwt'
 
-const jwt = new JwtService();
 
 const DoctorProfileForm = ({ onSubmit }) => {
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
   const response = useSelector((state) => state.user.data);
+const [uid , setUid] =useState()
+const [phoneNumber , setPhoneNumber] = useState();
+ const {state}=useLocation();
+ const[token, setToken] = useState()
+console.log('the state in the update doctor : ' ,state?.phone)
 
   const {
   register,
@@ -45,51 +51,68 @@ const DoctorProfileForm = ({ onSubmit }) => {
   
 
   // ✅ Form Submit
+
+  
   const handleFormSubmit = async (data) => {
+    console.log(data)
     try {
       // Transform form data into API payload
       const payload = {
-        userId: response?.data?.uid,
-        experienceYears: Number(data.experienceYears),
-        hospitalClinicName: data.hospitalClinicName,
-        hospitalClinicAddress: data.hospitalClinicAddress,
-        pincode: data.pincode,
-        address: data.address,
-        country: data.country,
-        city: data.city,
-        state: data.state,
-        bio: data.bio,
-        consultationFee: Number(data.consultationFee),
-        gender: data.gender.toUpperCase(), // ensure API expects MALE/FEMALE/OTHER
-        dateOfBirth: data.dateOfBirth,
-        licenseNumber: data.licenseNumber,
-        licenseIssueDate: data.licenseIssueDate,
-        licenseExpiryDate: data.licenseExpiryDate,
-        qualification: data.qualification,
-        specialization: data.specialization,
-        previousWorkplace: data.previousWorkplace,
-        joiningDate: data.joiningDate,
-        employmentType: data.employmentType.toUpperCase(),
-        isActive: Boolean(data.isActive),
-        emergencyContactNumber: data.emergencyContactNumber,
+        userId: uid,
+        experienceYears: Number(data?.experienceYears),
+        hospitalClinicName: data?.hospitalClinicName,
+        hospitalClinicAddress: data?.hospitalClinicAddress,
+        pincode: data?.pincode,
+        address: data?.address,
+        country: data?.country,
+        city: data?.city,
+        state: data?.state,
+        bio: data?.bio,
+        consultationFee: Number(data?.consultationFee),
+        gender: data?.gender.toUpperCase(), // ensure API expects MALE/FEMALE/OTHER
+        dateOfBirth: data?.dateOfBirth,
+        licenseNumber: data?.licenseNumber,
+        licenseIssueDate: data?.licenseIssueDate,
+        licenseExpiryDate: data?.licenseExpiryDate,
+        qualification: data?.qualification,
+        specialization: data?.specialization,
+        previousWorkplace: data?.previousWorkplace,
+        joiningDate: data?.joiningDate,
+        employmentType: data?.employmentType.toUpperCase(),
+        isActive: Boolean(data?.isActive),
+        emergencyContactNumber: data?.emergencyContactNumber,
       };
 
-      const res = await jwt.createDoctor(payload);
+      const res = await useJwt.createDoctor(payload);
 
       const loginPyaload = {
-        phone_number: response?.data?.phoneNumber,
+        phone_number: phoneNumber? phoneNumber : '1234567490' ,
         countryCode: response?.data?.countryCode,
       };
-      let loginRes;
-      if (res?.status === 201) {
-        loginRes = await jwt.login(loginPyaload);
-        console.log("loginres", loginRes);
-      }
-      navigate("/otp-verification", {
-        state: {
-          otp: loginRes?.data?.otp,
-        },
-      });
+    
+debugger
+       let loginRes = await useJwt.login(loginPyaload);
+       const {data:loginData}=loginRes
+
+      
+      
+
+      
+     navigate(`/otp-verification/${loginData?.token}`, {
+  state: {
+    otp: loginData?.otp, // dynamic OTP
+    phone: `${loginData?.countryCode}${loginData?.phone_number}`, // dynamic mobile
+  },
+  replace:true
+});
+
+          // navigate(, {
+          //   state: {
+          //     otp: state?.otp, // Use dynamic OTP from response
+          //     phone: phoneNumber // Use dynamic mobile from response
+          //   }
+          // })
+       
     } catch (error) {
       console.error(
         "❌ Profile update failed:",
@@ -97,7 +120,10 @@ const DoctorProfileForm = ({ onSubmit }) => {
       );
       setErrorMsg(error.response?.data?.message || "Profile update failed");
     }
+                console.log('this is token we are sendinto the otp page' ,token)
+
   };
+  
 
   // ✅ Common Input Class
   const inputClass = (err) =>
@@ -127,6 +153,30 @@ const DoctorProfileForm = ({ onSubmit }) => {
         {message}
       </p>
     ) : null;
+
+   useEffect(() => {
+    
+    const fetchUser = async () => {
+      try {
+        if (state?.phone) {
+          const res = await useJwt.getUserByMobile(state.phone);
+          console.log("✅ User fetched by mobile:", res.data?.uid);
+
+          setUid(res.data?.uid); // store UID if needed
+          setPhoneNumber(res.data?.phone)
+          
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch user:", err.response?.data || err.message);
+        setErrorMsg(err.response?.data?.message || "User not found");
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+
+
 
   return (
     <div className="my-20 bg-white shadow-lg border border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-12 xl:px-16 2xl:px-40 max-w-full mx-auto">

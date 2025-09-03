@@ -169,13 +169,13 @@ const App = () => {
                 <Route path="/viewprofile4" element={<ViewProfile4 />} />
                 <Route path="/viewprofile" element={<Viewprofile />} />
                 <Route
-                  path="/updateProfile"
+                  path="/updateProfile/:token"
                   element={<DoctorProfileUpdate />}
                 />
                 {/* Public Routes */}
                 <Route path="/signin" element={<LoginForm />}></Route>
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/otp-verification" element={<OtpVerification />} />
+                <Route path="/otp-verification/:token" element={<OtpVerification />} />
               </Route>
             </Routes>
           </Suspense>
