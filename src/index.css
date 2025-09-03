@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* Apply focus outline, border, and height for input inside label */
+/* .select,
+.input {
+  @apply focus:!outline-primary focus:!border-none h-[2rem] min-h-[2rem] outline-none;
+}
+input:focus-within {
+  @apply outline-primary;
+} */
+/* .select,
+.input {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary;
+} */
+
+/* Alternatively, if you need to apply styles directly to the icon: */
+
+/* In your Tailwind CSS file or within your component's style */
+.back-nav-btn {
+  @apply bg-transparent border-0 outline-none;
+}
+
+.table-btn {
+  @apply h-4 w-4 min-h-4 bg-transparent;
+}
+th,
+td {
+  @apply border-l-2 border-base-200;
+}
