@@ -101,7 +101,7 @@ debugger
      navigate(`/otp-verification/${loginData?.token}`, {
   state: {
     otp: loginData?.otp, // dynamic OTP
-    phone: `${loginData?.countryCode}${loginData?.phone_number}`, // dynamic mobile
+    phone: `${loginData?.phone_number}`, // dynamic mobile
   },
   replace:true
 });
