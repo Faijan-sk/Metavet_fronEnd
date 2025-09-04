@@ -3,7 +3,7 @@ import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
 // axios.defaults.baseURL = 'http://192.168.29.200:8010/'
-axios.defaults.baseURL = 'http://34.61.254.251:8080/'
+axios.defaults.baseURL = 'http://34.61.254.251/'
 
 // Optional: Environment-based configuration
 // const API_BASE_URL = process.env.NODE_ENV === 'production' 
