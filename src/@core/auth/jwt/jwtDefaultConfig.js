@@ -7,7 +7,7 @@ export default {
   registerEndpoint: '/api/auth/register',
   loginEndpoint: '/api/auth/login',
   otpVerifyEndPoint: '/api/auth/otp/verify-otp',
-getUserByMobileEndPoint : '/user/byNumber',
+getUserByMobileEndPoint : '/api/auth/user/byNumber',
   /*
   * Doctor EndPoints
   */
