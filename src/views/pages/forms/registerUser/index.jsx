@@ -51,7 +51,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
   // ✅ The corrected function for form submission
   const handleFormSubmit = async (data) => {
-    debugger
+  
     if (!data.userType) {
       setError('userType', {
         type: 'required',
@@ -61,7 +61,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     }
 
     try {
-      debugger
+      
   
       const response = await useJwt.register(data)
 
