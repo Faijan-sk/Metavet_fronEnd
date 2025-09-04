@@ -175,7 +175,7 @@
         // Check backend success
         if (success) {
           console.log("✅ OTP Verified Successfully:", otpValue);
-
+alert("User Registration Successfully!");
           // 🎯 Redirect to dashboard after successful OTP verification
           navigate("/", {
             state: {
