@@ -87,7 +87,7 @@ console.log('the state in the update doctor : ' ,state?.phone)
 
       const loginPyaload = {
         phone_number: phoneNumber? phoneNumber : '1234567490' ,
-        countryCode: response?.data?.countryCode,
+       
       };
     
 debugger
