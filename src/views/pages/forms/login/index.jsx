@@ -8,7 +8,6 @@ import { setUser } from './../../../../store/userSlice'
 const jwt = new JwtService()
 
 const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
-
   const navigate = useNavigate()
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -24,39 +23,35 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
   })
 
   const handleFormSubmit = async (data) => {
-    debugger
     try {
-      debugger
-      
       setErrorMsg('')
 
+      // Call the login API
       const response = await jwt.login(data)
-       const {data:loginData}=loginRes
- 
-      const token = response.data.token;
-      
+      const loginData = response.data
 
-      if (response.data?.accessToken) {
-        jwt.setToken(response.data.accessToken)
-        jwt.setRefreshToken(response.data.refreshToken)
+      const token = loginData.token
+
+      // Set JWT tokens if available
+      if (loginData?.accessToken) {
+        jwt.setToken(loginData.accessToken)
+        jwt.setRefreshToken(loginData.refreshToken)
       }
 
       if (onSubmit) {
-        onSubmit(response.data)
+        onSubmit(loginData)
       }
 
       reset()
-      // navigate(`/otp-verification/${token}`, {
-      //   state: { phone_number: data.phone_number },
-      // })
+
+      // Navigate to OTP Verification with dynamic OTP and phone
       navigate(`/otp-verification/${token}`, {
-       
-  state: {
-    otp: response.data.otp, // dynamic OTP
-    phone: response.data.phone_number, // dynamic mobile
-  },
-  replace:true
-});
+        state: {
+          otp: loginData.otp,
+          phone: data.phone_number,
+        },
+        replace: true,
+      })
     } catch (error) {
       console.error('❌ Login failed:', error.response?.data || error.message)
       setErrorMsg(error.response?.data?.message || 'Login failed. Please try again.')
