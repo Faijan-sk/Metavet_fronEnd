@@ -24,7 +24,9 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
   })
 
   const handleFormSubmit = async (data) => {
+    debugger
     try {
+      debugger
       
       setErrorMsg('')
 
@@ -48,9 +50,10 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
       //   state: { phone_number: data.phone_number },
       // })
       navigate(`/otp-verification/${token}`, {
+       
   state: {
-    otp: loginData?.otp, // dynamic OTP
-    phone: `${loginData?.phone_number}`, // dynamic mobile
+    otp: response.data.otp, // dynamic OTP
+    phone: response.data.phone_number, // dynamic mobile
   },
   replace:true
 });
