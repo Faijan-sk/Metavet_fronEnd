@@ -86,7 +86,9 @@ console.log('the state in the update doctor : ' ,state?.phone)
       const res = await useJwt.createDoctor(payload);
 
       const loginPyaload = {
-        phone_number: phoneNumber? phoneNumber : '1234567490' ,
+        // phone_number: phoneNumber? phoneNumber : '1234567490' ,
+                phone_number: res.data.data.user.phoneNumber ,
+
        
       };
     
