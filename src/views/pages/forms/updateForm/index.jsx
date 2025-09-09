@@ -89,10 +89,10 @@ console.log('the state in the update doctor : ' ,state?.phone)
         // phone_number: phoneNumber? phoneNumber : '1234567490' ,
                 phone_number: res.data.data.user.phoneNumber ,
 
-       
-      };
+ };
     
-debugger
+
+console.log('Login Payload' , loginPyaload)
        let loginRes = await useJwt.login(loginPyaload);
        const {data:loginData}=loginRes
 
