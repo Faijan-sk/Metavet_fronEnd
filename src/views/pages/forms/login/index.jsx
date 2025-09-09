@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import JwtService from './../../../../@core/auth/jwt/jwtService'
-import { useDispatch } from 'react-redux'
+
 import { setUser } from './../../../../store/userSlice'
 
 const jwt = new JwtService()
 
 const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
-  const dispatch = useDispatch()
+
   const navigate = useNavigate()
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -29,8 +29,9 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
       setErrorMsg('')
 
       const response = await jwt.login(data)
-      dispatch(setUser(response))
-const token = response.data.token;
+       const {data:loginData}=loginRes
+ 
+      const token = response.data.token;
       
 
       if (response.data?.accessToken) {
@@ -43,9 +44,16 @@ const token = response.data.token;
       }
 
       reset()
+      // navigate(`/otp-verification/${token}`, {
+      //   state: { phone_number: data.phone_number },
+      // })
       navigate(`/otp-verification/${token}`, {
-        state: { phone_number: data.phone_number },
-      })
+  state: {
+    otp: loginData?.otp, // dynamic OTP
+    phone: `${loginData?.phone_number}`, // dynamic mobile
+  },
+  replace:true
+});
     } catch (error) {
       console.error('❌ Login failed:', error.response?.data || error.message)
       setErrorMsg(error.response?.data?.message || 'Login failed. Please try again.')
