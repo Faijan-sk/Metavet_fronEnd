@@ -25,13 +25,13 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
 
   const handleFormSubmit = async (data) => {
     try {
-      console.log('📤 Sending login data to backend:', data)
+      
       setErrorMsg('')
 
       const response = await jwt.login(data)
       dispatch(setUser(response))
-
-      console.log('✅ Login success:', response.data)
+const token = response.data.token;
+      
 
       if (response.data?.accessToken) {
         jwt.setToken(response.data.accessToken)
@@ -43,7 +43,7 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
       }
 
       reset()
-      navigate('/otp-verification', {
+      navigate(`/otp-verification/${token}`, {
         state: { phone_number: data.phone_number },
       })
     } catch (error) {
