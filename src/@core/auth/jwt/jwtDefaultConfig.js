@@ -17,9 +17,11 @@ getUserByMobileEndPoint : '/api/auth/user/byNumber',
  getDoctorBySpecialityEndPoint:'api/doctors/specialization',
  getAllSpecializationEndPoint : 'api/doctors/specializations/available',
  getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
- createPets:'/api/pets/create',
-getAllPets:'/api/pets/owner/',
 
+ /*
+ * Pet Endpoint
+ */
+getAllPetsByOwnerEndpoint : '/api/pets/byOwner' ,
 
 
   // ** This will be prefixed in authorization header with token

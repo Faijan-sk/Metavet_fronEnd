@@ -2,8 +2,8 @@ import axios from 'axios'
 import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.29.200:8010/'
-axios.defaults.baseURL = 'http://34.61.254.251/'
+axios.defaults.baseURL = 'http://192.168.29.199:8010/'
+// axios.defaults.baseURL = 'http://34.61.254.251/'
 
 // Optional: Environment-based configuration
 // const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -147,7 +147,7 @@ export default class JwtService {
   }
 
   getAllDoctors() {
-    console.log('Calling get all doctors API');
+   
     return axios.get(this.jwtConfig.getAllDoctorEndPoint);
   }
 
@@ -172,4 +172,14 @@ export default class JwtService {
       params: { phoneNumber: mobileNumber }, // matches @RequestParam
     });
   }
+
+/*
+*  Pet Services 
+*/
+getAllPetsByOwner() {
+  console.log('Calling get all pets by owner API');
+  return axios.get(`${this.jwtConfig.getAllPetsByOwnerEndpoint}`);
 }
+
+
+} 

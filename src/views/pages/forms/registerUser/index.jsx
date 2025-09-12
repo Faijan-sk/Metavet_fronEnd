@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom';
+import { Alert } from '@mui/material';
 
 import useJwt from '../../../../enpoints/jwt/useJwt'
 
@@ -15,6 +16,8 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
   const navigate = useNavigate()
   const [userType, setUserType] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [validationErrors, setValidationErrors] = useState([])
+  const [currentErrorIndex, setCurrentErrorIndex] = useState(0)
   const [otp, setOtp] = useState();
   const [mobile, setMobile] = useState();
 
@@ -47,6 +50,60 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     setValue('userType', typeId)
     setUserType(typeId)
     clearErrors('userType')
+    setErrorMsg(''); // ✅ Clear API error when user selects type
+    setValidationErrors([]); // ✅ Clear validation errors array
+    setCurrentErrorIndex(0); // ✅ Reset error index
+  }
+
+  // ✅ Helper function to extract validation errors as array
+  const extractValidationErrors = (errorResponse) => {
+    if (errorResponse?.data?.errors) {
+      const errors = errorResponse.data.errors;
+      const errorMessages = [];
+      
+      // If errors is an object with field names as keys
+      if (typeof errors === 'object' && !Array.isArray(errors)) {
+        Object.keys(errors).forEach(field => {
+          if (Array.isArray(errors[field])) {
+            // If field has multiple errors (array)
+            errors[field].forEach(msg => errorMessages.push(msg));
+          } else if (typeof errors[field] === 'string') {
+            // If field has single error (string)
+            errorMessages.push(errors[field]);
+          }
+        });
+      }
+      // If errors is an array
+      else if (Array.isArray(errors)) {
+        errorMessages.push(...errors);
+      }
+      // If errors is a string
+      else if (typeof errors === 'string') {
+        errorMessages.push(errors);
+      }
+      
+      return errorMessages;
+    }
+    
+    return [];
+  }
+
+  // ✅ Function to go to next error
+  const showNextError = () => {
+    if (validationErrors.length > 1) {
+      setCurrentErrorIndex((prevIndex) => 
+        prevIndex < validationErrors.length - 1 ? prevIndex + 1 : 0
+      );
+    }
+  }
+
+  // ✅ Function to go to previous error
+  const showPreviousError = () => {
+    if (validationErrors.length > 1) {
+      setCurrentErrorIndex((prevIndex) => 
+        prevIndex > 0 ? prevIndex - 1 : validationErrors.length - 1
+      );
+    }
   }
 
   // ✅ The corrected function for form submission
@@ -61,8 +118,6 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     }
 
     try {
-      
-  
       const response = await useJwt.register(data)
 
       // Store OTP and mobile from response
@@ -85,17 +140,16 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
       if (response.data?.data?.userType === 2) {
         navigate(`/updateProfile/${receivedToken}`, {
             state: {
-              otp: receivedOtp, // Use dynamic OTP from response
-              phone: receivedMobile // Use dynamic mobile from response
+              otp: receivedOtp, 
+              phone: receivedMobile 
             }
           })
       } else {
-        // ✅ Updated code: Use the dynamic OTP and mobile from response
         if (receivedToken) {
           navigate(`/otp-verification/${receivedToken}`, {
             state: {
-              otp: receivedOtp, // Use dynamic OTP from response
-              phone: receivedMobile // Use dynamic mobile from response
+              otp: receivedOtp, 
+              phone: receivedMobile 
             }
           })
         } else {
@@ -106,7 +160,20 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
     } catch (error) {
       console.error('❌ Signup failed:', error.response?.data || error.message)
-      setErrorMsg(error.response?.data?.message || 'Signup failed')
+      
+      // ✅ Enhanced error handling to extract validation errors as array
+      const extractedErrors = extractValidationErrors(error.response);
+      
+      if (extractedErrors.length > 0) {
+        setValidationErrors(extractedErrors);
+        setCurrentErrorIndex(0);
+        setErrorMsg(''); // Clear any previous generic error
+      } else {
+        // Fallback to generic message if no specific validation errors found
+        setErrorMsg(error.response?.data?.message || 'Signup failed');
+        setValidationErrors([]);
+        setCurrentErrorIndex(0);
+      }
     }
   }
 
@@ -123,6 +190,13 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     { id: 2, label: 'Doctor', icon: '👨‍⚕️', description: 'Veterinary professional' },
     { id: 3, label: 'Service Provider', icon: '🐾', description: 'Pet Services' },
   ]
+
+  // ✅ Check if there are multiple validation errors to show navigation
+  const hasMultipleErrors = validationErrors.length > 1;
+
+  // ✅ Combined error message for Alert
+  const combinedErrorMsg = errors.userType?.message || errorMsg || 
+    (validationErrors.length > 0 ? validationErrors[currentErrorIndex] : '');
 
   return (
     <Fragment>
@@ -169,18 +243,6 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
                 </button>
               ))}
             </div>
-            {errors.userType && (
-              <p className="text-red-500 text-sm flex items-center mt-2">
-                <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {errors.userType.message}
-              </p>
-            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -283,7 +345,48 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
             {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
-          <p className="text-red-500 text-sm text-center">{errorMsg}</p>
+          {/* ✅ Enhanced Alert for userType error and API errors with navigation */}
+          {combinedErrorMsg && (
+            <Alert 
+              severity="error" 
+              onClose={() => {
+                setErrorMsg('');
+                setValidationErrors([]);
+                setCurrentErrorIndex(0);
+              }}
+              action={
+                hasMultipleErrors ? (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      {currentErrorIndex + 1} of {validationErrors.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={showPreviousError}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                      title="Previous error"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={showNextError}
+                      className="p-1 hover:bg-red-100 rounded transition-colors"
+                      title="Next error"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : null
+              }
+            >
+              {combinedErrorMsg}
+            </Alert>
+          )}
 
           <button
             type="submit"

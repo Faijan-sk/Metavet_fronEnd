@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import JwtService from './../../../../@core/auth/jwt/jwtService'
+import { Alert } from '@mui/material';
+
 
 import { setUser } from './../../../../store/userSlice'
 
@@ -125,11 +127,9 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
             )}
           </div>
 
-          {/* Error Message */}
-          {errorMsg && (
-            <p className="text-red-500 text-xs sm:text-sm md:text-base text-center">{errorMsg}</p>
-          )}
-
+            {errorMsg && (  <Alert 
+              severity="error" >{errorMsg}</Alert>
+            )}
           {/* Submit Button */}
           <button
             type="submit"

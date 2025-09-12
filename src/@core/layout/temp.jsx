@@ -215,7 +215,7 @@ const Header = () => {
                 clipRule="evenodd"
               />
             </svg>
-            SignUp
+            SignUp / Login 
           </Link>
 
           <button
