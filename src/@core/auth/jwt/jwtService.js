@@ -177,8 +177,11 @@ export default class JwtService {
 *  Pet Services 
 */
 getAllPetsByOwner() {
-  console.log('Calling get all pets by owner API');
   return axios.get(`${this.jwtConfig.getAllPetsByOwnerEndpoint}`);
+}
+
+createPet(payload) {
+  return axios.post(this.jwtConfig.addPetEndPoint, payload);
 }
 
 

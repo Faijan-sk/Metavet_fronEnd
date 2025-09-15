@@ -20,7 +20,7 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
     reset,
   } = useForm({
     defaultValues: {
-      phone_number: '1234567890',
+      phone_number: '',
     },
   })
 
@@ -201,4 +201,4 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
   )
 }
 
-export default LoginForm
+export default LoginForm  

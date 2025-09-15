@@ -22,6 +22,7 @@ getUserByMobileEndPoint : '/api/auth/user/byNumber',
  * Pet Endpoint
  */
 getAllPetsByOwnerEndpoint : '/api/pets/byOwner' ,
+addPetEndPoint : '/api/pets/create-with-image',
 
 
   // ** This will be prefixed in authorization header with token

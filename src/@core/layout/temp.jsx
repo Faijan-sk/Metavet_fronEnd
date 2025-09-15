@@ -199,7 +199,7 @@ const Header = () => {
         <div className="flex items-center space-x-3">
           {/* Desktop SignUp Button - Now redirects to /SignUp */}
           <Link
-            to="/SignUp"
+            to="/Signin"
             className={`${
               isMobile ? 'hidden' : 'flex'
             } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
