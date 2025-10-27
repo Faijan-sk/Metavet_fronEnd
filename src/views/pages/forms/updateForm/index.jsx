@@ -313,8 +313,9 @@ console.log('Login Payload' , loginPyaload)
         {/* Consultation Fee */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Consultation Fee (₹)
-          </label>
+  Consultation Fee ($)
+</label>
+
           <input
             type="number"
             {...register("consultationFee", { required: "Fee is required" })}
