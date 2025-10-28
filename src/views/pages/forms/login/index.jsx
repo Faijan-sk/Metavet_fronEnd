@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import JwtService from './../../../../@core/auth/jwt/jwtService'
-import { Alert } from '@mui/material';
-
-
+import { Alert } from '@mui/material'
 import { setUser } from './../../../../store/userSlice'
 
 const jwt = new JwtService()
 
-const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
+const LoginForm = ({ onSubmit }) => {
   const navigate = useNavigate()
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -60,8 +58,13 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
     }
   }
 
+  // 👇 Function to handle navigation to signup page
+  const onSwitchToSignup = () => {
+    navigate('/SignUp')
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">      
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
@@ -127,9 +130,10 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
             )}
           </div>
 
-            {errorMsg && (  <Alert 
-              severity="error" >{errorMsg}</Alert>
-            )}
+          {errorMsg && (
+            <Alert severity="error">{errorMsg}</Alert>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
@@ -192,8 +196,7 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
         {/* Footer */}
         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
           <p className="text-center text-[10px] sm:text-xs md:text-sm text-gray-500">
-            By continuing, you agree to Metavet&apos;s Terms of Service and Privacy
-            Policy
+            By continuing, you agree to Metavet&apos;s Terms of Service and Privacy Policy
           </p>
         </div>
       </div>
@@ -201,4 +204,4 @@ const LoginForm = ({ onSubmit, onSwitchToSignup }) => {
   )
 }
 
-export default LoginForm  
+export default LoginForm

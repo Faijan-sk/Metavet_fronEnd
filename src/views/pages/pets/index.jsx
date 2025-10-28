@@ -304,28 +304,33 @@ export default function PetDetailsCard() {
         </div>
 
         {loading ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((_, index) => (
               <div
                 key={index}
-                className="w-full bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row animate-pulse"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 animate-pulse"
               >
-                <div className="bg-gray-300 flex flex-col items-center justify-center p-4 md:w-1/4 space-y-2">
-                  <div className="w-28 h-28 rounded-full bg-gray-400 shadow-md"></div>
+                <div className="bg-gray-300 p-8 flex flex-col items-center">
+                  <div className="w-32 h-32 rounded-full bg-gray-400 shadow-md mb-4"></div>
+                  <div className="h-6 w-32 bg-gray-400 rounded mb-2"></div>
                   <div className="h-4 w-20 bg-gray-400 rounded"></div>
-                  <div className="h-3 w-16 bg-gray-400 rounded"></div>
                 </div>
-                <div className="flex-1 p-4 space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex justify-between items-center border-b pb-1">
+                <div className="p-5 space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                    <div className="flex-1 space-y-2">
                       <div className="h-3 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-3 w-20 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
                     </div>
-                  ))}
-                  <div className="pt-3 flex gap-2 justify-end">
-                    <div className="h-8 w-24 bg-gray-300 rounded-md"></div>
-                    <div className="h-8 w-24 bg-gray-300 rounded-md"></div>
                   </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-12 bg-gray-300 rounded-lg mt-4"></div>
                 </div>
               </div>
             ))}
@@ -345,73 +350,83 @@ export default function PetDetailsCard() {
         ) : petList.length === 0 ? (
           <ErrorState400 setIsAddOpen={setIsAddOpen} />
         ) : (
-          petList.map((pet) => (
-            <div
-              key={pet.pid}
-              className="w-full bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 flex flex-col md:flex-row mb-4"
-            >
-              <div className="bg-gradient-to-br from-[#52B2AD] to-[#42948f] text-white flex flex-col items-center justify-center p-4 md:w-1/4">
-                <img
-                  src={PetProfile}
-                  alt="Pet"
-                  className="w-28 h-28 rounded-full shadow-lg border-4 border-white shadow-md mb-2 object-cover bg-white"
-                />
-                <h2 className="text-lg font-semibold leading-tight">{pet.petName}</h2>
-                <p className="text-sm opacity-90">{pet.petSpecies}</p>
-              </div>
-
-              <div className="flex-1 p-4 text-sm text-gray-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2">
-                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm ">
-                      <User size={16} />
-                      <span>Owner:</span>
-                    </div>
-                    {/* ✅ FIXED: owner object rendering */}
-                    <span className="font-medium text-gray-800 text-sm">
-                      {typeof pet.owner === "object"
-                        ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim() || pet.owner?.email || "N/A"
-                        : pet.owner || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <PawPrint size={16} />
-                      <span>Species:</span>
-                    </div>
-                    <span className="font-medium text-gray-800 text-sm">{pet.petSpecies}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <Hash size={16} />
-                      <span>Pet ID:</span>
-                    </div>
-                    <span className="font-medium text-gray-800 text-sm">{pet.pid}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <Calendar size={16} />
-                      <span>Birthdate:</span>
-                    </div>
-                    <span className="font-medium text-gray-800 text-sm">{pet.birthDate || "Unknown"}</span>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {petList.map((pet) => (
+              <div
+                key={pet.pid}
+                className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 animate-fadeIn"
+              >
+                {/* Decorative gradient overlay */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
+                
+                {/* Pet ID Badge */}
+                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
+                  <Hash size={12} className="text-[#52B2AD]" />
+                  <span className="text-xs font-semibold text-gray-700">{pet.pid}</span>
                 </div>
 
-                <div className="flex justify-end mt-4 gap-2">
+                {/* Pet Image Section */}
+                <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+                    <img
+                      src={PetProfile}
+                      alt={pet.petName}
+                      className="relative w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white transform group-hover:scale-110 transition-transform duration-300"
+                    />
+                    {/* Paw print decoration */}
+                    <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
+                      <PawPrint size={20} className="text-[#52B2AD]" />
+                    </div>
+                  </div>
+                  
+                  <h2 className="text-2xl font-bold text-white mt-4 text-center">{pet.petName}</h2>
+                  <p className="text-white/90 text-sm font-medium mt-1">{pet.petSpecies}</p>
+                </div>
+
+                {/* Pet Details Section */}
+                <div className="p-5 space-y-3">
+                  {/* Owner Info */}
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 font-medium">Owner</p>
+                      <p className="text-sm font-semibold text-gray-800 truncate">
+                        {typeof pet.owner === "object"
+                          ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim() || pet.owner?.email || "N/A"
+                          : pet.owner || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Birthdate Info */}
+                  {/* <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Calendar size={18} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Birthday</p>
+                      <p className="text-sm font-semibold text-gray-800">{pet.birthDate || "Unknown"}</p>
+                    </div>
+                  </div> */}
+
+                  {/* Action Button */}
                   <button
                     onClick={() => handleViewProfile(pet)}
-                    className="bg-[#52B2AD] hover:bg-[#42948f] text-white text-sm px-4 py-2 rounded-lg shadow transition flex items-center gap-1"
+                    className="w-full bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group mt-4"
                   >
-                    <User size={16} />
-                    View Profile
+                    <User size={18} className="group-hover:rotate-12 transition-transform" />
+                    <span>View Full Profile</span>
                   </button>
                 </div>
+
+                {/* Hover effect border */}
+                <div className="absolute inset-0 border-2 border-[#52B2AD] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
@@ -420,6 +435,8 @@ export default function PetDetailsCard() {
         setIsAddOpen={setIsAddOpen}
         onAddPet={handleAddPet}
       />
+
+      
     </div>
   );
 }
