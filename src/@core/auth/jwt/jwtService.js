@@ -184,5 +184,9 @@ createPet(payload) {
   return axios.post(this.jwtConfig.addPetEndPoint, payload);
 }
 
+createPetWithoutImage(...args) {
+
+  return axios.post(this.jwtConfig.addPetEndpointwithoutImage, ...args);
+}
 
 } 

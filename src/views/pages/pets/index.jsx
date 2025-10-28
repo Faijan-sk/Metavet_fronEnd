@@ -1,15 +1,17 @@
-import { Calendar, Hash, PawPrint, User, Plus, Lock, ShieldAlert, Search } from "lucide-react";
+import { Calendar, Hash, PawPrint, User, Plus, Lock, ShieldAlert, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import AddPetForm from "./AddPetForm"; // ✅ Your form component
+import useJwt from "../../../enpoints/jwt/useJwt";
 
-// Mock functions for demonstration
-const useJwt = {
-  getAllPetsByOwner: async () => {
-    // Simulate different error scenarios for demo
-    // Change the status to test: 400, 401, 403, 404
-    const status = 400;
-    throw { response: { status }, status };
-  }
-};
+// // Mock functions for demonstration
+// const useJwt = {
+//   getAllPetsByOwner: async () => {
+//     // Simulate different error scenarios for demo
+//     // Change the status to test: 400, 401, 403, 404
+//     const status = 400;
+//     throw { response: { status }, status };
+//   }
+// };
 
 const AddPets = ({ setIsAddOpen, isAddOpen }) => (
   <button 
@@ -22,6 +24,36 @@ const AddPets = ({ setIsAddOpen, isAddOpen }) => (
 );
 
 const PetProfile = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
+
+// ✅ AddPetModal Component
+const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
+  if (!isAddOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative animate-fadeIn">
+        {/* Close Button */}
+        <button
+          onClick={() => setIsAddOpen(false)}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition"
+        >
+          <X size={22} />
+        </button>
+
+        {/* Header */}
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+          Add New Pet
+        </h2>
+
+        {/* Form */}
+        <AddPetForm
+          onClose={() => setIsAddOpen(false)}
+          onSubmit={onAddPet}
+        />
+      </div>
+    </div>
+  );
+};
 
 // Error State Components
 const ErrorState400 = ({ setIsAddOpen }) => (
@@ -230,6 +262,12 @@ export default function PetDetailsCard() {
     setOpen(true);
   };
 
+  // ✅ Add pet handler for form submission
+  const handleAddPet = (newPet) => {
+    setPetList((prev) => [...prev, { pid: prev.length + 1, ...newPet }]);
+    setIsAddOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <style>{`
@@ -319,42 +357,56 @@ export default function PetDetailsCard() {
                   className="w-28 h-28 rounded-full shadow-lg border-4 border-white shadow-md mb-2 object-cover bg-white"
                 />
                 <h2 className="text-lg font-semibold leading-tight">{pet.petName}</h2>
-                <p className="text-xs opacity-90">{pet.petSpecies}</p>
+                <p className="text-sm opacity-90">{pet.petSpecies}</p>
               </div>
-              <div className="flex-1 p-4 space-y-2">
-                <div className="flex justify-between items-center border-b pb-1">
-                  <span className="flex items-center text-gray-500 gap-1 text-sm">
-                    <Hash size={14} /> ID
-                  </span>
-                  <span className="font-medium text-gray-800 text-sm">#PET-{pet.pid}</span>
+
+              <div className="flex-1 p-4 text-sm text-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2">
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm ">
+                      <User size={16} />
+                      <span>Owner:</span>
+                    </div>
+                    {/* ✅ FIXED: owner object rendering */}
+                    <span className="font-medium text-gray-800 text-sm">
+                      {typeof pet.owner === "object"
+                        ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim() || pet.owner?.email || "N/A"
+                        : pet.owner || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <PawPrint size={16} />
+                      <span>Species:</span>
+                    </div>
+                    <span className="font-medium text-gray-800 text-sm">{pet.petSpecies}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Hash size={16} />
+                      <span>Pet ID:</span>
+                    </div>
+                    <span className="font-medium text-gray-800 text-sm">{pet.pid}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-1 mx-5">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Calendar size={16} />
+                      <span>Birthdate:</span>
+                    </div>
+                    <span className="font-medium text-gray-800 text-sm">{pet.birthDate || "Unknown"}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center border-b pb-1">
-                  <span className="flex items-center text-gray-500 gap-1 text-sm">
-                    <User size={14} /> Owner
-                  </span>
-                  <span className="font-medium text-gray-800 text-sm">{pet.owner}</span>
-                </div>
-                <div className="flex justify-between items-center border-b pb-1">
-                  <span className="flex items-center text-gray-500 gap-1 text-sm">
-                    <PawPrint size={14} /> Species
-                  </span>
-                  <span className="font-medium text-gray-800 text-sm">{pet.petSpecies}</span>
-                </div>
-                <div className="flex justify-between items-center border-b pb-1">
-                  <span className="flex items-center text-gray-500 gap-1 text-sm">
-                    <Calendar size={14} /> Next Appointment
-                  </span>
-                  <span className="font-medium text-gray-800 text-sm">Sep 10, 2025</span>
-                </div>
-                <div className="pt-3 flex gap-2 justify-end">
+
+                <div className="flex justify-end mt-4 gap-2">
                   <button
                     onClick={() => handleViewProfile(pet)}
-                    className="bg-[#52B2AD] hover:bg-[#42948f] text-white px-3 py-1.5 rounded-md shadow-md transition text-sm font-medium"
+                    className="bg-[#52B2AD] hover:bg-[#42948f] text-white text-sm px-4 py-2 rounded-lg shadow transition flex items-center gap-1"
                   >
+                    <User size={16} />
                     View Profile
-                  </button>
-                  <button className="border border-[#52B2AD] text-[#52B2AD] hover:bg-[#52B2AD] hover:text-white px-3 py-1.5 rounded-md shadow-md transition text-sm font-medium">
-                    Appointment
                   </button>
                 </div>
               </div>
@@ -362,6 +414,12 @@ export default function PetDetailsCard() {
           ))
         )}
       </div>
+
+      <AddPetModal
+        isAddOpen={isAddOpen}
+        setIsAddOpen={setIsAddOpen}
+        onAddPet={handleAddPet}
+      />
     </div>
   );
 }
