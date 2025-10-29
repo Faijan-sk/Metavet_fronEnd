@@ -43,7 +43,6 @@ const Header = () => {
     const shouldShowPets = !userInfo || userInfo?.userType === 1;
 
     return [
-      // { name: 'Find a Doctor', path: '/finddoctor', active: true },
       ...(shouldShowPets ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
       { name: 'Appointment', path: '/appointment', active: true },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
@@ -102,7 +101,6 @@ const Header = () => {
         { label: 'Video Newsroom', path: '/videonewsroom' },
         { label: "Today's Veterinarian", path: '/todayveterinarian' },
         { label: 'Newsletter Archive', path: '/newsletter' },
-        // { label: 'Find A Clinic', path: '/hospital' },
         { label: 'Surgery', path: '/surgery' },
         { label: 'Radiology', path: '/radiology' },
         { label: 'FAQ', path: '/faq' },
@@ -155,6 +153,33 @@ const Header = () => {
     setIsMenuOpen(false)
     setOpenMobileDropdown(null)
   }, [])
+
+  // Logout handler - clears entire localStorage and redirects to signin
+  const handleLogout = useCallback((e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    try {
+      // Clear everything from localStorage (accessToken, refreshToken, userInfo, etc.)
+      localStorage.clear();
+      // Also remove axios default Authorization header if set globally
+      try {
+        // eslint-disable-next-line no-undef
+        if (typeof window !== 'undefined' && window.axios?.defaults?.headers) {
+          delete window.axios.defaults.headers.common['Authorization'];
+        }
+      } catch (err) {
+        // ignore - only best-effort cleanup
+      }
+    } catch (err) {
+      console.error("Error clearing localStorage during logout:", err);
+    }
+
+    setIsMenuOpen(false);
+    setOpenMobileDropdown(null);
+
+    // Full reload to Signin page so app state resets
+    window.location.href = "/Signin";
+  }, []);
 
   return (
     <header className="sticky top-0 shadow-md py-2 sm:py-4 px-4 sm:px-6 lg:px-10 font-sans min-h-[60px] sm:min-h-[70px] tracking-wide relative z-50 bg-primary">
@@ -221,8 +246,8 @@ const Header = () => {
         <div className="flex items-center space-x-3">
           {userInfo ? (
             <Link
-              // to="/profile"
               to="/Signin"
+              onClick={handleLogout}
               className={`${
                 isMobile ? 'hidden' : 'flex'
               } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
@@ -238,7 +263,7 @@ const Header = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              Profile
+              Log Out
             </Link>
           ) : (
             <Link
@@ -399,9 +424,8 @@ const Header = () => {
           <div className="p-4 border-t border-gray-200">
             {userInfo ? (
               <Link
-                // to="/profile"
                 to="/Signin"
-                onClick={closeMenu}
+                onClick={handleLogout}
                 className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 transition-colors duration-200"
               >
                 <svg
@@ -415,7 +439,7 @@ const Header = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                Profile
+                LogOut
               </Link>
             ) : (
               <Link
