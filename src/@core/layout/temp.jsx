@@ -1,43 +1,78 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo, useCallback, useMemo } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 
 //import images 
 import Logo from "./../../assets/MetavetImages/logo/navLogo.png"
-const navItems = [
-  { name: 'Find a Doctor', path: '/finddoctor', active: true },
-  { name: 'Appointment', path: '/appointment', active: true },
-  { name: 'Pets', path: '/about-pet', active: true },
-  { name: 'Health Record', path: '/healthrecord', active: true },
-   
-  {
-    name: 'Services',
-    hasDropdown: true,
-    dropdownItems: [
-      { label: 'Teleconsultation', path: '/teleconsultation' },
-      { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
-      { label: 'Blood Work', path: '/blood-work' },
-      { label: 'Grooming', path: '/grooming' },
-      { label: 'Groomers to Client KYC', path: '/groomer-kyc' },
-      { label: 'Kennels/Boarding', path: '/kennels-boarding' },
-      { label: 'Training', path: '/dog-training' },
-      { label: 'Dental', path: '/dental' },
-      { label: 'Vaccines', path: '/vaccines' },
-      { label: 'Parasite Prevention', path: '/parasite-prevention' },
-      { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
-      { label: 'Nutrition', path: '/nutrition' },
-      { label: 'Behaviour', path: '/behaviour' },
-    ],
-  },
-]
+
+// Get user info - component ke bahar
+const getUserInfo = () => {
+  try {
+    const userInfo = localStorage.getItem("userInfo");
+    return userInfo ? JSON.parse(userInfo) : null;
+  } catch (error) {
+    console.error('Error parsing userInfo:', error);
+    return null;
+  }
+};
+
+// Memoized Dropdown Component
+const DropdownMenu = memo(({ items }) => (
+  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
+    {items.map(({ label, path }, index) => (
+      <Link
+        key={index}
+        to={path}
+        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+      >
+        {label}
+      </Link>
+    ))}
+  </div>
+))
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [hoveredItem, setHoveredItem] = useState(null)
   const [openMobileDropdown, setOpenMobileDropdown] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
+  
+  const userInfo = getUserInfo();
 
-  const navItems2 = [
-    ...(isMobile ? navItems : []),
+  // Memoized navigation items
+  const baseNavItems = useMemo(() => {
+    const shouldShowPets = !userInfo || userInfo?.userType === 1;
+
+    return [
+      // { name: 'Find a Doctor', path: '/finddoctor', active: true },
+      ...(shouldShowPets ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
+      { name: 'Appointment', path: '/appointment', active: true },
+      ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
+      { name: 'Health Record', path: '/healthrecord', active: true },
+      {
+        name: 'Services',
+        hasDropdown: true, 
+        dropdownItems: [
+          { label: 'Teleconsultation', path: '/teleconsultation' },
+          { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
+          { label: 'Blood Work', path: '/blood-work' },
+          { label: 'Grooming', path: '/grooming' },
+          { label: 'Groomers to Client KYC', path: '/groomer-kyc' },
+          { label: 'Kennels/Boarding', path: '/kennels-boarding' },
+          { label: 'Training', path: '/dog-training' },
+          { label: 'Dental', path: '/dental' },
+          { label: 'Vaccines', path: '/vaccines' },
+          { label: 'Parasite Prevention', path: '/parasite-prevention' },
+          { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
+          { label: 'Nutrition', path: '/nutrition' },
+          { label: 'Behaviour', path: '/behaviour' },
+        ],
+      },
+    ]
+    
+  }, [userInfo])
+
+  const navItems2 = useMemo(() => [
+    ...(isMobile ? baseNavItems : []),
     {
       name: 'Patient Center',
       hasDropdown: true,
@@ -74,33 +109,28 @@ const Header = () => {
       ],
     },
     { name: 'Contact Us', path: '/contactus' },
-  ]
+  ], [isMobile, baseNavItems])
 
+  // Combined effect for screen size and click outside
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 991)
-    }
-
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
-
-  useEffect(() => {
+    const checkScreenSize = () => setIsMobile(window.innerWidth < 991)
     const handleClickOutside = (event) => {
-      if (
-        isMenuOpen &&
-        !event.target.closest('.mobile-menu') &&
-        !event.target.closest('.menu-toggle')
-      ) {
+      if (isMenuOpen && !event.target.closest('.mobile-menu') && !event.target.closest('.menu-toggle')) {
         setIsMenuOpen(false)
       }
     }
 
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
     document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    
+    return () => {
+      window.removeEventListener('resize', checkScreenSize)
+      document.removeEventListener('click', handleClickOutside)
+    }
   }, [isMenuOpen])
 
+  // Body overflow effect
   useEffect(() => {
     document.body.style.overflow = isMenuOpen && isMobile ? 'hidden' : 'unset'
     return () => {
@@ -108,22 +138,23 @@ const Header = () => {
     }
   }, [isMenuOpen, isMobile])
 
-  const handleDropdownHover = (index) => {
+  // Memoized callbacks
+  const handleDropdownHover = useCallback((index) => {
     if (!isMobile) setHoveredItem(index)
-  }
+  }, [isMobile])
 
-  const handleDropdownLeave = () => {
+  const handleDropdownLeave = useCallback(() => {
     if (!isMobile) setHoveredItem(null)
-  }
+  }, [isMobile])
 
-  const toggleMobileDropdown = (index) => {
-    setOpenMobileDropdown(openMobileDropdown === index ? null : index)
-  }
+  const toggleMobileDropdown = useCallback((index) => {
+    setOpenMobileDropdown(prev => prev === index ? null : index)
+  }, [])
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setIsMenuOpen(false)
     setOpenMobileDropdown(null)
-  }
+  }, [])
 
   return (
     <header className="sticky top-0 shadow-md py-2 sm:py-4 px-4 sm:px-6 lg:px-10 font-sans min-h-[60px] sm:min-h-[70px] tracking-wide relative z-50 bg-primary">
@@ -133,6 +164,7 @@ const Header = () => {
             <img
               src={Logo}
               alt="logo"
+              loading="lazy"
               className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
             />
             <span className="ml-2 text-white font-bold text-lg sm:text-xl hidden sm:block">
@@ -144,7 +176,7 @@ const Header = () => {
         <nav
           className={`${isMobile ? 'hidden' : 'flex'} items-center space-x-1`}
         >
-          {navItems.map((item, index) => (
+          {baseNavItems.map((item, index) => (
             <div
               key={index}
               className="relative group"
@@ -180,43 +212,55 @@ const Header = () => {
               </NavLink>
 
               {item.hasDropdown && hoveredItem === index && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
-                  {item.dropdownItems.map(({ label, path }, dropdownIndex) => (
-                    <Link
-                      key={dropdownIndex}
-                      to={path}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                    >
-                      {label}
-                    </Link>
-                  ))}
-                </div>
+                <DropdownMenu items={item.dropdownItems} />
               )}
             </div>
           ))}
         </nav>
 
         <div className="flex items-center space-x-3">
-          {/* Desktop SignUp Button - Now redirects to /SignUp */}
-          <Link
-            to="/Signin"
-            className={`${
-              isMobile ? 'hidden' : 'flex'
-            } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
+          {userInfo ? (
+            <Link
+              // to="/profile"
+              to="/Signin"
+              className={`${
+                isMobile ? 'hidden' : 'flex'
+              } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
             >
-              <path
-                fillRule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clipRule="evenodd"
-              />
-            </svg>
-            SignUp / Login 
-          </Link>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Profile
+            </Link>
+          ) : (
+            <Link
+              to="/Signin"
+              className={`${
+                isMobile ? 'hidden' : 'flex'
+              } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Login
+            </Link>
+          )}
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -352,15 +396,36 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Mobile SignUp Button - Now redirects to /SignUp */}
           <div className="p-4 border-t border-gray-200">
-            <Link
-              to="/SignUp"
-              onClick={closeMenu}
-              className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 transition-colors duration-200"
-            >
-              Sign Up
-            </Link>
+            {userInfo ? (
+              <Link
+                // to="/profile"
+                to="/Signin"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 transition-colors duration-200"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Profile
+              </Link>
+            ) : (
+              <Link
+                to="/SignUp"
+                onClick={closeMenu}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary/80 transition-colors duration-200"
+              >
+                Sign Up / Login
+              </Link>
+            )}
           </div>
         </div>
       </div>

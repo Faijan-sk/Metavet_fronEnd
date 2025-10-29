@@ -146,85 +146,97 @@ const OTPVerification = ({ onSubmit, onBack, userInfo, formType }) => {
     }
   };
 
+
   // Updated handleOtpSubmit method with dashboard redirect
-  const handleOtpSubmit = async (data) => {
-    const otpValue = `${data.otp0}${data.otp1}${data.otp2}${data.otp3}`;
+  // Updated handleOtpSubmit method with page reload
+const handleOtpSubmit = async (data) => {
+  const otpValue = `${data.otp0}${data.otp1}${data.otp2}${data.otp3}`;
 
-    if (otpValue.length !== 4) {
-      setError("root", {
-        type: "manual",
-        message: "Please enter complete 4-digit OTP",
-      });
-      return;
-    }
+  if (otpValue.length !== 4) {
+    setError("root", {
+      type: "manual",
+      message: "Please enter complete 4-digit OTP",
+    });
+    return;
+  }
 
-    setIsSubmitting(true);
-    clearErrors();
+  setIsSubmitting(true);
+  clearErrors();
 
-    try {
-      const apiPayload = {
-        otp: otpValue,
-      };
+  try {
+    const apiPayload = {
+      otp: otpValue,
+    };
 
-      const { data: apiResponse } = await jwt.verifyOtp(apiPayload, token);
-      const { data: user, accessToken, refreshToken, success } = apiResponse;
+    const { data: apiResponse } = await jwt.verifyOtp(apiPayload, token);
 
-      dispatch(handleLogin({ user, accessToken, refreshToken }));
+    console.log('this otp response', apiResponse.data)
 
-      // Check backend success
-      if (success) {
-        console.log("✅ OTP Verified Successfully:", otpValue);
-        
-        // Show success toast
-        console.log('Setting success alert to open');
-        setAlertType('success');
-        setAlertMessage('User Registration Successfully!');
-        setOpen(true);
+    localStorage.setItem("userInfo", JSON.stringify(apiResponse.data));
 
-        // Add delay before navigation to allow toast to show
-        setTimeout(() => {
-          navigate("/", {
-            state: {
-              verified: true,
-              phone: formatPhoneNumber(),
-              verificationTime: new Date().toISOString(),
-            },
-            replace: true,
-          });
-        }, 1500); // 1.5 second delay
-      } else {
-        setError("root", {
-          type: "manual",
-          message: apiResponse?.data?.message || "Invalid OTP. Please try again.",
-        });
-        reset();
-        document.getElementById("otp-0")?.focus();
-      }
-    } catch (error) {
-      console.error("❌ OTP Verification Error:", error);
+    const { data: user, accessToken, refreshToken, success } = apiResponse;
 
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Verification failed. Please try again.";
+    dispatch(handleLogin({ user, accessToken, refreshToken }));
 
-      setError("root", {
-        type: "manual",
-        message: errorMessage,
-      });
+    // Check backend success
+    if (success) {
+      console.log("✅ OTP Verified Successfully:", otpValue);
       
-      // Show error alert as well
-      console.log('Setting error alert to open');
-      setAlertType('error');
-      setAlertMessage(errorMessage);
+      // Show success toast
+      console.log('Setting success alert to open');
+      setAlertType('success');
+      setAlertMessage('User Registration Successfully!');
       setOpen(true);
-      
+
+      // Add delay before navigation with reload
+      setTimeout(() => {
+        // Option 1: Navigate and then reload
+        navigate("/", {
+          state: {
+            verified: true,
+            phone: formatPhoneNumber(),
+            verificationTime: new Date().toISOString(),
+          },
+          replace: true,
+        });
+        
+        // Force page reload after navigation
+        window.location.reload();
+        
+      }, 1500); // 1.5 second delay
+    } else {
+      setError("root", {
+        type: "manual",
+        message: apiResponse?.data?.message || "Invalid OTP. Please try again.",
+      });
       reset();
       document.getElementById("otp-0")?.focus();
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  } catch (error) {
+    console.error("❌ OTP Verification Error:", error);
+
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Verification failed. Please try again.";
+
+    setError("root", {
+      type: "manual",
+      message: errorMessage,
+    });
+    
+    // Show error alert as well
+    console.log('Setting error alert to open');
+    setAlertType('error');
+    setAlertMessage(errorMessage);
+    setOpen(true);
+    
+    reset();
+    document.getElementById("otp-0")?.focus();
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Resend OTP
   const handleResendOtp = async () => {
@@ -242,6 +254,7 @@ const OTPVerification = ({ onSubmit, onBack, userInfo, formType }) => {
     }
 
     try {
+      debugger
       const res = await jwt.login(loginPayload);
       console.log("resend otp", res);
       

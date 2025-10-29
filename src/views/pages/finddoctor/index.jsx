@@ -260,6 +260,8 @@ const FindDoctor = () => {
   const [errorStatus, setErrorStatus] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredDoctors(doctors);
@@ -273,6 +275,8 @@ const FindDoctor = () => {
       });
       setFilteredDoctors(filtered);
     }
+
+  
   }, [searchQuery, doctors]);
 
   const fetchDoctors = async () => {

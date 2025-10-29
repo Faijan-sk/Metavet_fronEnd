@@ -247,103 +247,207 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">First Name</label>
-              <input
-                type="text"
-                {...register('firstName', {
-                  required: 'First name is required',
-                  minLength: { value: 2, message: 'First name must be at least 2 characters' },
-                })}
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
-                  errors.firstName
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-200 focus:border-primary hover:border-gray-300'
-                } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
-                placeholder="First name"
-              />
-              {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
-            </div>
+  <label className="block text-sm font-semibold text-gray-800">First Name</label>
+  <input
+    type="text"
+    {...register('firstName', {
+      required: 'First name is required',
+      minLength: { value: 2, message: 'First name must be at least 2 characters' },
+      pattern: {
+        value: /^[A-Za-z\s]+$/,
+        message: 'Only alphabets and spaces are allowed',
+      },
+    })}
+    onKeyDown={(e) => {
+      // Prevent typing anything other than letters or space
+      if (
+        !/[a-zA-Z\s]/.test(e.key) && 
+        e.key !== 'Backspace' &&
+        e.key !== 'Tab' &&
+        e.key !== 'ArrowLeft' &&
+        e.key !== 'ArrowRight' &&
+        e.key !== 'Delete'
+      ) {
+        e.preventDefault();
+      }
+    }}
+    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
+      errors.firstName
+        ? 'border-red-400 focus:border-red-500'
+        : 'border-gray-200 focus:border-primary hover:border-gray-300'
+    } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
+    placeholder="First name"
+  />
+  {errors.firstName && (
+    <p className="text-red-500 text-sm">{errors.firstName.message}</p>
+  )}
+</div>
+
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Last Name</label>
-              <input
-                type="text"
-                {...register('lastName', {
-                  required: 'Last name is required',
-                  minLength: { value: 2, message: 'Last name must be at least 2 characters' },
-                })}
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
-                  errors.lastName
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-200 focus:border-primary hover:border-gray-300'
-                } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
-                placeholder="Last name"
-              />
-              {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
-            </div>
+  <label className="block text-sm font-semibold text-gray-800">Last Name</label>
+  <input
+    type="text"
+    {...register('lastName', {
+      required: 'Last name is required',
+      minLength: { value: 2, message: 'Last name must be at least 2 characters' },
+      pattern: {
+        value: /^[A-Za-z\s]+$/,
+        message: 'Only alphabets and spaces are allowed',
+      },
+    })}
+    onKeyDown={(e) => {
+      // Prevent typing anything other than letters or space
+      if (
+        !/[a-zA-Z\s]/.test(e.key) &&
+        e.key !== 'Backspace' &&
+        e.key !== 'Tab' &&
+        e.key !== 'ArrowLeft' &&
+        e.key !== 'ArrowRight' &&
+        e.key !== 'Delete'
+      ) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Clean pasted or programmatic input
+      e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, '');
+    }}
+    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
+      errors.lastName
+        ? 'border-red-400 focus:border-red-500'
+        : 'border-gray-200 focus:border-primary hover:border-gray-300'
+    } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
+    placeholder="Last name"
+  />
+  {errors.lastName && (
+    <p className="text-red-500 text-sm">{errors.lastName.message}</p>
+  )}
+</div>
+
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-800">Phone Number</label>
-            <div className="flex gap-2 sm:gap-3">
-              <div className="w-2/5 sm:w-1/3">
-                <select
-                  {...register('countryCode', { required: 'Country code is required' })}
-                  className={`w-full px-2 sm:px-3 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
-                    errors.countryCode
-                      ? 'border-red-400 focus:border-red-500'
-                      : 'border-gray-200 focus:border-primary hover:border-gray-300'
-                  } bg-gray-50 focus:bg-white`}
-                >
-                  <option value="+91">🇮🇳 +91</option>
-                  <option value="+1">🇺🇸 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                  <option value="+61">🇦🇺 +61</option>
-                </select>
-              </div>
-              <div className="w-3/5 sm:w-2/3">
-                <input
-                  type="tel"
-                  {...register('phoneNumber', {
-                    required: 'Phone number is required',
-                    pattern: { value: /^[0-9]{10}$/, message: 'Please enter a valid 10-digit phone number' },
-                  })}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
-                    errors.phoneNumber
-                      ? 'border-red-400 focus:border-red-500'
-                      : 'border-gray-200 focus:border-primary hover:border-gray-300'
-                  } focus:outline-none bg-gray-50 focus:bg-white`}
-                  placeholder="Enter 10-digit number"
-                />
-              </div>
-            </div>
-            {(errors.countryCode || errors.phoneNumber) && (
-              <p className="text-red-500 text-sm">
-                {errors.countryCode?.message || errors.phoneNumber?.message}
-              </p>
-            )}
-          </div>
+  <label className="block text-sm font-semibold text-gray-800">Phone Number</label>
+  <div className="flex gap-2 sm:gap-3">
+    {/* Country Code */}
+    <div className="w-2/5 sm:w-1/3">
+      <select
+        {...register('countryCode', { required: 'Country code is required' })}
+        className={`w-full px-2 sm:px-3 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
+          errors.countryCode
+            ? 'border-red-400 focus:border-red-500'
+            : 'border-gray-200 focus:border-primary hover:border-gray-300'
+        } bg-gray-50 focus:bg-white`}
+      >
+        <option value="+91">🇮🇳 +91</option>
+        <option value="+1">🇺🇸 +1</option>
+        <option value="+44">🇬🇧 +44</option>
+        <option value="+61">🇦🇺 +61</option>
+      </select>
+    </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-800">Email Address</label>
-            <input
-              type="email"
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Please enter a valid email address',
-                },
-              })}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
-                errors.email
-                  ? 'border-red-400 focus:border-red-500'
-                  : 'border-gray-200 focus:border-primary hover:border-gray-300'
-              } focus:outline-none bg-gray-50 focus:bg-white`}
-              placeholder="Enter your email"
-            />
-            {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
-          </div>
+    {/* Phone Number */}
+    <div className="w-3/5 sm:w-2/3">
+      <input
+        type="tel"
+        {...register('phoneNumber', {
+          required: 'Phone number is required',
+          pattern: {
+            value: /^[0-9]{10}$/,
+            message: 'Please enter a valid 10-digit phone number',
+          },
+        })}
+        onKeyDown={(e) => {
+          // Allow only digits and control keys
+          if (
+            !/[0-9]/.test(e.key) &&
+            e.key !== 'Backspace' &&
+            e.key !== 'Tab' &&
+            e.key !== 'ArrowLeft' &&
+            e.key !== 'ArrowRight' &&
+            e.key !== 'Delete'
+          ) {
+            e.preventDefault();
+          }
+        }}
+        onInput={(e) => {
+          // Clean pasted or programmatic input (remove non-digits)
+          e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        }}
+        className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
+          errors.phoneNumber
+            ? 'border-red-400 focus:border-red-500'
+            : 'border-gray-200 focus:border-primary hover:border-gray-300'
+        } focus:outline-none bg-gray-50 focus:bg-white`}
+        placeholder="Enter 10-digit number"
+        maxLength={10}
+      />
+    </div>
+  </div>
+
+  {(errors.countryCode || errors.phoneNumber) && (
+    <p className="text-red-500 text-sm">
+      {errors.countryCode?.message || errors.phoneNumber?.message}
+    </p>
+  )}
+</div>
+
+
+         <div className="space-y-2">
+  <label className="block text-sm font-semibold text-gray-800">Email Address</label>
+  <input
+    type="email"
+    {...register('email', {
+      required: 'Email is required',
+      pattern: {
+        // ✅ Gmail-only regex (letters/numbers before @, only gmail.com allowed)
+        value: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+        message: 'Please enter a valid Gmail address (example@gmail.com)',
+      },
+    })}
+    onKeyDown={(e) => {
+      // Allow letters, numbers, one @, and control keys
+      const allowedKeys = [
+        'Backspace',
+        'Tab',
+        'ArrowLeft',
+        'ArrowRight',
+        'Delete',
+        '.',
+        '_',
+        '-',
+        '+',
+      ];
+
+      // Allow only one '@' symbol
+      if (e.key === '@' && e.target.value.includes('@')) {
+        e.preventDefault();
+      }
+
+      if (
+        !/[a-zA-Z0-9@._+\-]/.test(e.key) && // Only these characters allowed
+        !allowedKeys.includes(e.key)
+      ) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Remove invalid pasted characters (anything not allowed)
+      e.target.value = e.target.value.replace(/[^a-zA-Z0-9@._+\-]/g, '');
+    }}
+    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base ${
+      errors.email
+        ? 'border-red-400 focus:border-red-500'
+        : 'border-gray-200 focus:border-primary hover:border-gray-300'
+    } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
+    placeholder="Enter your Gmail address"
+  />
+  {errors.email && (
+    <p className="text-red-500 text-sm">{errors.email.message}</p>
+  )}
+</div>
+
 
           {/* ✅ Enhanced Alert for userType error and API errors with navigation */}
           {combinedErrorMsg && (

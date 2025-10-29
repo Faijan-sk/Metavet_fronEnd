@@ -27,6 +27,7 @@ const LoginForm = ({ onSubmit }) => {
       setErrorMsg('')
 
       // Call the login API
+      debugger
       const response = await jwt.login(data)
       const loginData = response.data
 

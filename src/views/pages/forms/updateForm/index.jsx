@@ -48,6 +48,39 @@ console.log('the state in the update doctor : ' ,state?.phone)
   emergencyContactNumber: "3125558976",
   },
 })
+
+
+// const {
+//   register,
+//   handleSubmit,
+//   formState: { errors },
+// } = useForm({
+//   defaultValues: {
+//     experienceYears: "",
+//     hospitalClinicName: "",
+//     hospitalClinicAddress: "",
+//     pincode: "",
+//     address: "",
+//     country: "",
+//     city: "",
+//     state: "",
+//     bio: "",
+//     consultationFee: "",
+//     gender: "",
+//     dateOfBirth: "",
+//     licenseNumber: "",
+//     licenseIssueDate: "",
+//     licenseExpiryDate: "",
+//     qualification: "",
+//     specialization: "",
+//     previousWorkplace: "",
+//     joiningDate: "",
+//     employmentType: "",
+//     isActive: false,
+//     emergencyContactNumber: "",
+//   },
+// });
+
   
 
   // ✅ Form Submit
@@ -201,129 +234,351 @@ console.log('Login Payload' , loginPyaload)
       >
         {/* Experience */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Experience (Years)
-          </label>
-          <input
-            type="number"
-            {...register("experienceYears", {
-              required: "Experience is required",
-            })}
-            className={inputClass(errors.experienceYears)}
-            placeholder="Enter total years"
-          />
-          <ErrorMsg message={errors.experienceYears?.message} />
-        </div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Experience (Years)
+  </label>
+  <input
+    type="text"
+    {...register("experienceYears", {
+      required: "Experience is required",
+      pattern: {
+        value: /^[0-9]+$/,
+        message: "Only numeric values are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      // Allow only digits and control/navigation keys
+      if (
+        !/[0-9]/.test(e.key) &&
+        e.key !== "Backspace" &&
+        e.key !== "Tab" &&
+        e.key !== "ArrowLeft" &&
+        e.key !== "ArrowRight" &&
+        e.key !== "Delete"
+      ) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Remove non-numeric characters from pasted input
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    }}
+    className={inputClass(errors.experienceYears)}
+    placeholder="Enter total years"
+  />
+  <ErrorMsg message={errors.experienceYears?.message} />
+</div>
+
 
         {/* Hospital + Pincode */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Hospital/Clinic Name
-            </label>
-            <input
-              type="text"
-              {...register("hospitalClinicName", {
-                required: "Hospital/Clinic name is required",
-              })}
-              className={inputClass(errors.hospitalClinicName)}
-              placeholder="Hospital Name"
-            />
-            <ErrorMsg message={errors.hospitalClinicName?.message} />
-          </div>
+    <label className="block text-sm font-semibold text-gray-800 mb-2">
+      Hospital/Clinic Name
+    </label>
+    <input
+      type="text"
+      {...register("hospitalClinicName", {
+        required: "Hospital/Clinic name is required",
+        pattern: {
+          value: /^[A-Za-z0-9.,\s]+$/,
+          message:
+            "Only letters, numbers, spaces, dots, and commas are allowed",
+        },
+      })}
+      onKeyDown={(e) => {
+        // Allow only letters, numbers, space, dot, comma, and editing keys
+        if (
+          !/[a-zA-Z0-9.,\s]/.test(e.key) &&
+          e.key !== "Backspace" &&
+          e.key !== "Tab" &&
+          e.key !== "ArrowLeft" &&
+          e.key !== "ArrowRight" &&
+          e.key !== "Delete"
+        ) {
+          e.preventDefault();
+        }
+      }}
+      onInput={(e) => {
+        // Remove any invalid characters (e.g., pasted text)
+        e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
+      }}
+      className={inputClass(errors.hospitalClinicName)}
+      placeholder="Hospital Name"
+    />
+    <ErrorMsg message={errors.hospitalClinicName?.message} />
+  </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Pincode
-            </label>
-            <input
-              type="text"
-              {...register("pincode", { required: "Pincode is required" })}
-              className={inputClass(errors.pincode)}
-              placeholder="411045"
-            />
-            <ErrorMsg message={errors.pincode?.message} />
-          </div>
+    <label className="block text-sm font-semibold text-gray-800 mb-2">
+      Pincode
+    </label>
+    <input
+      type="text"
+      {...register("pincode", {
+        required: "Pincode is required",
+        pattern: {
+          value: /^[0-9]+$/,
+          message: "Only numbers are allowed",
+        },
+      })}
+      onKeyDown={(e) => {
+        // Allow only digits and editing keys
+        if (
+          !/[0-9]/.test(e.key) &&
+          e.key !== "Backspace" &&
+          e.key !== "Tab" &&
+          e.key !== "ArrowLeft" &&
+          e.key !== "ArrowRight" &&
+          e.key !== "Delete"
+        ) {
+          e.preventDefault();
+        }
+      }}
+      onInput={(e) => {
+        // Remove non-numeric pasted content
+        e.target.value = e.target.value.replace(/[^0-9]/g, "");
+      }}
+      className={inputClass(errors.pincode)}
+      placeholder="411045"
+      maxLength={6} // Optional: limit to 6 digits for Indian pincodes
+    />
+    <ErrorMsg message={errors.pincode?.message} />
+  </div>
         </div>
 
         {/* Hospital Address */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Hospital/Clinic Address
-          </label>
-          <input
-            type="text"
-            {...register("hospitalClinicAddress", {
-              required: "Address is required",
-            })}
-            className={inputClass(errors.hospitalClinicAddress)}
-            placeholder="Full Address"
-          />
-          <ErrorMsg message={errors.hospitalClinicAddress?.message} />
-        </div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Hospital/Clinic Address
+  </label>
+  <input
+    type="text"
+    {...register("hospitalClinicAddress", {
+      required: "Address is required",
+      pattern: {
+        value: /^[A-Za-z0-9.,\s]+$/,
+        message: "Only letters, numbers, spaces, commas, and dots are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      // Allow: letters, numbers, space, comma, dot, and essential control keys
+      const allowedKeys = [
+        "Backspace",
+        "Tab",
+        "ArrowLeft",
+        "ArrowRight",
+        "Delete",
+      ];
+
+      if (
+        !/[a-zA-Z0-9.,\s]/.test(e.key) && // not a valid input char
+        !allowedKeys.includes(e.key) // not a control key
+      ) {
+        e.preventDefault(); // block typing
+      }
+    }}
+    onInput={(e) => {
+      // Clean pasted content: remove any disallowed characters
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
+    }}
+    className={inputClass(errors.hospitalClinicAddress)}
+    placeholder="Full Address"
+  />
+  <ErrorMsg message={errors.hospitalClinicAddress?.message} />
+</div>
+
+
 
         {/* Home Address */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Residential Address
-          </label>
-          <input
-            type="text"
-            {...register("address", { required: "Address is required" })}
-            className={inputClass(errors.address)}
-            placeholder="Home Address"
-          />
-          <ErrorMsg message={errors.address?.message} />
-        </div>
+       <div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Residential Address
+  </label>
+  <input
+    type="text"
+    {...register("address", {
+      required: "Address is required",
+      pattern: {
+        value: /^[A-Za-z0-9.,\s]+$/,
+        message: "Only letters, numbers, spaces, commas, and dots are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      // Allow only letters, numbers, spaces, comma, dot, and navigation keys
+      const allowedKeys = [
+        "Backspace",
+        "Tab",
+        "ArrowLeft",
+        "ArrowRight",
+        "Delete",
+      ];
+
+      if (
+        !/[a-zA-Z0-9.,\s]/.test(e.key) && // not valid character
+        !allowedKeys.includes(e.key) // not control key
+      ) {
+        e.preventDefault(); // block invalid typing
+      }
+    }}
+    onInput={(e) => {
+      // Clean pasted text or autofill input
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
+    }}
+    className={inputClass(errors.address)}
+    placeholder="Home Address"
+  />
+  <ErrorMsg message={errors.address?.message} />
+</div>
+
+
 
         {/* Country, State, City */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <input
-            type="text"
-            {...register("country", { required: "Country is required" })}
-            className={inputClass(errors.country)}
-            placeholder="Country"
-          />
-          <input
-            type="text"
-            {...register("state", { required: "State is required" })}
-            className={inputClass(errors.state)}
-            placeholder="State"
-          />
-          <input
-            type="text"
-            {...register("city", { required: "City is required" })}
-            className={inputClass(errors.city)}
-            placeholder="City"
-          />
-        </div>
+       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  {/* Country */}
+  <input
+    type="text"
+    {...register("country", {
+      required: "Country is required",
+      pattern: {
+        value: /^[A-Za-z0-9\s]+$/,
+        message: "Only letters, numbers, and spaces are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
+    }}
+    className={inputClass(errors.country)}
+    placeholder="Country"
+  />
+  <ErrorMsg message={errors.country?.message} />
+
+  {/* State */}
+  <input
+    type="text"
+    {...register("state", {
+      required: "State is required",
+      pattern: {
+        value: /^[A-Za-z0-9\s]+$/,
+        message: "Only letters, numbers, and spaces are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
+    }}
+    className={inputClass(errors.state)}
+    placeholder="State"
+  />
+  <ErrorMsg message={errors.state?.message} />
+
+  {/* City */}
+  <input
+    type="text"
+    {...register("city", {
+      required: "City is required",
+      pattern: {
+        value: /^[A-Za-z0-9\s]+$/,
+        message: "Only letters, numbers, and spaces are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
+    }}
+    className={inputClass(errors.city)}
+    placeholder="City"
+  />
+  <ErrorMsg message={errors.city?.message} />
+</div>
+
 
         {/* Bio */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Short Bio
-          </label>
-          <textarea
-            {...register("bio", { required: "Bio is required" })}
-            className={inputClass(errors.bio)}
-            placeholder="Write about yourself..."
-          />
-          <ErrorMsg message={errors.bio?.message} />
-        </div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Short Bio
+  </label>
+  <textarea
+    {...register("bio", {
+      required: "Bio is required",
+      pattern: {
+        value: /^[A-Za-z0-9,\s]+$/,
+        message: "Only letters, numbers, spaces, and commas are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+
+      // Block Enter key (no multiline)
+      if (e.key === "Enter") {
+        e.preventDefault();
+        return;
+      }
+
+      // Allow letters, numbers, spaces, commas, and essential keys only
+      if (!/[a-zA-Z0-9,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Clean any invalid pasted characters
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9,\s]/g, "");
+    }}
+    className={inputClass(errors.bio)}
+    placeholder="Write about yourself..."
+  />
+  <ErrorMsg message={errors.bio?.message} />
+</div>
+
 
         {/* Consultation Fee */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-  Consultation Fee ($)
-</label>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Consultation Fee ($)
+  </label>
 
-          <input
-            type="number"
-            {...register("consultationFee", { required: "Fee is required" })}
-            className={inputClass(errors.consultationFee)}
-            placeholder="2000"
-          />
-          <ErrorMsg message={errors.consultationFee?.message} />
-        </div>
+  <input
+    type="text"
+    {...register("consultationFee", {
+      required: "Fee is required",
+      pattern: {
+        value: /^[0-9]+$/,
+        message: "Only numbers are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+
+      // Allow only digits and essential control keys
+      if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Clean up any invalid characters from pasted input
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    }}
+    className={inputClass(errors.consultationFee)}
+    placeholder="2000"
+  />
+  <ErrorMsg message={errors.consultationFee?.message} />
+</div>
+
 
         {/* Gender + DOB */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -416,49 +671,98 @@ console.log('Login Payload' , loginPyaload)
 
         {/* Qualification + Specialization */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Qualification
-            </label>
-            <input
-              type="text"
-              {...register("qualification", {
-                required: "Qualification is required",
-              })}
-              className={inputClass(errors.qualification)}
-              placeholder="MBBS, MD"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Specialization
-            </label>
-            <input
-              type="text"
-              {...register("specialization", {
-                required: "Specialization is required",
-              })}
-              className={inputClass(errors.specialization)}
-              placeholder="Cardiology"
-            />
-          </div>
-        </div>
+  {/* Qualification */}
+  <div>
+    <label className="block text-sm font-semibold text-gray-800 mb-2">
+      Qualification
+    </label>
+    <input
+      type="text"
+      {...register("qualification", {
+        required: "Qualification is required",
+        pattern: {
+          value: /^[A-Za-z,\s]+$/,
+          message: "Only letters, spaces, and commas are allowed",
+        },
+      })}
+      onKeyDown={(e) => {
+        const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+        if (!/[a-zA-Z,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+          e.preventDefault();
+        }
+      }}
+      onInput={(e) => {
+        e.target.value = e.target.value.replace(/[^A-Za-z,\s]/g, "");
+      }}
+      className={inputClass(errors.qualification)}
+      placeholder="MBBS, MD"
+    />
+    <ErrorMsg message={errors.qualification?.message} />
+  </div>
+
+  {/* Specialization */}
+  <div>
+    <label className="block text-sm font-semibold text-gray-800 mb-2">
+      Specialization
+    </label>
+    <input
+      type="text"
+      {...register("specialization", {
+        required: "Specialization is required",
+        pattern: {
+          value: /^[A-Za-z,\s]+$/,
+          message: "Only letters, spaces, and commas are allowed",
+        },
+      })}
+      onKeyDown={(e) => {
+        const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+        if (!/[a-zA-Z,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+          e.preventDefault();
+        }
+      }}
+      onInput={(e) => {
+        e.target.value = e.target.value.replace(/[^A-Za-z,\s]/g, "");
+      }}
+      className={inputClass(errors.specialization)}
+      placeholder="Cardiology"
+    />
+    <ErrorMsg message={errors.specialization?.message} />
+  </div>
+</div>
+
 
         {/* Previous Workplace + Joining Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Previous Workplace
-            </label>
-            <input
-              type="text"
-              {...register("previousWorkplace", {
-                required: "Previous workplace is required",
-              })}
-              className={inputClass(errors.previousWorkplace)}
-              placeholder="Fortis Hospital"
-            />
-          </div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Previous Workplace
+  </label>
+  <input
+    type="text"
+    {...register("previousWorkplace", {
+      required: "Previous workplace is required",
+      pattern: {
+        value: /^[A-Za-z0-9,\s]+$/,
+        message: "Only letters, numbers, spaces, and commas are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+      // Allow only letters, numbers, spaces, commas, and essential control keys
+      if (!/[a-zA-Z0-9,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Remove any invalid characters from pasted text
+      e.target.value = e.target.value.replace(/[^A-Za-z0-9,\s]/g, "");
+    }}
+    className={inputClass(errors.previousWorkplace)}
+    placeholder="Fortis Hospital"
+  />
+  <ErrorMsg message={errors.previousWorkplace?.message} />
+</div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
               Joining Date
@@ -505,19 +809,35 @@ console.log('Login Payload' , loginPyaload)
 
         {/* Emergency Contact */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Emergency Contact Number
-          </label>
-          <input
-            type="tel"
-            {...register("emergencyContactNumber", {
-              required: "Emergency contact is required",
-            })}
-            className={inputClass(errors.emergencyContactNumber)}
-            placeholder="9988776655"
-          />
-          <ErrorMsg message={errors.emergencyContactNumber?.message} />
-        </div>
+  <label className="block text-sm font-semibold text-gray-800 mb-2">
+    Emergency Contact Number
+  </label>
+  <input
+    type="tel"
+    {...register("emergencyContactNumber", {
+      required: "Emergency contact is required",
+      pattern: {
+        value: /^[0-9]+$/,
+        message: "Only numbers are allowed",
+      },
+    })}
+    onKeyDown={(e) => {
+      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+      // Allow only digits and essential control keys
+      if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    onInput={(e) => {
+      // Remove invalid characters if pasted
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    }}
+    className={inputClass(errors.emergencyContactNumber)}
+    placeholder="9988776655"
+  />
+  <ErrorMsg message={errors.emergencyContactNumber?.message} />
+</div>
+
 
         {/* Server Error */}
         <p className="text-red-500 text-sm text-center">{errorMsg}</p>
