@@ -3,6 +3,10 @@ import React from 'react'
 const FAQ = () => {
   return (
     <div className="px-6 py-8 max-w-4xl mx-auto">
+       <h1 className="text-3xl font-bold mb-6 text-center">
+        FAQ
+      </h1>
+
       {/* <h1 className="text-3xl font-bold mb-6 text-center">Bloodwork</h1> */}
       <p className="text-lg text-gray-600 text-center mb-12">
         Blood tests are an essential part of diagnosing what is ailing your pet,

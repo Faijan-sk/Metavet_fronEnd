@@ -18,68 +18,69 @@ const [phoneNumber , setPhoneNumber] = useState();
  const[token, setToken] = useState()
 console.log('the state in the update doctor : ' ,state?.phone)
 
-  const {
-  register,
-  handleSubmit,
-  formState: { errors },
-} = useForm({
-  defaultValues: {
-    experienceYears: "12",
-  hospitalClinicName: "Sunrise Medical Center",
-  hospitalClinicAddress: "742 Evergreen Terrace, Apt 3B",
-  pincode: "998855",
-  address: "Suite 21B, Springfield Plaza",
-  country: "United States",
-  city: "Springfield",
-  state: "Illinois",
-  bio: "Dr. John Carter is a board-certified cardiologist with over a decade of experience in managing complex heart conditions and providing compassionate patient care.",
-  consultationFee: "200",
-  gender: "MALE",
-  dateOfBirth: "1978-06-14",
-  licenseNumber: "ILCARD78945",
-  licenseIssueDate: "2010-04-15",
-  licenseExpiryDate: "2030-04-14",
-  qualification: "MBBS, MD (Cardiology)",
-  specialization: "Cardiologist",
-  previousWorkplace: "Mercy General Hospital",
-  joiningDate: "2022-09-01",
-  employmentType: "Full-time",
-  isActive: true,
-  emergencyContactNumber: "3125558976",
-  },
-})
-
-
-// const {
+//   const {
 //   register,
 //   handleSubmit,
 //   formState: { errors },
 // } = useForm({
 //   defaultValues: {
-//     experienceYears: "",
-//     hospitalClinicName: "",
-//     hospitalClinicAddress: "",
-//     pincode: "",
-//     address: "",
-//     country: "",
-//     city: "",
-//     state: "",
-//     bio: "",
-//     consultationFee: "",
-//     gender: "",
-//     dateOfBirth: "",
-//     licenseNumber: "",
-//     licenseIssueDate: "",
-//     licenseExpiryDate: "",
-//     qualification: "",
-//     specialization: "",
-//     previousWorkplace: "",
-//     joiningDate: "",
-//     employmentType: "",
-//     isActive: false,
-//     emergencyContactNumber: "",
+//     experienceYears: "12",
+//   hospitalClinicName: "Sunrise Medical Center",
+//   hospitalClinicAddress: "742 Evergreen Terrace, Apt 3B",
+//   pincode: "998855",
+//   address: "Suite 21B, Springfield Plaza",
+//   country: "United States",
+//   city: "Springfield",
+//   state: "Illinois",
+//   bio: "Dr. John Carter is a board-certified cardiologist with over a decade of experience in managing complex heart conditions and providing compassionate patient care.",
+//   consultationFee: "200",
+//   gender: "MALE",
+//   dateOfBirth: "1978-06-14",
+//   licenseNumber: "ILCARD78945",
+//   licenseIssueDate: "2010-04-15",
+//   licenseExpiryDate: "2030-04-14",
+//   qualification: "MBBS, MD (Cardiology)",
+//   specialization: "Cardiologist",
+//   previousWorkplace: "Mercy General Hospital",
+//   joiningDate: "2022-09-01",
+//   employmentType: "Full-time",
+//   isActive: true,
+//   emergencyContactNumber: "3125558976",
 //   },
-// });
+// })
+
+
+
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+} = useForm({
+  defaultValues: {
+    experienceYears: "",
+    hospitalClinicName: "",
+    hospitalClinicAddress: "",
+    pincode: "",
+    address: "",
+    country: "",
+    city: "",
+    state: "",
+    bio: "",
+    consultationFee: "",
+    gender: "",
+    dateOfBirth: "",
+    licenseNumber: "",
+    licenseIssueDate: "",
+    licenseExpiryDate: "",
+    qualification: "",
+    specialization: "",
+    previousWorkplace: "",
+    joiningDate: "",
+    employmentType: "",
+    isActive: false,
+    emergencyContactNumber: "",
+  },
+});
 
   
 

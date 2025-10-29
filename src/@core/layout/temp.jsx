@@ -102,7 +102,7 @@ const Header = () => {
         { label: 'Video Newsroom', path: '/videonewsroom' },
         { label: "Today's Veterinarian", path: '/todayveterinarian' },
         { label: 'Newsletter Archive', path: '/newsletter' },
-        { label: 'Find A Clinic', path: '/hospital' },
+        // { label: 'Find A Clinic', path: '/hospital' },
         { label: 'Surgery', path: '/surgery' },
         { label: 'Radiology', path: '/radiology' },
         { label: 'FAQ', path: '/faq' },

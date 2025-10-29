@@ -10,16 +10,16 @@ const AddPetForm = ({ onClose, onSubmit }) => {
     reset,
   } = useForm({
     defaultValues: {
-      petName: "mangu",
-      petAge: "25",
-      petHeight: "10",
-      petWeight: "23",
-      petSpecies: "abc",
-      petGender: "Male",
-      petBreed: "XYZ",
+      petName: "",
+      petAge: "",
+      petHeight: "",
+      petWeight: "",
+      petSpecies: "",
+      petGender: "",
+      petBreed: "",
       isVaccinated: false,
       isNeutered: false,
-      medicalNotes: "nothing",
+      medicalNotes: "",
     },
   });
 

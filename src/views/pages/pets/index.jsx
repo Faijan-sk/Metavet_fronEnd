@@ -1,38 +1,42 @@
 import { Calendar, Hash, PawPrint, User, Plus, Lock, ShieldAlert, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import AddPetForm from "./AddPetForm"; // ✅ Your form component
+import AddPetForm from "./AddPetForm";
 import useJwt from "../../../enpoints/jwt/useJwt";
+import PetProfileOne from "./PetProfile";
 
-// // Mock functions for demonstration
-// const useJwt = {
-//   getAllPetsByOwner: async () => {
-//     // Simulate different error scenarios for demo
-//     // Change the status to test: 400, 401, 403, 404
-//     const status = 400;
-//     throw { response: { status }, status };
-//   }
-// };
+const getUserInfo = () => {
+  try {
+    const userInfo = localStorage.getItem("userInfo");
+    return userInfo ? JSON.parse(userInfo) : null;
+  } catch (error) {
+    console.error('Error parsing userInfo:', error);
+    return null;
+  }
+};
 
-const AddPets = ({ setIsAddOpen, isAddOpen }) => (
-  <button 
-    onClick={() => setIsAddOpen(true)}
-    className="bg-[#52B2AD] hover:bg-[#42948f] text-white px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2"
-  >
-    <Plus size={20} />
-    Add Pet
-  </button>
-);
+const AddPets = ({ setIsAddOpen, isAddOpen }) => {
+  const userInfo = getUserInfo();
+  if (!userInfo) return null;
+
+  return (
+    <button 
+      onClick={() => setIsAddOpen(true)}
+      className="bg-[#52B2AD] hover:bg-[#42948f] text-white px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2"
+    >
+      <Plus size={20} />
+      Add Pet
+    </button>
+  );
+};
 
 const PetProfile = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
 
-// ✅ AddPetModal Component
 const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
   if (!isAddOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative animate-fadeIn">
-        {/* Close Button */}
+    <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative animate-fadeIn max-h-[90vh] overflow-y-auto">
         <button
           onClick={() => setIsAddOpen(false)}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition"
@@ -40,16 +44,36 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
           <X size={22} />
         </button>
 
-        {/* Header */}
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
           Add New Pet
         </h2>
 
-        {/* Form */}
         <AddPetForm
           onClose={() => setIsAddOpen(false)}
           onSubmit={onAddPet}
         />
+      </div>
+    </div>
+  );
+};
+
+// Compact Profile Modal with proper height
+const ProfileModal = ({ open, onClose, pet }) => {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl relative animate-fadeIn max-h-[85vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 transition bg-white rounded-full p-1.5 shadow-md"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="p-4">
+          <PetProfileOne pet={pet} />
+        </div>
       </div>
     </div>
   );
@@ -262,7 +286,6 @@ export default function PetDetailsCard() {
     setOpen(true);
   };
 
-  // ✅ Add pet handler for form submission
   const handleAddPet = (newPet) => {
     setPetList((prev) => [...prev, { pid: prev.length + 1, ...newPet }]);
     setIsAddOpen(false);
@@ -356,16 +379,13 @@ export default function PetDetailsCard() {
                 key={pet.pid}
                 className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 animate-fadeIn"
               >
-                {/* Decorative gradient overlay */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
                 
-                {/* Pet ID Badge */}
                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
                   <Hash size={12} className="text-[#52B2AD]" />
                   <span className="text-xs font-semibold text-gray-700">{pet.pid}</span>
                 </div>
 
-                {/* Pet Image Section */}
                 <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
@@ -374,7 +394,6 @@ export default function PetDetailsCard() {
                       alt={pet.petName}
                       className="relative w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white transform group-hover:scale-110 transition-transform duration-300"
                     />
-                    {/* Paw print decoration */}
                     <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
                       <PawPrint size={20} className="text-[#52B2AD]" />
                     </div>
@@ -384,9 +403,7 @@ export default function PetDetailsCard() {
                   <p className="text-white/90 text-sm font-medium mt-1">{pet.petSpecies}</p>
                 </div>
 
-                {/* Pet Details Section */}
                 <div className="p-5 space-y-3">
-                  {/* Owner Info */}
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="w-10 h-10 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center flex-shrink-0">
                       <User size={18} className="text-white" />
@@ -401,18 +418,6 @@ export default function PetDetailsCard() {
                     </div>
                   </div>
 
-                  {/* Birthdate Info */}
-                  {/* <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Calendar size={18} className="text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Birthday</p>
-                      <p className="text-sm font-semibold text-gray-800">{pet.birthDate || "Unknown"}</p>
-                    </div>
-                  </div> */}
-
-                  {/* Action Button */}
                   <button
                     onClick={() => handleViewProfile(pet)}
                     className="w-full bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group mt-4"
@@ -422,7 +427,6 @@ export default function PetDetailsCard() {
                   </button>
                 </div>
 
-                {/* Hover effect border */}
                 <div className="absolute inset-0 border-2 border-[#52B2AD] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
             ))}
@@ -436,6 +440,11 @@ export default function PetDetailsCard() {
         onAddPet={handleAddPet}
       />
 
+      <ProfileModal
+        open={open}
+        onClose={() => setOpen(false)}
+        pet={selectedPet}
+      />
       
     </div>
   );
