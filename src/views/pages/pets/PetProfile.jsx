@@ -194,7 +194,7 @@ export default function PetProfileOne({ pet }) {
               </button> */}
 
               <button
-                onClick={() => alert('Open edit modal (implement as needed)')}
+                // onClick={() => alert('Open edit modal (implement as needed)')}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-[#52B2AD] text-[#52B2AD] font-semibold shadow-md hover:shadow-lg hover:bg-teal-50 transform transition-all duration-200 hover:scale-105"
               >
                 <Edit size={18} />
