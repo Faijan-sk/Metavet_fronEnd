@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import useJwt from "../../../enpoints/jwt/useJwt";
 
@@ -23,22 +23,54 @@ const AddPetForm = ({ onClose, onSubmit }) => {
     },
   });
 
-  const submitHandler = (data) => {
-    console.log('data coming from the form ', data)
+  // ✅ State for backend error messages
+  const [backendError, setBackendError] = useState("");
+
+  const submitHandler = async (data) => {
+    console.log("data coming from the form ", data);
+    setBackendError(""); // Clear previous backend errors
+
     const formattedPet = {
       ...data,
       petAge: Number(data.petAge),
       petHeight: parseFloat(data.petHeight),
       petWeight: parseFloat(data.petWeight),
     };
-    
-    console.log('this is frmated', formattedPet)
 
-    const response = useJwt.createPetWithoutImage(formattedPet)
+    console.log("this is formatted", formattedPet);
 
-    onSubmit(formattedPet);
-    onClose();
-    reset();
+    try {
+      const response = await useJwt.createPetWithoutImage(formattedPet);
+      console.log("API Response:", response);
+
+      // ✅ Success case — reload page
+      if (response && (response.status === 200 || response.status === 201)) {
+        onSubmit(formattedPet);
+        reset();
+        onClose();
+        window.location.reload(); // ✅ Reload page after success
+        return; // ✅ Stop execution here (don’t go to error message)
+      }
+
+      // ❌ Handle backend validation errors
+      if (response?.data?.status === "error" && response?.data?.errors?.length > 0) {
+        const backendMsg = response.data.errors[0]?.defaultMessage || "Validation failed";
+        setBackendError(backendMsg);
+      } else {
+        // ⚠️ Only show fallback message if clearly failed (not success)
+        setBackendError("Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating pet:", error);
+
+      // ✅ Handle backend validation message from catch
+      if (error.response?.data?.errors?.length > 0) {
+        const backendMsg = error.response.data.errors[0]?.defaultMessage;
+        setBackendError(backendMsg);
+      } else {
+        setBackendError("An unexpected error occurred. Please try again.");
+      }
+    }
   };
 
   return (
@@ -151,7 +183,7 @@ const AddPetForm = ({ onClose, onSubmit }) => {
         </div>
       </div>
 
-      {/* Row 4: Height (Full Width) */}
+      {/* Row 4: Height */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Height (cm)
@@ -191,18 +223,12 @@ const AddPetForm = ({ onClose, onSubmit }) => {
         </label>
       </div>
 
-      {/* Medical Notes */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Medical Notes
-        </label>
-        <textarea
-          {...register("medicalNotes")}
-          placeholder="Enter any medical notes"
-          rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition resize-none"
-        />
-      </div>
+      {/* ✅ Backend Validation Message */}
+      {backendError && (
+        <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-2 rounded-md text-sm font-medium">
+          {backendError}
+        </div>
+      )}
 
       {/* Buttons */}
       <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
