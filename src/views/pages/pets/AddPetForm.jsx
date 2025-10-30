@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import useJwt from "../../../enpoints/jwt/useJwt";
 
-const AddPetForm = ({ onClose, onSubmit }) => {
+const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       petName: "",
@@ -23,12 +24,32 @@ const AddPetForm = ({ onClose, onSubmit }) => {
     },
   });
 
-  // ✅ State for backend error messages
   const [backendError, setBackendError] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (editPetData) {
+      setIsEditMode(true);
+      setValue("petName", editPetData.petName || "");
+      setValue("petAge", editPetData.petAge || "");
+      setValue("petHeight", editPetData.petHeight || "");
+      setValue("petWeight", editPetData.petWeight || "");
+      setValue("petSpecies", editPetData.petSpecies || "");
+      setValue("petGender", editPetData.petGender || "");
+      setValue("petBreed", editPetData.petBreed || "");
+      setValue("isVaccinated", editPetData.isVaccinated || false);
+      setValue("isNeutered", editPetData.isNeutered || false);
+      setValue("medicalNotes", editPetData.medicalNotes || "");
+    } else {
+      setIsEditMode(false);
+      reset();
+    }
+  }, [editPetData, setValue, reset]);
 
   const submitHandler = async (data) => {
     console.log("data coming from the form ", data);
-    setBackendError(""); // Clear previous backend errors
+    setBackendError("");
 
     const formattedPet = {
       ...data,
@@ -40,30 +61,40 @@ const AddPetForm = ({ onClose, onSubmit }) => {
     console.log("this is formatted", formattedPet);
 
     try {
-      const response = await useJwt.createPetWithoutImage(formattedPet);
-      console.log("API Response:", response);
+      let response;
+      
+      if (isEditMode && editPetData?.pid) {
+        // Update existing pet
+        debugger
+        response = await useJwt.updatePet(editPetData.pid, formattedPet);
+        debugger
+        console.log("Update API Response:", response);
+      } else {
+        // Create new pet
+        response = await useJwt.createPetWithoutImage(formattedPet);
+        console.log("Create API Response:", response);
+      }
 
-      // ✅ Success case — reload page
+      // Success case — reload page
       if (response && (response.status === 200 || response.status === 201)) {
         onSubmit(formattedPet);
         reset();
         onClose();
-        window.location.reload(); // ✅ Reload page after success
-        return; // ✅ Stop execution here (don’t go to error message)
+        window.location.reload();
+        return;
       }
 
-      // ❌ Handle backend validation errors
+      // Handle backend validation errors
       if (response?.data?.status === "error" && response?.data?.errors?.length > 0) {
         const backendMsg = response.data.errors[0]?.defaultMessage || "Validation failed";
         setBackendError(backendMsg);
       } else {
-        // ⚠️ Only show fallback message if clearly failed (not success)
         setBackendError("Something went wrong. Please try again.");
       }
     } catch (error) {
-      console.error("Error creating pet:", error);
+      console.error("Error saving pet:", error);
 
-      // ✅ Handle backend validation message from catch
+      // Handle backend validation message from catch
       if (error.response?.data?.errors?.length > 0) {
         const backendMsg = error.response.data.errors[0]?.defaultMessage;
         setBackendError(backendMsg);
@@ -223,7 +254,20 @@ const AddPetForm = ({ onClose, onSubmit }) => {
         </label>
       </div>
 
-      {/* ✅ Backend Validation Message */}
+      {/* Medical Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Medical Notes (Optional)
+        </label>
+        <textarea
+          {...register("medicalNotes")}
+          placeholder="Enter any medical notes or special care instructions"
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition resize-none"
+        />
+      </div>
+
+      {/* Backend Validation Message */}
       {backendError && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-2 rounded-md text-sm font-medium">
           {backendError}
@@ -243,7 +287,7 @@ const AddPetForm = ({ onClose, onSubmit }) => {
           type="submit"
           className="bg-[#52B2AD] hover:bg-[#42948f] text-white px-5 py-2 rounded-lg shadow-md transition font-medium"
         >
-          Save Pet
+          {isEditMode ? "Update Pet" : "Save Pet"}
         </button>
       </div>
     </form>

@@ -189,4 +189,25 @@ createPetWithoutImage(...args) {
   return axios.post(this.jwtConfig.addPetEndpointwithoutImage, ...args);
 }
 
+
+updatePet(petId, ...payload) {
+  console.log('Calling update pet API');
+  return axios.put(`${this.jwtConfig.updatePetEndPoint}${petId}`, ...payload, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+
+deletePet(petId) {
+  console.log('Calling delete pet API');
+  return axios.delete(`${this.jwtConfig.deletePetEndPoint}${petId}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    },
+  });
+}
+
 } 

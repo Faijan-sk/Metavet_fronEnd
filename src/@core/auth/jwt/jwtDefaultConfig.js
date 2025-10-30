@@ -24,6 +24,8 @@ getUserByMobileEndPoint : '/api/auth/user/byNumber',
 getAllPetsByOwnerEndpoint : '/api/pets/owner' ,
 addPetEndPoint : '/api/pets/create-with-image',
 addPetEndpointwithoutImage : '/api/pets/create',
+deletePetEndPoint : '/api/pets/delete/',
+updatePetEndPoint : '/api/pets/update/' ,
 
 
 

@@ -31,7 +31,7 @@ const AddPets = ({ setIsAddOpen, isAddOpen }) => {
 
 const PetProfile = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
 
-const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
+const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet, editPetData, onUpdatePet }) => {
   if (!isAddOpen) return null;
 
   return (
@@ -45,12 +45,13 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
         </button>
 
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Add New Pet
+          {editPetData ? "Edit Pet" : "Add New Pet"}
         </h2>
 
         <AddPetForm
           onClose={() => setIsAddOpen(false)}
-          onSubmit={onAddPet}
+          onSubmit={editPetData ? onUpdatePet : onAddPet}
+          editPetData={editPetData}
         />
       </div>
     </div>
@@ -58,7 +59,7 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet }) => {
 };
 
 // Compact Profile Modal with proper height
-const ProfileModal = ({ open, onClose, pet }) => {
+const ProfileModal = ({ open, onClose, pet, onEditClick }) => {
   if (!open) return null;
 
   return (
@@ -72,7 +73,7 @@ const ProfileModal = ({ open, onClose, pet }) => {
         </button>
 
         <div className="p-4">
-          <PetProfileOne pet={pet} />
+          <PetProfileOne pet={pet} onEditClick={onEditClick} />
         </div>
       </div>
     </div>
@@ -232,6 +233,7 @@ export default function PetDetailsCard() {
   const [unAuthorisedError, setUnAuthorisedError] = useState();
   const [msg, setMsg] = useState();
   const [selectedPet, setSelectedPet] = useState(null);
+  const [editPetData, setEditPetData] = useState(null);
 
   const fetchPets = async () => {
     try {
@@ -289,6 +291,26 @@ export default function PetDetailsCard() {
   const handleAddPet = (newPet) => {
     setPetList((prev) => [...prev, { pid: prev.length + 1, ...newPet }]);
     setIsAddOpen(false);
+    setEditPetData(null);
+  };
+
+  const handleEditClick = (pet) => {
+    setEditPetData(pet);
+    setOpen(false);
+    setIsAddOpen(true);
+  };
+
+  const handleUpdatePet = async (updatedPet) => {
+    setPetList((prev) =>
+      prev.map((p) => (p.pid === editPetData.pid ? { ...p, ...updatedPet } : p))
+    );
+    setIsAddOpen(false);
+    setEditPetData(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsAddOpen(false);
+    setEditPetData(null);
   };
 
   return (
@@ -436,14 +458,17 @@ export default function PetDetailsCard() {
 
       <AddPetModal
         isAddOpen={isAddOpen}
-        setIsAddOpen={setIsAddOpen}
+        setIsAddOpen={handleCloseModal}
         onAddPet={handleAddPet}
+        editPetData={editPetData}
+        onUpdatePet={handleUpdatePet}
       />
 
       <ProfileModal
         open={open}
         onClose={() => setOpen(false)}
         pet={selectedPet}
+        onEditClick={handleEditClick}
       />
       
     </div>

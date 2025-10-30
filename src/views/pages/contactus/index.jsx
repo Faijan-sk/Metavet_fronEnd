@@ -11,7 +11,7 @@ const ContactUs = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
     // Handle form submission logic here
-    alert('Your message has been submitted!')
+    // alert('Your message has been submitted!')
   }
 
   return (
