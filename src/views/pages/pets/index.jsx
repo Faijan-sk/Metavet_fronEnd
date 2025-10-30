@@ -59,7 +59,7 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet, editPetData, onUpdateP
 };
 
 // Compact Profile Modal with proper height
-const ProfileModal = ({ open, onClose, pet, onEditClick }) => {
+const ProfileModal = ({ open, onClose, pet, onEditClick, onDeleteSuccess }) => {
   if (!open) return null;
 
   return (
@@ -73,7 +73,11 @@ const ProfileModal = ({ open, onClose, pet, onEditClick }) => {
         </button>
 
         <div className="p-4">
-          <PetProfileOne pet={pet} onEditClick={onEditClick} />
+          <PetProfileOne 
+            pet={pet} 
+            onEditClick={onEditClick}
+            onDeleteSuccess={onDeleteSuccess}
+          />
         </div>
       </div>
     </div>
@@ -313,6 +317,12 @@ export default function PetDetailsCard() {
     setEditPetData(null);
   };
 
+  const handleDeleteSuccess = async (petId) => {
+    console.log(`Pet ${petId} deleted successfully`);
+    setOpen(false);
+    await fetchPets();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <style>{`
@@ -469,6 +479,7 @@ export default function PetDetailsCard() {
         onClose={() => setOpen(false)}
         pet={selectedPet}
         onEditClick={handleEditClick}
+        onDeleteSuccess={handleDeleteSuccess}
       />
       
     </div>

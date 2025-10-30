@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { User, Calendar, PawPrint, Phone, Edit, Copy, Heart, Award, Activity } from "lucide-react";
+import { User, Calendar, PawPrint, Phone, Edit, Heart, Award, Activity, Trash2, AlertTriangle } from "lucide-react";
+import useJwt from "../../../enpoints/jwt/useJwt";
 
-export default function PetProfileOne({ pet, onEditClick }) {
+export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
   const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!pet) {
     return (
@@ -22,6 +25,34 @@ export default function PetProfileOne({ pet, onEditClick }) {
     navigator.clipboard?.writeText(JSON.stringify(pet, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await useJwt.deletePet(pet.pid);
+      console.log(`Pet ${pet.pid} deleted successfully`);
+      setShowDeleteModal(false);
+      
+      // Call parent callback to refresh pet list
+      if (onDeleteSuccess) {
+        onDeleteSuccess(pet.pid);
+      }
+    } catch (error) {
+      console.error('Error deleting pet:', error);
+      const errorMsg = error?.response?.data?.message || 'Failed to delete pet. Please try again.';
+      alert(errorMsg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
   };
 
   return (
@@ -192,10 +223,70 @@ export default function PetProfileOne({ pet, onEditClick }) {
                 <Edit size={18} />
                 Edit Profile
               </button>
+
+              <button
+                onClick={handleDeleteClick}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-red-500 text-red-500 font-semibold shadow-md hover:shadow-lg hover:bg-red-50 transform transition-all duration-200 hover:scale-105"
+              >
+                <Trash2 size={18} />
+                Delete
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-fadeIn">
+            <div className="p-6">
+              {/* Warning Icon */}
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
+                  <AlertTriangle size={32} className="text-red-600" />
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <h3 className="text-2xl font-bold text-gray-800 text-center mb-2">
+                Delete Pet Profile?
+              </h3>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete <span className="font-bold text-[#52B2AD]">{pet.petName}</span>'s profile? This action cannot be undone.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={isDeleting}
+                  className="flex-1 px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
