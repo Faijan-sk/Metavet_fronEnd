@@ -19,7 +19,7 @@ const BookAppointment = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle form submission logic here
-    alert("Appointment Request Submitted!");
+    // alert("Appointment Request Submitted!");
   };
 
   return (

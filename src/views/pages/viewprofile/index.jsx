@@ -195,9 +195,9 @@ const ViewProfile = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert(
-      `Appointment booked for ${name} on ${appointmentDate} at ${appointmentTime}`
-    );
+    // alert(
+    //   `Appointment booked for ${name} on ${appointmentDate} at ${appointmentTime}`
+    // );
   };
 
   return (

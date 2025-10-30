@@ -418,11 +418,11 @@ const MyAccount = () => {
                 {/* Save Address Button */}
                 <button
                   type="button"
-                  onClick={() =>
-                    alert(
-                      `Address Line 1: ${address}, Address Line 2: ${permanentAddress}, City: ${city}, State: ${state}, Zip/Postal Code: ${zipCode}, Country: ${country}`
-                    )
-                  }
+                  // onClick={() =>
+                  //   alert(
+                  //     `Address Line 1: ${address}, Address Line 2: ${permanentAddress}, City: ${city}, State: ${state}, Zip/Postal Code: ${zipCode}, Country: ${country}`
+                  //   )
+                  // }
                   className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-indigo-700 mt-4"
                 >
                   Save Address
@@ -610,7 +610,7 @@ const MyAccount = () => {
 
                 <button
                   type="button"
-                  onClick={() => alert("Wishlist item saved")}
+                  // onClick={() => alert("Wishlist item saved")}
                   className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-indigo-700 mt-4"
                 >
                   Save Wishlist Item
