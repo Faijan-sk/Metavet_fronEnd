@@ -36,6 +36,8 @@ export default {
   fetDoctorDayIdByDoctorAndDay : '/api/doctor-days/doctor',
   fetchAvailableSlotByDoctorEndpoint: '/api/appointments/available-slots',
   bookAppointmentEndPoint : '/api/appointments/book',
+  getAppointmentEndpoint: '/api/appointments/my-appointments',
+  cancelAppointmentEndpoint : '/api/appointments/my-appointments',
 
   // ** This will be prefixed in authorization header with token
   // ? e.g. Authorization: Bearer <token>

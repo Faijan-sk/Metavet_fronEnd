@@ -247,4 +247,11 @@ export default class JwtService {
     return axios.post(this.jwtConfig.bookAppointmentEndPoint, ...payload);
 }
 
+getMyAppointments() {
+  console.log('Calling get my appointments API');
+  return axios.get(this.jwtConfig.getAppointmentEndpoint);
+}
+cancelAppointment(id){
+  return axios.delete(`${this.jwtDefaultConfig.cancelAppointment}/${id}`)
+}
 }
