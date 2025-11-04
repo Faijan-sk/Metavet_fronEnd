@@ -18,7 +18,7 @@ const HealthRecord = lazy(() => import("./views/pages/health-record"));
 const MyPet = lazy(() => import("./views/pages/mypet"));
 const FindDoctor = lazy(() => import("./views/pages/finddoctor"));
 const ContactUs = lazy(() => import("./views/pages/contactus"));
-const BookAppointment = lazy(() => import("./views/pages/appointmentform"));
+// const BookAppointment = lazy(() => import("./views/pages/appointmentform"));
 const AddPet = lazy(() => import("./views/pages/addpet"));
 const Viewprofile = lazy(() => import("./views/pages/viewprofile"));
 const Teleconsultation = lazy(() => import("./views/pages/teleconsultation"));

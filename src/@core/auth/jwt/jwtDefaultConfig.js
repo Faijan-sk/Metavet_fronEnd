@@ -7,27 +7,35 @@ export default {
   registerEndpoint: '/api/auth/register',
   loginEndpoint: '/api/auth/login',
   otpVerifyEndPoint: '/api/auth/otp/verify-otp',
-getUserByMobileEndPoint : '/api/auth/user/byNumber',
+  getUserByMobileEndPoint : '/api/auth/user/byNumber',
+  
   /*
   * Doctor EndPoints
   */
- updateDpctorEndPoint: '/api/auth/doctor/create',
- getDoctorByIdEndPoint : 'api/doctors',
- getAllDoctorEndPoint : '/api/auth/doctors/available',
- getDoctorBySpecialityEndPoint:'api/doctors/specialization',
- getAllSpecializationEndPoint : 'api/doctors/specializations/available',
- getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
+  updateDpctorEndPoint: '/api/auth/doctor/create',
+  getDoctorByIdEndPoint : 'api/doctors',
+  getAllDoctorEndPoint : '/api/auth/doctors/available',
+  getDoctorBySpecialityEndPoint:'api/doctors/specialization',
+  getAllSpecializationEndPoint : 'api/doctors/specializations/available',
+  getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
 
- /*
- * Pet Endpoint
- */
-getAllPetsByOwnerEndpoint : '/api/pets/owner' ,
-addPetEndPoint : '/api/pets/create-with-image',
-addPetEndpointwithoutImage : '/api/pets/create',
-deletePetEndPoint : '/api/pets/delete/',
-updatePetEndPoint : '/api/pets/update/' ,
+  /*
+  * Pet Endpoint
+  */
+  getAllPetsByOwnerEndpoint : '/api/pets/owner' ,
+  addPetEndPoint : '/api/pets/create-with-image',
+  addPetEndpointwithoutImage : '/api/pets/create',
+  deletePetEndPoint : '/api/pets/delete/',
+  updatePetEndPoint : '/api/pets/update/' ,
 
-
+  /*
+  * Appointment Endponint
+  */
+  getDoctorByDayEndpoint: '/api/doctor-days/day',
+  fetchAvailableSlotByDoctorEndpoint: '/api/appointments/available-slots',
+  fetDoctorDayIdByDoctorAndDay : '/api/doctor-days/doctor',
+  fetchAvailableSlotByDoctorEndpoint: '/api/appointments/available-slots',
+  bookAppointmentEndPoint : '/api/appointments/book',
 
   // ** This will be prefixed in authorization header with token
   // ? e.g. Authorization: Bearer <token>

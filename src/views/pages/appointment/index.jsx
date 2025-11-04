@@ -1,6 +1,6 @@
 import { Pencil, Save, Trash2, X, Calendar, Clock, Stethoscope, PawPrint, Plus, FileText, User } from "lucide-react";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import BookAppointmentForm from "./BokAppointmentForm";
 // Mock doctor image
 const dr = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
 
@@ -55,6 +55,27 @@ const Appointment = () => {
   const [editAppointment, setEditAppointment] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // New appointment form state
+  const [newAppointment, setNewAppointment] = useState({
+    pet: "",
+    doctor: "",
+    petType: "",
+    date: "",
+    time: "",
+    reason: "",
+    notes: "",
+    status: "upcoming"
+  });
+
+  // Simple focus management: trap ESC to close modal
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") setShowAddModal(false);
+    };
+    if (showAddModal) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showAddModal]);
+
   const handleEdit = (appointment) => setEditAppointment({ ...appointment });
 
   const handleSaveEdit = () => {
@@ -84,13 +105,48 @@ const Appointment = () => {
   };
 
   const getPetIcon = (petType) => {
-    switch(petType.toLowerCase()) {
+    switch((petType || "").toLowerCase()) {
       case 'dog': return '🐕';
       case 'cat': return '🐈';
       case 'rabbit': return '🐰';
       case 'bird': return '🐦';
       default: return '🐾';
     }
+  };
+
+  // Add appointment form handlers
+  const handleNewChange = (e) => {
+    const { name, value } = e.target;
+    setNewAppointment((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetNewForm = () => {
+    setNewAppointment({
+      pet: "",
+      doctor: "",
+      petType: "",
+      date: "",
+      time: "",
+      reason: "",
+      notes: "",
+      status: "upcoming"
+    });
+  };
+
+  const handleAddAppointment = (e) => {
+    e.preventDefault();
+    // Basic validation
+    if (!newAppointment.pet.trim() || !newAppointment.doctor.trim() || !newAppointment.date) {
+      alert("Please fill Pet name, Doctor and Date.");
+      return;
+    }
+    const newItem = {
+      ...newAppointment,
+      id: Date.now() + Math.floor(Math.random() * 1000) // simple unique id
+    };
+    setAppointments((prev) => [newItem, ...prev]);
+    resetNewForm();
+    setShowAddModal(false);
   };
 
   // Empty State Component
@@ -439,6 +495,31 @@ const Appointment = () => {
           </div>
         )}
       </div>
+
+      {/* Add Appointment Modal */}
+      {showAddModal && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center"
+    aria-modal="true"
+    role="dialog"
+  >
+    {/* Overlay */}
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setShowAddModal(false)}
+    />
+
+    {/* Modal Panel — child handles form + API */}
+    <BookAppointmentForm
+      onClose={() => setShowAddModal(false)}
+      apiEndpoint="/api/appointments" // change to your real endpoint
+      onCreated={(newAppointment) => {
+        // Update parent list immediately with server response
+        setAppointments(prev => [newAppointment, ...prev]);
+      }}
+    />
+  </div>
+)}
     </div>
   );
 };

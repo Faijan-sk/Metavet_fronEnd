@@ -2,7 +2,7 @@ import axios from 'axios'
 import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.29.200:8080/'
+// axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 axios.defaults.baseURL = 'http://35.206.66.49:8080/'
 
 // Optional: Environment-based configuration
@@ -147,7 +147,6 @@ export default class JwtService {
   }
 
   getAllDoctors() {
-   
     return axios.get(this.jwtConfig.getAllDoctorEndPoint);
   }
 
@@ -173,41 +172,79 @@ export default class JwtService {
     });
   }
 
-/*
-*  Pet Services 
-*/
-getAllPetsByOwner() {
-  return axios.get(`${this.jwtConfig.getAllPetsByOwnerEndpoint}`);
+  /*
+  *  Pet Services 
+  */
+  getAllPetsByOwner() {
+    return axios.get(`${this.jwtConfig.getAllPetsByOwnerEndpoint}`);
+  }
+
+  createPet(payload) {
+    return axios.post(this.jwtConfig.addPetEndPoint, payload);
+  }
+
+  createPetWithoutImage(...args) {
+    return axios.post(this.jwtConfig.addPetEndpointwithoutImage, ...args);
+  }
+
+  updatePet(petId, ...payload) {
+    console.log('Calling update pet API');
+    return axios.put(`${this.jwtConfig.updatePetEndPoint}${petId}`, ...payload, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        "Content-Type": "application/json",
+      },
+    });
+  }
+
+  deletePet(petId) {
+    console.log('Calling delete pet API');
+    return axios.delete(`${this.jwtConfig.deletePetEndPoint}${petId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+    });
+  }
+
+  /*
+  * Appointment Methods 
+  */
+  getDoctorByDay(day) {
+    return axios.get(`${this.jwtConfig.getDoctorByDayEndpoint}/${day}/details`);
+  }
+
+  getAvailableSlots(doctorId, doctorDayId, date) {
+    console.log('Calling get available slots API');
+    return axios.get(this.jwtConfig.fetchAvailableSlotByDoctorEndpoint, {
+      params: {
+        doctorId: doctorId,
+        doctorDayId: doctorDayId,
+        date: date
+      }
+    });
+  }
+
+  // NEW METHOD: Get DoctorDay ID by doctorId and day
+  getDoctorDayId(doctorId, day) {
+    console.log('Calling get doctor day ID API');
+    return axios.get(`${this.jwtConfig.fetDoctorDayIdByDoctorAndDay}/${doctorId}/day/${day}/id`);
+  }
+
+  getAvailableSlots(doctorId, doctorDayId, date) {
+    console.log('Calling get available slots API with params:', { doctorId, doctorDayId, date });
+    return axios.get(this.jwtConfig.fetchAvailableSlotByDoctorEndpoint, {
+      params: {
+        doctorId: doctorId,
+        doctorDayId: doctorDayId,
+        date: date
+      }
+    });
+  }
+
+
+ bookAppointment(...payload) {
+    console.log('Calling book appointment API with payload:', payload);
+    return axios.post(this.jwtConfig.bookAppointmentEndPoint, ...payload);
 }
 
-createPet(payload) {
-  return axios.post(this.jwtConfig.addPetEndPoint, payload);
 }
-
-createPetWithoutImage(...args) {
-
-  return axios.post(this.jwtConfig.addPetEndpointwithoutImage, ...args);
-}
-
-
-updatePet(petId, ...payload) {
-  console.log('Calling update pet API');
-  return axios.put(`${this.jwtConfig.updatePetEndPoint}${petId}`, ...payload, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      "Content-Type": "application/json",
-    },
-  });
-}
-
-
-deletePet(petId) {
-  console.log('Calling delete pet API');
-  return axios.delete(`${this.jwtConfig.deletePetEndPoint}${petId}`, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-    },
-  });
-}
-
-} 
