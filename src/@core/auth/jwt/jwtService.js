@@ -230,28 +230,37 @@ export default class JwtService {
     return axios.get(`${this.jwtConfig.fetDoctorDayIdByDoctorAndDay}/${doctorId}/day/${day}/id`);
   }
 
-  getAvailableSlots(doctorId, doctorDayId, date) {
-    console.log('Calling get available slots API with params:', { doctorId, doctorDayId, date });
-    return axios.get(this.jwtConfig.fetchAvailableSlotByDoctorEndpoint, {
-      params: {
-        doctorId: doctorId,
-        doctorDayId: doctorDayId,
-        date: date
-      }
+  bookAppointment(...payload) {
+    console.log('Calling book appointment API with payload:', payload);
+    return axios.post(this.jwtConfig.bookAppointmentEndPoint, ...payload);
+  }
+
+  getMyAppointments() {
+    console.log('Calling get my appointments API');
+    return axios.get(this.jwtConfig.getAppointmentEndpoint);
+  }
+
+  cancelAppointment(id) {
+    console.log('Calling cancel appointment API');
+    return axios.delete(`${this.jwtConfig.cancelAppointmentEndpoint}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
     });
   }
 
+  createAppintment(id, payload) {
+    console.log('Calling create appointment API with payload:', payload);
+    return axios.post(`${this.jwtConfig.createAppointmentEndpoint}/${id}/days`, payload, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
- bookAppointment(...payload) {
-    console.log('Calling book appointment API with payload:', payload);
-    return axios.post(this.jwtConfig.bookAppointmentEndPoint, ...payload);
-}
-
-getMyAppointments() {
-  console.log('Calling get my appointments API');
-  return axios.get(this.jwtConfig.getAppointmentEndpoint);
-}
-cancelAppointment(id){
-  return axios.delete(`${this.jwtDefaultConfig.cancelAppointment}/${id}`)
-}
+  getBookedAppointment(){
+     console.log('Calling get my appointments API');
+    return axios.get(this.jwtConfig.getBookedAppoinmentEndpoint);
+  }
 }

@@ -38,6 +38,8 @@ export default {
   bookAppointmentEndPoint : '/api/appointments/book',
   getAppointmentEndpoint: '/api/appointments/my-appointments',
   cancelAppointmentEndpoint : '/api/appointments/my-appointments',
+  createAppointmentEndpoint: '/api/doctor-days/doctor',
+  getBookedAppoinmentEndpoint : 'api/appointments/my-appointments-doctor?status=BOOKED',
 
   // ** This will be prefixed in authorization header with token
   // ? e.g. Authorization: Bearer <token>

@@ -2,81 +2,158 @@ import { Pencil, Save, Trash2, X, Calendar, Clock, Stethoscope, PawPrint, Plus, 
 import { useEffect, useState } from "react";
 import BookAppointmentForm from "./BokAppointmentForm";
 import useJwt from "../../../enpoints/jwt/useJwt";
+import CreateAppointment from "./CreateAppointment";
 
 // Mock doctor image
 const dr = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
+
+const getUserInfo = () => {
+  try {
+    const userInfo = localStorage.getItem("userInfo");
+    return userInfo ? JSON.parse(userInfo) : null;
+  } catch (error) {
+    console.error('Error parsing userInfo:', error);
+    return null;
+  }
+};
 
 const Appointment = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editAppointment, setEditAppointment] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false); // replaces showAddModal
+  const [modalType, setModalType] = useState(null); // 'book' or 'create'
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // keep userInfo in state so it can change if localStorage is updated elsewhere
+  const [userInfo, setUserInfo] = useState(getUserInfo());
+
+  useEffect(() => {
+    // optional: listen for storage changes (other tabs) to keep userInfo fresh
+    const onStorage = (e) => {
+      if (e.key === "userInfo") setUserInfo(getUserInfo());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Fetch appointments from API
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchAppointments() {
       try {
         setLoading(true);
         console.log('Fetching user appointments...');
-        const response = await useJwt.getMyAppointments();
-        
-        console.log('Appointments response:', response.data);
-        
-        // Backend response: { userId, totalAppointments, appointments: [...] }
-        if (response.data && response.data.appointments) {
-          // Transform backend data to match UI structure
-          const transformedAppointments = response.data.appointments.map(apt => ({
-            id: apt.id,
-            pet: apt.petId,
-            doctor: apt.doctor ? `${apt.doctor.qualification || 'Dr.'} (${apt.doctor.specialization})` : 'Unknown',
-            doctorName: apt.doctor ? apt.doctor.qualification : 'Doctor',
-            petType: "Pet",
-            date: apt.appointmentDate,
-            time: apt.slot ? `${apt.slot.startTime} - ${apt.slot.endTime}` : 'N/A',
-            startTime: apt.slot?.startTime,
-            endTime: apt.slot?.endTime,
-            reason: apt.doctor?.specialization || 'Consultation',
-            notes: `Consultation Fee: $${apt.doctor?.consultationFee || 0}`,
-            status: apt.status.toLowerCase(),
-            // Store full objects for reference
-            fullDoctor: apt.doctor,
-            fullSlot: apt.slot,
-            fullUser: apt.user,
-            hospitalName: apt.doctor?.hospitalClinicName,
-            hospitalAddress: apt.doctor?.hospitalClinicAddress,
-            doctorBio: apt.doctor?.bio,
-            consultationFee: apt.doctor?.consultationFee
-          }));
-          
-          setAppointments(transformedAppointments);
+
+        // Ensure we have userInfo; if not, redirect to signin (or handle gracefully)
+        if (!userInfo) {
+          console.warn("No userInfo found in localStorage. Redirecting to Signin.");
+          // you can change behavior if you don't want to redirect
+          window.location.href = "/Signin";
+          return;
         }
-        
+
+        // declare response variable in outer scope so it's accessible after branches
+        let response;
+
+        // call correct API based on userType but handle both responses the same way
+        try {
+          if (userInfo.userType === 2) {
+            response = await useJwt.getBookedAppointment();
+          } else {
+            response = await useJwt.getMyAppointments();
+          }
+        } catch (apiErr) {
+          console.error("API call failed:", apiErr);
+          // Try fallback: if one endpoint fails, try the other (optional)
+          try {
+            response = await useJwt.getMyAppointments();
+          } catch (fallbackErr) {
+            console.error("Fallback API call failed:", fallbackErr);
+            response = null;
+          }
+        }
+
+        console.log('Appointments response:', response?.data ?? response);
+
+        if (cancelled) return;
+
+        // Normalize response data shape
+        // Expected server shape (from your note): { userId, totalAppointments, appointments: [...] }
+        // But we'll handle variations robustly.
+        const data = response?.data ?? response;
+        const rawAppointments = Array.isArray(data) ? data : (data?.appointments ?? []);
+
+        if (!rawAppointments || rawAppointments.length === 0) {
+          setAppointments([]);
+          return;
+        }
+
+        // Transform backend data to match UI structure
+        const transformedAppointments = rawAppointments.map(apt => {
+          // defensive accessors
+          const doctor = apt.doctor ?? apt.doctorDetail ?? null;
+          const slot = apt.slot ?? apt.timeSlot ?? null;
+          const user = apt.user ?? apt.patient ?? null;
+          const appointmentDate = apt.appointmentDate ?? apt.date ?? apt.dateOfAppointment ?? apt.date_time ?? null;
+
+          return {
+            id: apt.id ?? apt.appointmentId ?? Math.random().toString(36).slice(2,9),
+            pet: apt.petId ?? apt.pet ?? apt.pet_id ?? apt.petRef ?? "N/A",
+            doctor: doctor ? `${doctor.qualification ?? 'Dr.'} (${doctor.specialization ?? 'General'})` : 'Unknown',
+            doctorName: doctor?.name ?? doctor?.qualification ?? 'Doctor',
+            petType: apt.petType ?? "Pet",
+            date: appointmentDate,
+            time: slot ? `${slot.startTime ?? slot.from} - ${slot.endTime ?? slot.to}` : (apt.time ?? 'N/A'),
+            startTime: slot?.startTime ?? slot?.from,
+            endTime: slot?.endTime ?? slot?.to,
+            reason: doctor?.specialization ?? apt.reason ?? 'Consultation',
+            notes: apt.notes ?? `Consultation Fee: $${doctor?.consultationFee ?? apt.consultationFee ?? 0}`,
+            status: (apt.status ?? 'unknown').toString().toLowerCase(),
+            // Store full objects for reference
+            fullDoctor: doctor,
+            fullSlot: slot,
+            fullUser: user,
+            hospitalName: doctor?.hospitalClinicName ?? doctor?.hospital ?? apt.hospitalName ?? '',
+            hospitalAddress: doctor?.hospitalClinicAddress ?? apt.hospitalAddress ?? '',
+            doctorBio: doctor?.bio ?? '',
+            consultationFee: doctor?.consultationFee ?? apt.consultationFee ?? 0,
+            // keep original raw for debugging if needed
+            _raw: apt
+          };
+        });
+
+        setAppointments(transformedAppointments);
       } catch (error) {
         console.error("Error fetching appointments:", error);
         setAppointments([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchAppointments();
-  }, []);
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.userType]); // refetch if user type changes
 
   // Simple focus management: trap ESC to close modals
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") {
-        setShowAddModal(false);
+        setModalOpen(false);
         setDeleteConfirmModal(null);
+        setModalType(null);
       }
     };
-    if (showAddModal || deleteConfirmModal) {
+    if (modalOpen || deleteConfirmModal) {
       window.addEventListener("keydown", onKey);
     }
     return () => window.removeEventListener("keydown", onKey);
-  }, [showAddModal, deleteConfirmModal]);
+  }, [modalOpen, deleteConfirmModal]);
 
   const handleEdit = (appointment) => setEditAppointment({ ...appointment });
 
@@ -110,7 +187,7 @@ const Appointment = () => {
       console.log('Appointment cancelled successfully');
     } catch (error) {
       console.error("Error cancelling appointment:", error);
-      // alert("Failed to cancel appointment. Please try again.");
+      // you may want to show toast here
     } finally {
       setIsDeleting(false);
     }
@@ -161,14 +238,26 @@ const Appointment = () => {
       <p className="text-gray-600 text-center mb-6 max-w-md">
         Schedule your first appointment to keep your pet healthy and happy.
       </p>
-      
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
-      >
-        <Plus size={20} />
-        Book Your First Appointment
-      </button>
+      {
+        userInfo?.userType === 2 ? ( 
+          <button
+            onClick={() => { setModalType('create'); setModalOpen(true); }}
+            className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
+          >
+            <Plus size={20} />
+            Create Your Appointments
+          </button>
+        ) : (
+          <button
+            onClick={() => { setModalType('book'); setModalOpen(true); }}
+            className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
+          >
+            <Plus size={20} />
+            Book Your First Appointment
+          </button>
+        )
+      }
+    
       
       <div className="mt-8 grid grid-cols-3 gap-4 max-w-md w-full">
         <div className="text-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition">
@@ -245,10 +334,6 @@ const Appointment = () => {
             <span className="font-semibold text-gray-900">{appointment.hospitalName}</span>
           </div>
           
-          {/* <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Fee:</span>
-            <span className="font-semibold text-gray-900">${appointment.consultationFee}</span>
-          </div> */}
         </div>
 
         {/* Action Buttons */}
@@ -324,14 +409,28 @@ const Appointment = () => {
             </h1>
             <p className="text-gray-600">Manage your pet's healthcare schedule</p>
           </div>
+       {userInfo ? (
+  <div>
+    <button
+      onClick={() => { setModalType(userInfo.userType === 2 ? 'create' : 'book'); setModalOpen(true); }}
+      className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2 font-semibold"
+    >
+      <Plus size={20} />
+      {userInfo.userType === 2 ? "Create Appointment" : "Add Appointment"}
+    </button>
+  </div>
+) : (
+  <button
+    onClick={() => (window.location.href = "/Signin")}
+    className="bg-gray-400 text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 flex items-center gap-2 font-semibold cursor-pointer"
+  >
+    <Plus size={20} />
+    Login to Book Appointment
+  </button>
+)}
+
+
           
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2 font-semibold"
-          >
-            <Plus size={20} />
-            Add Appointment
-          </button>
         </div>
 
         {/* Stats Cards */}
@@ -419,13 +518,6 @@ const Appointment = () => {
                       </>
                     ) : (
                       <>
-                        {/* <button
-                          onClick={() => handleEdit(appointment)}
-                          className="p-2.5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all transform hover:scale-110"
-                          title="Edit"
-                        >
-                          <Pencil size={18} />
-                        </button> */}
                         <button
                           onClick={() => handleDeleteClick(appointment)}
                           className="p-2.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all transform hover:scale-110"
@@ -599,8 +691,8 @@ const Appointment = () => {
         )}
       </div>
 
-      {/* Add Appointment Modal */}
-      {showAddModal && (
+      {/* Modal */}
+      {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           aria-modal="true"
@@ -609,17 +701,41 @@ const Appointment = () => {
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowAddModal(false)}
+            onClick={() => { setModalOpen(false); setModalType(null); }}
           />
 
           {/* Modal Panel */}
-          <BookAppointmentForm
-            onClose={() => setShowAddModal(false)}
-            apiEndpoint="/api/appointments"
-            onCreated={(newAppointment) => {
-              window.location.reload();
-            }}
-          />
+          <div className="relative w-full max-w-3xl mx-auto">
+            {modalType === 'book' && (
+              <BookAppointmentForm
+                onClose={() => { setModalOpen(false); setModalType(null); }}
+                onCreated={(newAppointment) => {
+                  if (newAppointment && newAppointment.id) {
+                    setAppointments(prev => [newAppointment, ...prev]);
+                  } else {
+                    window.location.reload();
+                  }
+                  setModalOpen(false);
+                  setModalType(null);
+                }}
+              />
+            )}
+
+            {modalType === 'create' && (
+              <CreateAppointment
+                onClose={() => { setModalOpen(false); setModalType(null); }}
+                onCreated={(newAppointment) => {
+                  if (newAppointment && newAppointment.id) {
+                    setAppointments(prev => [newAppointment, ...prev]);
+                  } else {
+                    window.location.reload();
+                  }
+                  setModalOpen(false);
+                  setModalType(null);
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
 
