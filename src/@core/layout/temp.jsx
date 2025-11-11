@@ -45,8 +45,17 @@ const Header = () => {
     return [
       ...(shouldShowPets ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
       { name: 'Appointment', path: '/appointment', active: true },
+       {
+        name: 'KYC',
+        hasDropdown: true, 
+        dropdownItems: [
+          // { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
+           { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
+          // { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
+        ],
+      },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
-      { name: 'Health Record', path: '/healthrecord', active: true },
+      // { name: 'Health Record', path: '/healthrecord', active: true },
       {
         name: 'Services',
         hasDropdown: true, 
