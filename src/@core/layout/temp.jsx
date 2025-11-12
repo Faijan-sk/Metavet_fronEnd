@@ -49,9 +49,9 @@ const Header = () => {
         name: 'KYC',
         hasDropdown: true, 
         dropdownItems: [
-          // { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
+          { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
            { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
-          // { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
+          { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
         ],
       },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),

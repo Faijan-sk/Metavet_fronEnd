@@ -63,11 +63,10 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
     try {
       let response;
       
-      if (isEditMode && editPetData?.pid) {
-        // Update existing pet
-        debugger
-        response = await useJwt.updatePet(editPetData.pid, formattedPet);
-        debugger
+      if (isEditMode && editPetData?.uid) {
+        // Update existing pet using UID
+        console.log("Updating pet with UID:", editPetData.uid);
+        response = await useJwt.updatePet(editPetData.uid, formattedPet);
         console.log("Update API Response:", response);
       } else {
         // Create new pet
@@ -75,7 +74,7 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
         console.log("Create API Response:", response);
       }
 
-      // Success case — reload page
+      // Success case — close modal and refresh
       if (response && (response.status === 200 || response.status === 201)) {
         onSubmit(formattedPet);
         reset();
@@ -98,6 +97,8 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
       if (error.response?.data?.errors?.length > 0) {
         const backendMsg = error.response.data.errors[0]?.defaultMessage;
         setBackendError(backendMsg);
+      } else if (error.response?.data?.message) {
+        setBackendError(error.response.data.message);
       } else {
         setBackendError("An unexpected error occurred. Please try again.");
       }
@@ -255,7 +256,7 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
       </div>
 
       {/* Medical Notes */}
-      {/* <div>
+      <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Medical Notes (Optional)
         </label>
@@ -265,7 +266,7 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
           rows="3"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition resize-none"
         />
-      </div> */}
+      </div>
 
       {/* Backend Validation Message */}
       {backendError && (

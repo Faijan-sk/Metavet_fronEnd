@@ -293,7 +293,8 @@ export default function PetDetailsCard() {
   };
 
   const handleAddPet = (newPet) => {
-    setPetList((prev) => [...prev, { pid: prev.length + 1, ...newPet }]);
+    // Refresh pet list after adding
+    fetchPets();
     setIsAddOpen(false);
     setEditPetData(null);
   };
@@ -305,9 +306,8 @@ export default function PetDetailsCard() {
   };
 
   const handleUpdatePet = async (updatedPet) => {
-    setPetList((prev) =>
-      prev.map((p) => (p.pid === editPetData.pid ? { ...p, ...updatedPet } : p))
-    );
+    // Refresh pet list after updating
+    await fetchPets();
     setIsAddOpen(false);
     setEditPetData(null);
   };
@@ -317,9 +317,10 @@ export default function PetDetailsCard() {
     setEditPetData(null);
   };
 
-  const handleDeleteSuccess = async (petId) => {
-    console.log(`Pet ${petId} deleted successfully`);
+  const handleDeleteSuccess = async () => {
+    console.log('Pet deleted successfully, refreshing list...');
     setOpen(false);
+    setSelectedPet(null);
     await fetchPets();
   };
 
@@ -408,14 +409,14 @@ export default function PetDetailsCard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {petList.map((pet) => (
               <div
-                key={pet.pid}
+                key={pet.uid}
                 className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 animate-fadeIn"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
                 
                 <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
                   <Hash size={12} className="text-[#52B2AD]" />
-                  <span className="text-xs font-semibold text-gray-700">{pet.pid}</span>
+                  <span className="text-xs font-semibold text-gray-700">{pet.id}</span>
                 </div>
 
                 <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">

@@ -34,18 +34,21 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await useJwt.deletePet(pet.pid);
-      console.log(`Pet ${pet.pid} deleted successfully`);
+      // Use UID for deletion
+      console.log("Deleting pet with UID:", pet.uid);
+      await useJwt.deletePet(pet.uid);
+      console.log(`Pet ${pet.uid} deleted successfully`);
       setShowDeleteModal(false);
       
       // Call parent callback to refresh pet list
       if (onDeleteSuccess) {
-        onDeleteSuccess(pet.pid);
+        onDeleteSuccess();
       }
     } catch (error) {
       console.error('Error deleting pet:', error);
       const errorMsg = error?.response?.data?.message || 'Failed to delete pet. Please try again.';
       alert(errorMsg);
+      setShowDeleteModal(false);
     } finally {
       setIsDeleting(false);
     }
@@ -90,7 +93,7 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
 
                 <div className="text-right bg-white bg-opacity-20 rounded-lg px-3 py-2 backdrop-blur-sm">
                   <div className="text-xs text-teal-100 uppercase tracking-wide">Pet ID</div>
-                  <div className="font-bold text-white text-lg">{pet.pid}</div>
+                  <div className="font-bold text-white text-lg">{pet.id}</div>
                 </div>
               </div>
             </div>
@@ -287,6 +290,14 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+      `}</style>
     </div>
   );
 }
