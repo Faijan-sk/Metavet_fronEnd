@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import useJwt from "./../../../../enpoints/jwt/useJwt"
 
 const PetWalkerProviderKYC = () => {
   const [formData, setFormData] = useState({
@@ -10,43 +11,45 @@ const PetWalkerProviderKYC = () => {
     serviceArea: '',
     yearsExperience: '',
 
-    hasCertifications: null,
-    certificationDetails: '',
-    certificationFile: null,
+    hasPetCareCertifications: null,
+    hasPetCareCertificationsDetails: '',
+    petCareCertificationDoc: null,
 
     bondedOrInsured: null,
-    bondedFile: null,
+    bondedOrInsuredDoc: null,
 
     hasFirstAid: null,
-    firstAidFile: null,
+    petFirstAidCertificateDoc: null,
 
     criminalCheck: null,
-    criminalCheckFile: null,
+    crimialRecordDoc: null,
 
     liabilityInsurance: null,
     liabilityProvider: '',
     liabilityPolicyNumber: '',
     insuranceExpiry: '',
-    liabilityFile: null,
+    liabilityInsuaranceDoc: null,
 
-    businessLicenseFile: null,
+    hasBusinessLicenseDoc: null,
+    businessLicenseDoc: null,
 
     walkRadius: '',
     maxPetsPerWalk: '',
     preferredCommunication: '',
 
-    declarations: {
-      accurate: false,
-      verifyOK: false,
-      comply: false
-    },
+    declarationAccurate: false,
+    declarationVerifyOk: false,
+    declarationComply: false,
 
     signature: '',
     signatureDate: ''
   })
 
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(false)
+
   // Generic setter that validates input against a provided regex.
-  // Allows empty string so users can clear fields.
   const setIfValid = (field, value, regex) => {
     if (value === '' || regex.test(value)) {
       setFormData(prev => ({ ...prev, [field]: value }))
@@ -55,24 +58,229 @@ const PetWalkerProviderKYC = () => {
 
   const handleRadio = (field, val) => setFormData(prev => ({ ...prev, [field]: val }))
   const handleFileChange = (field, file) => setFormData(prev => ({ ...prev, [field]: file }))
-  const handleDeclaration = (key, value) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, [key]: value } }))
+  const handleCheckbox = (field, value) => setFormData(prev => ({ ...prev, [field]: value }))
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // minimal required checks
+  const validateForm = () => {
+    // Required fields
     if (!formData.fullLegalName || !formData.email) {
-      alert('Please fill required fields: Full legal name and email')
+      throw new Error('Please fill required fields: Full legal name and email')
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      throw new Error('Please enter a valid email address')
+    }
+
+    // Conditional validations based on selections
+    if (formData.hasPetCareCertifications === true && !formData.petCareCertificationDoc) {
+      throw new Error('Please upload Pet Care Certification document')
+    }
+
+    if (formData.bondedOrInsured === true && !formData.bondedOrInsuredDoc) {
+      throw new Error('Please upload Bonded or Insured document')
+    }
+
+    if (formData.hasFirstAid === true && !formData.petFirstAidCertificateDoc) {
+      throw new Error('Please upload Pet First Aid Certificate document')
+    }
+
+    if (formData.criminalCheck === true && !formData.crimialRecordDoc) {
+      throw new Error('Please upload Criminal Record document')
+    }
+
+    if (formData.liabilityInsurance === true) {
+      if (!formData.liabilityProvider) {
+        throw new Error('Please enter Liability Provider name')
+      }
+      if (!formData.liabilityPolicyNumber) {
+        throw new Error('Please enter Liability Policy Number')
+      }
+      if (!formData.insuranceExpiry) {
+        throw new Error('Please enter Insurance Expiry date')
+      }
+      if (!formData.liabilityInsuaranceDoc) {
+        throw new Error('Please upload Liability Insurance document')
+      }
+    }
+
+    // Declaration validations
+    if (!formData.declarationAccurate || !formData.declarationVerifyOk || !formData.declarationComply) {
+      throw new Error('Please accept all declarations to proceed')
+    }
+
+    if (!formData.signature) {
+      throw new Error('Please provide your signature')
+    }
+
+    if (!formData.signatureDate) {
+      throw new Error('Please select signature date')
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    setError(null)
+    setSuccess(false)
+    setLoading(true)
+
+    try {
+      // Early check: prevent submission if declarations are not all checked
+      if (!formData.declarationAccurate || !formData.declarationVerifyOk || !formData.declarationComply) {
+        setError('Please accept all declarations to proceed')
+        setLoading(false)
+        return
+      }
+
+      // Validate form
+      validateForm()
+
+      // Create FormData object
+      const formDataToSend = new FormData()
+
+      // Add all text fields
+      formDataToSend.append('fullLegalName', formData.fullLegalName)
+      if (formData.businessName) formDataToSend.append('businessName', formData.businessName)
+      formDataToSend.append('email', formData.email)
+      if (formData.phone) formDataToSend.append('phone', formData.phone)
+      if (formData.address) formDataToSend.append('address', formData.address)
+      if (formData.serviceArea) formDataToSend.append('serviceArea', formData.serviceArea)
+      if (formData.yearsExperience) formDataToSend.append('yearsExperience', formData.yearsExperience)
+
+      // Professional Credentials
+      if (formData.hasPetCareCertifications !== null) {
+        formDataToSend.append('hasPetCareCertifications', formData.hasPetCareCertifications)
+        if (formData.hasPetCareCertifications === true) {
+          if (formData.hasPetCareCertificationsDetails) {
+            formDataToSend.append('hasPetCareCertificationsDetails', formData.hasPetCareCertificationsDetails)
+          }
+          if (formData.petCareCertificationDoc) {
+            formDataToSend.append('petCareCertificationDoc', formData.petCareCertificationDoc)
+          }
+        }
+      }
+
+      if (formData.bondedOrInsured !== null) {
+        formDataToSend.append('bondedOrInsured', formData.bondedOrInsured)
+        if (formData.bondedOrInsured === true && formData.bondedOrInsuredDoc) {
+          formDataToSend.append('bondedOrInsuredDoc', formData.bondedOrInsuredDoc)
+        }
+      }
+
+      if (formData.hasFirstAid !== null) {
+        formDataToSend.append('hasFirstAid', formData.hasFirstAid)
+        if (formData.hasFirstAid === true && formData.petFirstAidCertificateDoc) {
+          formDataToSend.append('petFirstAidCertificateDoc', formData.petFirstAidCertificateDoc)
+        }
+      }
+
+      if (formData.criminalCheck !== null) {
+        formDataToSend.append('criminalCheck', formData.criminalCheck)
+        if (formData.criminalCheck === true && formData.crimialRecordDoc) {
+          formDataToSend.append('crimialRecordDoc', formData.crimialRecordDoc)
+        }
+      }
+
+      // Liability and Insurance
+      if (formData.liabilityInsurance !== null) {
+        formDataToSend.append('liabilityInsurance', formData.liabilityInsurance)
+        if (formData.liabilityInsurance === true) {
+          if (formData.liabilityProvider) {
+            formDataToSend.append('liabilityProvider', formData.liabilityProvider)
+          }
+          if (formData.liabilityPolicyNumber) {
+            formDataToSend.append('liabilityPolicyNumber', formData.liabilityPolicyNumber)
+          }
+          if (formData.insuranceExpiry) {
+            formDataToSend.append('insuranceExpiry', formData.insuranceExpiry)
+          }
+          if (formData.liabilityInsuaranceDoc) {
+            formDataToSend.append('liabilityInsuaranceDoc', formData.liabilityInsuaranceDoc)
+          }
+        }
+      }
+
+      if (formData.hasBusinessLicenseDoc !== null) {
+        formDataToSend.append('hasBusinessLicenseDoc', formData.hasBusinessLicenseDoc)
+        if (formData.hasBusinessLicenseDoc === true && formData.businessLicenseDoc) {
+          formDataToSend.append('businessLicenseDoc', formData.businessLicenseDoc)
+        }
+      }
+
+      // Operations
+      if (formData.walkRadius) formDataToSend.append('walkRadius', formData.walkRadius)
+      if (formData.maxPetsPerWalk) formDataToSend.append('maxPetsPerWalk', formData.maxPetsPerWalk)
+      if (formData.preferredCommunication) formDataToSend.append('preferredCommunication', formData.preferredCommunication)
+
+      // Declarations
+      formDataToSend.append('declarationAccurate', formData.declarationAccurate)
+      formDataToSend.append('declarationVerifyOk', formData.declarationVerifyOk)
+      formDataToSend.append('declarationComply', formData.declarationComply)
+      
+      if (formData.signature) formDataToSend.append('signature', formData.signature)
+      if (formData.signatureDate) formDataToSend.append('signatureDate', formData.signatureDate)
+
+      // Call API
+      console.log("*******body****************", formDataToSend)
+      const response = await useJwt.metavetToWalkerKyc(formDataToSend)
+      console.log("response *************" , response)
+      console.log('Success:', response.data)
+      setSuccess(true)
+      setError(null)
+      
+      // Reset form on success
+      setTimeout(() => {
+        window.location.reload() // Or navigate to success page
+      }, 2000)
+
+    } catch (err) {
+      console.error('Error submitting form:', err)
+      const errorMessage = err.response?.data || err.message || 'Failed to submit form. Please try again.'
+      setError(errorMessage)
+      setSuccess(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // helper to check if all declarations are ticked
+  const allDeclarationsChecked = formData.declarationAccurate && formData.declarationVerifyOk && formData.declarationComply
+
+  // onClick for the submit button — if declarations not checked, show message and prevent submit
+  const handleSubmitButtonClick = (e) => {
+    if (!allDeclarationsChecked && !loading) {
+      e.preventDefault()
+      setError('Please accept all declarations to proceed')
+      // Optional: scroll to declarations area (improves UX)
+      const el = document.querySelector('input[name="declarationAccurate"]')
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
       return
     }
-    console.log('Pet Walker Provider KYC submitted:', formData)
-    alert('Form submitted — check console for payload.')
+    // otherwise allow form submit to proceed (form's onSubmit will run)
   }
 
   return (
-    <div className="min-h-screen px-4 py-8">
+    <div className="min-h-screen px-4 py-8 bg-gray-50">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🚶 Metavet → Pet Walker KYC Summary</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🚶 Metavet → Pet Walker KYC</h1>
         <p className="text-center text-gray-600 mb-8">Provider onboarding — walking services</p>
+
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+            ✅ Walker KYC submitted successfully! Redirecting...
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            ❌ {typeof error === 'string' ? error : JSON.stringify(error)}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Personal & Business Information */}
@@ -104,27 +312,44 @@ const PetWalkerProviderKYC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block font-medium text-gray-700 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setIfValid('email', e.target.value, /^[^\s@]+@[^\s@]+\.[^\s@]+$/u)}
-                    placeholder="you@example.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    required
-                  />
-                </div>
+              <div>
+  <label className="block font-medium text-gray-700 mb-2">Email *</label>
+  <input
+    type="email"
+    value={formData.email}
+    onChange={(e) => {
+      // allow only letters, numbers, @ and .
+      const filtered = e.target.value.replace(/[^A-Za-z0-9@.]/g, '');
+      setFormData(prev => ({ ...prev, email: filtered }));
+    }}
+    placeholder="you@example.com"
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+    required
+  />
+</div>
+
+
 
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Phone</label>
                   <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setIfValid('phone', e.target.value, /^[0-9+\-\s]*$/u)}
-                    placeholder="+91 98765 43210"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
+  type="tel"
+  value={formData.phone}
+  onChange={(e) => {
+    // remove all non-digit characters
+    let value = e.target.value.replace(/\D/g, '');
+
+    // limit to max 10 digits
+    if (value.length > 10) {
+      value = value.slice(0, 10);
+    }
+
+    setFormData(prev => ({ ...prev, phone: value }));
+  }}
+  placeholder="9876543210"
+  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+/>
+
                 </div>
 
                 <div>
@@ -179,9 +404,9 @@ const PetWalkerProviderKYC = () => {
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="hasCertifications"
-                      checked={formData.hasCertifications === true}
-                      onChange={() => handleRadio('hasCertifications', true)}
+                      name="hasPetCareCertifications"
+                      checked={formData.hasPetCareCertifications === true}
+                      onChange={() => handleRadio('hasPetCareCertifications', true)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">Yes</span>
@@ -190,30 +415,33 @@ const PetWalkerProviderKYC = () => {
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="hasCertifications"
-                      checked={formData.hasCertifications === false}
-                      onChange={() => handleRadio('hasCertifications', false)}
+                      name="hasPetCareCertifications"
+                      checked={formData.hasPetCareCertifications === false}
+                      onChange={() => handleRadio('hasPetCareCertifications', false)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">No</span>
                   </label>
 
-                  {formData.hasCertifications === true && (
+                  {formData.hasPetCareCertifications === true && (
                     <div className="mt-2 ml-4 space-y-2">
                       <input
                         type="text"
-                        value={formData.certificationDetails}
-                        onChange={(e) => setIfValid('certificationDetails', e.target.value, /^[A-Za-z0-9,\s\/.-]*$/u)}
+                        value={formData.hasPetCareCertificationsDetails}
+                        onChange={(e) => setIfValid('hasPetCareCertificationsDetails', e.target.value, /^[A-Za-z0-9,\s\/.-]*$/u)}
                         placeholder="List certifications (or brief details)"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
-                      <label className="block text-sm text-gray-600">Upload proof (PDF/JPG)</label>
+                      <label className="block text-sm text-gray-600">Upload proof (PDF/JPG) *</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('certificationFile', e.target.files[0])}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('petCareCertificationDoc', e.target.files[0])}
                         className="mt-1"
                       />
+                      {formData.petCareCertificationDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.petCareCertificationDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -246,13 +474,16 @@ const PetWalkerProviderKYC = () => {
 
                   {formData.bondedOrInsured === true && (
                     <div className="mt-2 ml-4">
-                      <label className="block text-sm text-gray-600">Upload documentation</label>
+                      <label className="block text-sm text-gray-600">Upload documentation *</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('bondedFile', e.target.files[0])}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('bondedOrInsuredDoc', e.target.files[0])}
                         className="mt-1"
                       />
+                      {formData.bondedOrInsuredDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.bondedOrInsuredDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -285,13 +516,16 @@ const PetWalkerProviderKYC = () => {
 
                   {formData.hasFirstAid === true && (
                     <div className="mt-2 ml-4">
-                      <label className="block text-sm text-gray-600">Upload proof</label>
+                      <label className="block text-sm text-gray-600">Upload proof *</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('firstAidFile', e.target.files[0])}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('petFirstAidCertificateDoc', e.target.files[0])}
                         className="mt-1"
                       />
+                      {formData.petFirstAidCertificateDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.petFirstAidCertificateDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -324,13 +558,16 @@ const PetWalkerProviderKYC = () => {
 
                   {formData.criminalCheck === true && (
                     <div className="mt-2 ml-4">
-                      <label className="block text-sm text-gray-600">Upload proof (PDF)</label>
+                      <label className="block text-sm text-gray-600">Upload proof (PDF) *</label>
                       <input
                         type="file"
-                        accept=".pdf"
-                        onChange={(e) => handleFileChange('criminalCheckFile', e.target.files[0])}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('crimialRecordDoc', e.target.files[0])}
                         className="mt-1"
                       />
+                      {formData.crimialRecordDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.crimialRecordDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -374,14 +611,14 @@ const PetWalkerProviderKYC = () => {
                         type="text"
                         value={formData.liabilityProvider}
                         onChange={(e) => setIfValid('liabilityProvider', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
-                        placeholder="Provider name"
+                        placeholder="Provider name *"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                       <input
                         type="text"
                         value={formData.liabilityPolicyNumber}
                         onChange={(e) => setIfValid('liabilityPolicyNumber', e.target.value, /^[A-Za-z0-9-]*$/u)}
-                        placeholder="Policy number"
+                        placeholder="Policy number *"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                       <input
@@ -390,25 +627,61 @@ const PetWalkerProviderKYC = () => {
                         onChange={(e) => setFormData(prev => ({ ...prev, insuranceExpiry: e.target.value }))}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
-                      <label className="block text-sm text-gray-600">Upload certificate</label>
+                      <label className="block text-sm text-gray-600">Upload certificate *</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('liabilityFile', e.target.files[0])}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('liabilityInsuaranceDoc', e.target.files[0])}
                         className="mt-1"
                       />
+                      {formData.liabilityInsuaranceDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.liabilityInsuaranceDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Upload Business License (if applicable)</label>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
-                  onChange={(e) => handleFileChange('businessLicenseFile', e.target.files[0])}
-                />
+                <label className="block font-medium text-gray-700 mb-2">Business License (if applicable)</label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="hasBusinessLicenseDoc"
+                      checked={formData.hasBusinessLicenseDoc === true}
+                      onChange={() => handleRadio('hasBusinessLicenseDoc', true)}
+                      className="w-4 h-4 text-primary"
+                    />
+                    <span className="text-gray-700">Yes</span>
+                  </label>
+
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="hasBusinessLicenseDoc"
+                      checked={formData.hasBusinessLicenseDoc === false}
+                      onChange={() => handleRadio('hasBusinessLicenseDoc', false)}
+                      className="w-4 h-4 text-primary"
+                    />
+                    <span className="text-gray-700">No</span>
+                  </label>
+
+                  {formData.hasBusinessLicenseDoc === true && (
+                    <div className="mt-2 ml-4">
+                      <label className="block text-sm text-gray-600">Upload license *</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('businessLicenseDoc', e.target.files[0])}
+                        className="mt-1"
+                      />
+                      {formData.businessLicenseDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.businessLicenseDoc.name}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </section>
@@ -419,15 +692,21 @@ const PetWalkerProviderKYC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Walk Radius / Coverage Area</label>
-                <input
-                  type="text"
-                  value={formData.walkRadius}
-                  onChange={(e) => setIfValid('walkRadius', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
-                  placeholder="e.g., 5 km radius"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-              </div>
+  <label className="block font-medium text-gray-700 mb-2">Walk Radius / Coverage Area</label>
+  <input
+    type="text"
+    value={formData.walkRadius}
+    onChange={(e) => {
+      // allow only digits
+      const filtered = e.target.value.replace(/[^0-9]/g, '');
+
+      setFormData(prev => ({ ...prev, walkRadius: filtered }));
+    }}
+    placeholder="e.g., 5"
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+  />
+</div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -467,35 +746,36 @@ const PetWalkerProviderKYC = () => {
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.accurate}
-                  onChange={(e) => handleDeclaration('accurate', e.target.checked)}
+                  checked={formData.declarationAccurate}
+                  onChange={(e) => handleCheckbox('declarationAccurate', e.target.checked)}
                   className="w-4 h-4 text-primary mt-1"
+                  name="declarationAccurate"
                 />
-                <span className="text-gray-700">I confirm all provided information is accurate and current.</span>
+                <span className="text-gray-700">I confirm all provided information is accurate and current. *</span>
               </label>
 
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.verifyOK}
-                  onChange={(e) => handleDeclaration('verifyOK', e.target.checked)}
+                  checked={formData.declarationVerifyOk}
+                  onChange={(e) => handleCheckbox('declarationVerifyOk', e.target.checked)}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I acknowledge Metavet may verify my insurance, certifications, and background prior to activation or renewal of my provider account.</span>
+                <span className="text-gray-700">I acknowledge Metavet may verify my insurance, certifications, and background prior to activation or renewal of my provider account. *</span>
               </label>
 
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.comply}
-                  onChange={(e) => handleDeclaration('comply', e.target.checked)}
+                  checked={formData.declarationComply}
+                  onChange={(e) => handleCheckbox('declarationComply', e.target.checked)}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I agree to comply with Metavet’s Provider Code of Conduct and Pet Safety Standards.</span>
+                <span className="text-gray-700">I agree to comply with Metavet's Provider Code of Conduct and Pet Safety Standards. *</span>
               </label>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Signature (type full name)</label>
+                <label className="block font-medium text-gray-700 mb-2">Signature (type full name) *</label>
                 <input
                   type="text"
                   value={formData.signature}
@@ -505,24 +785,34 @@ const PetWalkerProviderKYC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-2">Date</label>
-                <input
-                  type="date"
-                  value={formData.signatureDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-              </div>
+             <div>
+  <label className="block font-medium text-gray-700 mb-2">Date *</label>
+  <input
+    type="date"
+    value={formData.signatureDate}
+    min={new Date().toISOString().split("T")[0]}   // 🚫 Prevent past dates
+    onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+  />
+</div>
+
             </div>
           </section>
 
           <div className="pt-6">
             <button
               type="submit"
-              className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary"
+              onClick={handleSubmitButtonClick}
+              disabled={loading} // only disabled while loading; user can attempt submit to see message
+              className={`w-full font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary ${
+                loading
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : allDeclarationsChecked
+                    ? 'bg-primary hover:bg-primary-dark text-white'
+                    : 'bg-gray-300 text-gray-700 cursor-pointer'
+              }`}
             >
-              Submit Walker KYC
+              {loading ? 'Submitting...' : 'Submit Walker KYC'}
             </button>
           </div>
         </form>

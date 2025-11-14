@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
+import useJwt from "./../../../../enpoints/jwt/useJwt"
 
 const PetGroomerKYC = () => {
   const [formData, setFormData] = useState({
     fullLegalName: '',
     businessName: '',
     hasBusinessLicense: null,
-    businessLicenseFile: null,
+    businessLicenseDoc: null,
     email: '',
     phone: '',
     address: '',
@@ -14,25 +15,25 @@ const PetGroomerKYC = () => {
 
     hasGroomingCert: null,
     groomingCertDetails: '',
-    groomingCertFile: null,
+    GroomingCertificateDoc: null,
 
     hasFirstAidCert: null,
-    firstAidFile: null,
+    firstAidCertificateDoc: null,
 
     hasInsurance: null,
     insuranceProvider: '',
     insurancePolicyNumber: '',
     insuranceExpiry: '',
-    insuranceFile: null,
+    insuranceDoc: null,
 
     criminalCheck: null,
-    criminalCheckFile: null,
+    crimialRecordDoc: null,
 
     liabilityInsurance: null,
     liabilityProvider: '',
     liabilityPolicyNumber: '',
     liabilityExpiry: '',
-    liabilityFile: null,
+    liabilityInsuaranceDoc: null,
 
     hasIncidentPolicy: null,
     incidentPolicyDetails: '',
@@ -43,18 +44,17 @@ const PetGroomerKYC = () => {
     averageAppointmentDuration: '',
     serviceRadius: '',
 
-    declarations: {
-      accuracy: false,
-      consentVerify: false,
-      comply: false
-    },
+    declarationAccuracy: false,
+    declarationConsentVerify: false,
+    declarationComply: false,
 
     signature: '',
     signatureDate: ''
   })
 
-  // Generic setter that validates input against a provided regex.
-  // Allows empty string so users can clear fields.
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' })
+
   const setIfValid = (field, value, regex) => {
     if (value === '' || regex.test(value)) {
       setFormData(prev => ({ ...prev, [field]: value }))
@@ -62,31 +62,198 @@ const PetGroomerKYC = () => {
   }
 
   const handleRadio = (field, val) => setFormData(prev => ({ ...prev, [field]: val }))
+  
   const handleFileChange = (field, file) => setFormData(prev => ({ ...prev, [field]: file }))
+  
   const handleCheckboxArray = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].includes(value) ? prev[field].filter(i => i !== value) : [...prev[field], value]
     }))
   }
-  const handleDeclaration = (key, value) => setFormData(prev => ({ ...prev, declarations: { ...prev.declarations, [key]: value } }))
 
-  const handleSubmit = (e) => {
+  // Map frontend service names to backend enum values
+  const mapServiceToEnum = (service) => {
+    const serviceMap = {
+      'Full Groom (bath + cut)': 'FULL_GROOM',
+      'Bath + brush only': 'BATH_BRUSH',
+      'Nail trim': 'NAIL_TRIM',
+      'Ear cleaning': 'EAR_CLEANING',
+      'Deshedding': 'DESHEDDING',
+      'Specialty/creative cut': 'SPECIALTY_CUT',
+      'Other': 'OTHER'
+    }
+    return serviceMap[service] || service
+  }
+
+  // Map frontend location type to backend enum
+  const mapLocationTypeToEnum = (locationType) => {
+    const locationMap = {
+      'Mobile': 'MOBILE',
+      'Salon': 'SALON',
+      'Home-based': 'HOME_BASED'
+    }
+    return locationMap[locationType] || locationType
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // minimal required checks
+    setSubmitStatus({ type: '', message: '' })
+
+    // Validate required fields
     if (!formData.fullLegalName || !formData.email) {
-      alert('Please fill required fields: Full legal name and email')
+      setSubmitStatus({ type: 'error', message: 'Please fill required fields: Full legal name and email' })
       return
     }
-    console.log('Pet Groomer KYC submitted:', formData)
-    alert('Pet Groomer KYC submitted — check console for payload.')
+
+    // Validate required declarations
+    if (!formData.declarationAccuracy || !formData.declarationConsentVerify || !formData.declarationComply) {
+      setSubmitStatus({ type: 'error', message: 'All declarations must be checked' })
+      return
+    }
+
+    // Validate conditional required documents
+    if (formData.hasBusinessLicense === true && !formData.businessLicenseDoc) {
+      setSubmitStatus({ type: 'error', message: 'Business License document is required' })
+      return
+    }
+
+    if (formData.hasGroomingCert === true && !formData.GroomingCertificateDoc) {
+      setSubmitStatus({ type: 'error', message: 'Grooming Certificate document is required' })
+      return
+    }
+
+    if (formData.hasFirstAidCert === true && !formData.firstAidCertificateDoc) {
+      setSubmitStatus({ type: 'error', message: 'First Aid Certificate document is required' })
+      return
+    }
+
+    if (formData.hasInsurance === true && !formData.insuranceDoc) {
+      setSubmitStatus({ type: 'error', message: 'Insurance document is required' })
+      return
+    }
+
+    if (formData.criminalCheck === true && !formData.crimialRecordDoc) {
+      setSubmitStatus({ type: 'error', message: 'Criminal Record document is required' })
+      return
+    }
+
+    if (formData.liabilityInsurance === true) {
+      if (!formData.liabilityProvider || !formData.liabilityPolicyNumber || !formData.liabilityExpiry || !formData.liabilityInsuaranceDoc) {
+        setSubmitStatus({ type: 'error', message: 'All liability insurance fields and document are required' })
+        return
+      }
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Create FormData object
+      const apiFormData = new FormData()
+
+      // Add text fields
+      apiFormData.append('fullLegalName', formData.fullLegalName)
+      if (formData.businessName) apiFormData.append('businessName', formData.businessName)
+      if (formData.hasBusinessLicense !== null) apiFormData.append('hasBusinessLicense', formData.hasBusinessLicense)
+      apiFormData.append('email', formData.email)
+      if (formData.phone) apiFormData.append('phone', formData.phone)
+      if (formData.address) apiFormData.append('address', formData.address)
+      if (formData.serviceLocationType) apiFormData.append('serviceLocationType', mapLocationTypeToEnum(formData.serviceLocationType))
+      if (formData.yearsExperience) apiFormData.append('yearsExperience', formData.yearsExperience)
+
+      // Professional Credentials
+      if (formData.hasGroomingCert !== null) apiFormData.append('hasGroomingCert', formData.hasGroomingCert)
+      if (formData.groomingCertDetails) apiFormData.append('groomingCertDetails', formData.groomingCertDetails)
+      if (formData.hasFirstAidCert !== null) apiFormData.append('hasFirstAidCert', formData.hasFirstAidCert)
+
+      // Insurance
+      if (formData.hasInsurance !== null) apiFormData.append('hasInsurance', formData.hasInsurance)
+      if (formData.insuranceProvider) apiFormData.append('insuranceProvider', formData.insuranceProvider)
+      if (formData.insurancePolicyNumber) apiFormData.append('insurancePolicyNumber', formData.insurancePolicyNumber)
+      if (formData.insuranceExpiry) apiFormData.append('insuranceExpiry', formData.insuranceExpiry)
+
+      // Criminal Check
+      if (formData.criminalCheck !== null) apiFormData.append('criminalCheck', formData.criminalCheck)
+
+      // Liability Insurance
+      if (formData.liabilityInsurance !== null) apiFormData.append('liabilityInsurance', formData.liabilityInsurance)
+      if (formData.liabilityProvider) apiFormData.append('liabilityProvider', formData.liabilityProvider)
+      if (formData.liabilityPolicyNumber) apiFormData.append('liabilityPolicyNumber', formData.liabilityPolicyNumber)
+      if (formData.liabilityExpiry) apiFormData.append('liabilityExpiry', formData.liabilityExpiry)
+
+      // Incident Policy
+      if (formData.hasIncidentPolicy !== null) apiFormData.append('hasIncidentPolicy', formData.hasIncidentPolicy)
+      if (formData.incidentPolicyDetails) apiFormData.append('incidentPolicyDetails', formData.incidentPolicyDetails)
+
+      // Services - Map to backend enum values
+      if (formData.servicesOffered.length > 0) {
+        formData.servicesOffered.forEach(service => {
+          apiFormData.append('servicesOffered', mapServiceToEnum(service))
+        })
+      }
+      if (formData.servicesOtherText) apiFormData.append('servicesOtherText', formData.servicesOtherText)
+      if (formData.servicesPrices) apiFormData.append('servicesPrices', formData.servicesPrices)
+      if (formData.averageAppointmentDuration) apiFormData.append('averageAppointmentDuration', formData.averageAppointmentDuration)
+      if (formData.serviceRadius) apiFormData.append('serviceRadius', formData.serviceRadius)
+
+      // Declarations
+      apiFormData.append('declarationAccuracy', formData.declarationAccuracy)
+      apiFormData.append('declarationConsentVerify', formData.declarationConsentVerify)
+      apiFormData.append('declarationComply', formData.declarationComply)
+      if (formData.signature) apiFormData.append('signature', formData.signature)
+      if (formData.signatureDate) apiFormData.append('signatureDate', formData.signatureDate)
+
+      // Add file fields
+      if (formData.businessLicenseDoc) apiFormData.append('businessLicenseDoc', formData.businessLicenseDoc)
+      if (formData.GroomingCertificateDoc) apiFormData.append('GroomingCertificateDoc', formData.GroomingCertificateDoc)
+      if (formData.firstAidCertificateDoc) apiFormData.append('firstAidCertificateDoc', formData.firstAidCertificateDoc)
+      if (formData.insuranceDoc) apiFormData.append('insuranceDoc', formData.insuranceDoc)
+      if (formData.crimialRecordDoc) apiFormData.append('crimialRecordDoc', formData.crimialRecordDoc)
+      if (formData.liabilityInsuaranceDoc) apiFormData.append('liabilityInsuaranceDoc', formData.liabilityInsuaranceDoc)
+
+      // Call your service method - replace with actual service call
+      // Example: await apiService.metavetToGroomerKyc(apiFormData)
+      
+      // Simulated API call for demonstration
+      console.log('Submitting FormData:', apiFormData)
+      debugger
+      const resposne = useJwt.metavetToGroomerKyc(apiFormData);
+      console.log('*****************Respones**************' ,resposne)
+      // Uncomment this when you have the service available:
+      // const response = await apiService.metavetToGroomerKyc(apiFormData)
+      
+      // Simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setSubmitStatus({ type: 'success', message: 'Groomer KYC submitted successfully!' })
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      setSubmitStatus({ 
+        type: 'error', 
+        message: error.response?.data || 'Failed to submit KYC. Please try again.' 
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen px-4 py-8">
+    <div className="min-h-screen px-4 py-8 ">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🧾 Metavet → Pet Groomer KYC </h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🧾 Metavet → Pet Groomer KYC</h1>
         <p className="text-center text-gray-600 mb-8">Provider onboarding — grooming services</p>
+
+        {submitStatus.message && (
+          <div className={`mb-6 p-4 rounded-lg ${submitStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            {submitStatus.message}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Personal & Business Information */}
@@ -146,10 +313,13 @@ const PetGroomerKYC = () => {
                       <div className="mt-2">
                         <input
                           type="file"
-                          accept=".pdf,image/*"
-                          onChange={(e) => handleFileChange('businessLicenseFile', e.target.files[0])}
-                          className="mt-1"
+                          accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                          onChange={(e) => handleFileChange('businessLicenseDoc', e.target.files[0])}
+                          className="mt-1 text-sm"
                         />
+                        {formData.businessLicenseDoc && (
+                          <p className="text-xs text-green-600 mt-1">✓ {formData.businessLicenseDoc.name}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -160,22 +330,51 @@ const PetGroomerKYC = () => {
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setIfValid('email', e.target.value, /^[^\s@]+@[^\s@]+\.[^\s@]+$/u)}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="you@example.com"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     required
+                    onKeyDown={(e) => {
+                      const allowed = /^[a-zA-Z0-9@._-]$/;
+
+                      if (
+                        !allowed.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "Tab" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight"
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </div>
 
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setIfValid('phone', e.target.value, /^[0-9+\-\s]*$/u)}
-                    placeholder="+91 98765 43210"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
+                 <input
+  type="tel"
+  inputMode="tel"
+  value={formData.phone}
+  onChange={(e) => {
+    const raw = e.target.value;
+    // keep only digits to count them
+    const digits = raw.replace(/\D/g, '');
+    // if more than 10 digits, ignore the new input
+    if (digits.length > 10) return;
+    // allow formatted input (spaces, +, -) but ensure pattern still applied by setIfValid
+    // using same regex as before
+    const allowedPattern = /^[0-9+\-\s]*$/u;
+    if (raw === '' || allowedPattern.test(raw)) {
+      setFormData(prev => ({ ...prev, phone: raw }));
+    }
+  }}
+  placeholder="+91 98765 43210"
+  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+  maxLength={16}
+/>
+
                 </div>
               </div>
 
@@ -216,8 +415,6 @@ const PetGroomerKYC = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
-
-                <div />
               </div>
             </div>
           </section>
@@ -258,16 +455,19 @@ const PetGroomerKYC = () => {
                         type="text"
                         value={formData.groomingCertDetails}
                         onChange={(e) => setIfValid('groomingCertDetails', e.target.value, /^[A-Za-z0-9,\s\/.-]*$/u)}
-                        placeholder="Upload proof or list details"
+                        placeholder="Certificate details"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                       <label className="block text-sm text-gray-600">Upload proof (PDF/JPG)</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('groomingCertFile', e.target.files[0])}
-                        className="mt-1"
+                        accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('GroomingCertificateDoc', e.target.files[0])}
+                        className="mt-1 text-sm"
                       />
+                      {formData.GroomingCertificateDoc && (
+                        <p className="text-xs text-green-600 mt-1">✓ {formData.GroomingCertificateDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -303,10 +503,13 @@ const PetGroomerKYC = () => {
                       <label className="block text-sm text-gray-600">Upload proof (PDF/JPG)</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('firstAidFile', e.target.files[0])}
-                        className="mt-1"
+                        accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('firstAidCertificateDoc', e.target.files[0])}
+                        className="mt-1 text-sm"
                       />
+                      {formData.firstAidCertificateDoc && (
+                        <p className="text-xs text-green-600 mt-1">✓ {formData.firstAidCertificateDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -362,10 +565,13 @@ const PetGroomerKYC = () => {
                       <label className="block text-sm text-gray-600">Upload Certificate of Insurance</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('insuranceFile', e.target.files[0])}
-                        className="mt-1"
+                        accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('insuranceDoc', e.target.files[0])}
+                        className="mt-1 text-sm"
                       />
+                      {formData.insuranceDoc && (
+                        <p className="text-xs text-green-600 mt-1">✓ {formData.insuranceDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -401,10 +607,13 @@ const PetGroomerKYC = () => {
                       <label className="block text-sm text-gray-600">Upload proof (PDF)</label>
                       <input
                         type="file"
-                        accept=".pdf"
-                        onChange={(e) => handleFileChange('criminalCheckFile', e.target.files[0])}
-                        className="mt-1"
+                        accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('crimialRecordDoc', e.target.files[0])}
+                        className="mt-1 text-sm"
                       />
+                      {formData.crimialRecordDoc && (
+                        <p className="text-xs text-green-600 mt-1">✓ {formData.crimialRecordDoc.name}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -467,23 +676,15 @@ const PetGroomerKYC = () => {
                       <label className="block text-sm text-gray-600">Upload documentation</label>
                       <input
                         type="file"
-                        accept=".pdf,image/*"
-                        onChange={(e) => handleFileChange('liabilityFile', e.target.files[0])}
-                        className="mt-1"
+                        accept=".pdf,.jpeg,.jpg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange('liabilityInsuaranceDoc', e.target.files[0])}
+                        className="mt-1 text-sm"
                       />
+                      {formData.liabilityInsuaranceDoc && (
+                        <p className="text-xs text-green-600 mt-1">✓ {formData.liabilityInsuaranceDoc.name}</p>
+                      )}
                     </div>
                   )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-medium text-gray-700 mb-2">Business License (copy)</label>
-                <div className="mt-2">
-                  <input
-                    type="file"
-                    accept=".pdf,image/*"
-                    onChange={(e) => handleFileChange('businessLicenseFile', e.target.files[0])}
-                  />
                 </div>
               </div>
 
@@ -597,7 +798,7 @@ const PetGroomerKYC = () => {
                     value={formData.serviceRadius}
                     onChange={(e) => setIfValid('serviceRadius', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
                     placeholder="e.g., 10 km radius"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus;border-primary"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
               </div>
@@ -612,31 +813,31 @@ const PetGroomerKYC = () => {
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.accuracy}
-                  onChange={(e) => handleDeclaration('accuracy', e.target.checked)}
+                  checked={formData.declarationAccuracy}
+                  onChange={(e) => setFormData(prev => ({ ...prev, declarationAccuracy: e.target.checked }))}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I confirm the accuracy of the provided information.</span>
+                <span className="text-gray-700">I confirm the accuracy of the provided information. *</span>
               </label>
 
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.consentVerify}
-                  onChange={(e) => handleDeclaration('consentVerify', e.target.checked)}
+                  checked={formData.declarationConsentVerify}
+                  onChange={(e) => setFormData(prev => ({ ...prev, declarationConsentVerify: e.target.checked }))}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I consent to verification by Metavet of insurance, certifications, and background checks.</span>
+                <span className="text-gray-700">I consent to verification by Metavet of insurance, certifications, and background checks. *</span>
               </label>
 
               <label className="flex items-start space-x-2">
                 <input
                   type="checkbox"
-                  checked={formData.declarations.comply}
-                  onChange={(e) => handleDeclaration('comply', e.target.checked)}
+                  checked={formData.declarationComply}
+                  onChange={(e) => setFormData(prev => ({ ...prev, declarationComply: e.target.checked }))}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I agree to comply with Metavet’s Provider Code of Conduct and Pet Safety Policy.</span>
+                <span className="text-gray-700">I agree to comply with Metavet's Provider Code of Conduct and Pet Safety Policy. *</span>
               </label>
 
               <div>
@@ -650,24 +851,33 @@ const PetGroomerKYC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-medium text-gray-700 mb-2">Date</label>
-                <input
-                  type="date"
-                  value={formData.signatureDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-              </div>
+             <div>
+  <label className="block font-medium text-gray-700 mb-2">Date</label>
+  <input
+    type="date"
+    value={formData.signatureDate}
+    min={new Date().toISOString().split("T")[0]}   // ← blocks past dates
+    onChange={(e) =>
+      setFormData((prev) => ({ ...prev, signatureDate: e.target.value }))
+    }
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+  />
+</div>
+
             </div>
           </section>
 
           <div className="pt-6">
             <button
               type="submit"
-              className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isSubmitting}
+              className={`w-full font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary ${
+                isSubmitting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary hover:bg-primary-dark text-white'
+              }`}
             >
-              Submit Groomer KYC
+              {isSubmitting ? 'Submitting...' : 'Submit Groomer KYC'}
             </button>
           </div>
         </form>

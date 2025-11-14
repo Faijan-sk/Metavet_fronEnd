@@ -48,4 +48,10 @@ export default {
   // ** Value of this property will be used as key to store JWT token in storage
   storageTokenKeyName: 'access',
   storageRefreshTokenKeyName: 'refresh',
+
+  //KYC 
+  metavetToWalkerKycEndpoint : '/api/walkerkyc/create',
+  metavetToGroomerKyCEndpoint : '/groomerkyc/create',
+  metavetToBehaviouristKycEndPoint: '/api/behaviouristkyc/create',
+  walkerToClientKyc : '/api/walker-kyc'
 }

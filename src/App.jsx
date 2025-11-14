@@ -9,7 +9,7 @@ import LoginForm from "./views/pages/forms/login";
 import OtpVerification from "./views/pages/forms/otpForm/index";
 import SignUp from "./views/pages/forms/registerUser/index";
 import DoctorProfileUpdate from "./views/pages/forms/updateForm/index";
-
+import WalkerToClientKyc from "./views/pages/kyc/walker-kyc/WalkerToClientKyc"
 import PetRecord from "./views/pages/pets/index";
 // ** Pages
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -127,7 +127,7 @@ const App = () => {
                 <Route path="/grooming" element={<Grooming />} />
                 <Route path="/groomer-kyc" element={<GroomerKyc />} />
                 <Route path="/walker-kyc" element={<WalkerKyc />} />
-                
+                <Route path="/walkerTo-client-Kyc" element={<WalkerToClientKyc />} />
                 <Route path="/behaviourist-kyc" element={<Behaviourist/>} />
                 <Route path="/kennels-boarding" element={<KennelsBoarding />} />
                 <Route path="/dog-training" element={<DogTraining />} />

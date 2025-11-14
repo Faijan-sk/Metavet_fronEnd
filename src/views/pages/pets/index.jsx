@@ -414,10 +414,10 @@ export default function PetDetailsCard() {
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
                 
-                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
+                {/* <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
                   <Hash size={12} className="text-[#52B2AD]" />
                   <span className="text-xs font-semibold text-gray-700">{pet.id}</span>
-                </div>
+                </div> */}
 
                 <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">
                   <div className="relative">

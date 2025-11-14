@@ -109,72 +109,139 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
     <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
       {/* Row 1: Pet Name & Species */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Pet Name
-          </label>
-          <input
-            {...register("petName", { required: "Pet name is required" })}
-            placeholder="Enter pet name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
-          />
-          {errors.petName && (
-            <p className="text-red-500 text-sm mt-1">{errors.petName.message}</p>
-          )}
-        </div>
+       <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Pet Name
+  </label>
+  <input
+    {...register("petName", {
+      required: "Pet name is required",
+      // ensure only alphabets and spaces are saved in react-hook-form
+      pattern: {
+        value: /^[A-Za-z ]+$/,
+        message: "Only alphabets and spaces are allowed",
+      },
+      setValueAs: (val) =>
+        typeof val === "string" ? val.replace(/[^A-Za-z ]+/g, "") : val,
+    })}
+    placeholder="Enter pet name"
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
+    onInput={(e) => {
+      // Live restriction: block all non-alphabet characters
+      e.target.value = e.target.value.replace(/[^A-Za-z ]+/g, "");
+    }}
+    onPaste={(e) => {
+      // Sanitize paste
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData("text");
+      const cleaned = pasted.replace(/[^A-Za-z ]+/g, "");
+      e.target.value = cleaned;
+
+      // Notify react-hook-form after sanitizing
+      e.target.dispatchEvent(new Event("input", { bubbles: true }));
+    }}
+  />
+
+  {errors.petName && (
+    <p className="text-red-500 text-sm mt-1">{errors.petName.message}</p>
+  )}
+</div>
+
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Species
-          </label>
-          <input
-            {...register("petSpecies", { required: "Species is required" })}
-            placeholder="e.g., Dog, Cat, Bird"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
-          />
-          {errors.petSpecies && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.petSpecies.message}
-            </p>
-          )}
-        </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Species
+  </label>
+  <input
+    {...register("petSpecies", {
+      required: "Species is required",
+      pattern: {
+        value: /^[A-Za-z ]+$/,
+        message: "Only alphabets and spaces are allowed",
+      },
+      setValueAs: (val) =>
+        typeof val === "string" ? val.replace(/[^A-Za-z ]+/g, "") : val,
+    })}
+    placeholder="e.g., Dog, Cat, Bird"
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
+    onInput={(e) => {
+      // Live restrict: remove anything except alphabets & space
+      e.target.value = e.target.value.replace(/[^A-Za-z ]+/g, "");
+    }}
+    onPaste={(e) => {
+      // Sanitize pasted text
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData("text");
+      const cleaned = pasted.replace(/[^A-Za-z ]+/g, "");
+      e.target.value = cleaned;
+
+      // Trigger form update
+      e.target.dispatchEvent(new Event("input", { bubbles: true }));
+    }}
+  />
+
+  {errors.petSpecies && (
+    <p className="text-red-500 text-sm mt-1">{errors.petSpecies.message}</p>
+  )}
+</div>
+
       </div>
 
       {/* Row 2: Breed & Gender */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Breed
-          </label>
-          <input
-            {...register("petBreed", { required: "Breed is required" })}
-            placeholder="Enter breed"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
-          />
-          {errors.petBreed && (
-            <p className="text-red-500 text-sm mt-1">{errors.petBreed.message}</p>
-          )}
-        </div>
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Breed
+    </label>
+    <input
+      {...register("petBreed", {
+        required: "Breed is required",
+        pattern: {
+          value: /^[A-Za-z ]+$/,
+          message: "Only alphabets and spaces are allowed",
+        },
+        setValueAs: (val) =>
+          typeof val === "string" ? val.replace(/[^A-Za-z ]+/g, "") : val,
+      })}
+      placeholder="Enter breed"
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
+      onInput={(e) => {
+        // live restrict
+        e.target.value = e.target.value.replace(/[^A-Za-z ]+/g, "");
+      }}
+      onPaste={(e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData("text");
+        const cleaned = pasted.replace(/[^A-Za-z ]+/g, "");
+        e.target.value = cleaned;
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Gender
-          </label>
-          <select
-            {...register("petGender", { required: "Gender is required" })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
-          >
-            <option value="">Select gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          {errors.petGender && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.petGender.message}
-            </p>
-          )}
-        </div>
-      </div>
+        // update react-hook-form
+        e.target.dispatchEvent(new Event("input", { bubbles: true }));
+      }}
+    />
+    {errors.petBreed && (
+      <p className="text-red-500 text-sm mt-1">{errors.petBreed.message}</p>
+    )}
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Gender
+    </label>
+    <select
+      {...register("petGender", { required: "Gender is required" })}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition"
+    >
+      <option value="">Select gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+    {errors.petGender && (
+      <p className="text-red-500 text-sm mt-1">{errors.petGender.message}</p>
+    )}
+  </div>
+</div>
+
 
       {/* Row 3: Age & Weight */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -255,18 +322,7 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
         </label>
       </div>
 
-      {/* Medical Notes */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Medical Notes (Optional)
-        </label>
-        <textarea
-          {...register("medicalNotes")}
-          placeholder="Enter any medical notes or special care instructions"
-          rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] outline-none transition resize-none"
-        />
-      </div>
+
 
       {/* Backend Validation Message */}
       {backendError && (

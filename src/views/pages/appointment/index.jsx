@@ -97,14 +97,18 @@ const Appointment = () => {
           const doctor = apt.doctor ?? apt.doctorDetail ?? null;
           const slot = apt.slot ?? apt.timeSlot ?? null;
           const user = apt.user ?? apt.patient ?? null;
+          const pet = apt.pet ?? null;
           const appointmentDate = apt.appointmentDate ?? apt.date ?? apt.dateOfAppointment ?? apt.date_time ?? null;
 
           return {
             id: apt.id ?? apt.appointmentId ?? Math.random().toString(36).slice(2,9),
-            pet: apt.petId ?? apt.pet ?? apt.pet_id ?? apt.petRef ?? "N/A",
+            petId: apt.petId ?? apt.pet_id ?? apt.petRef ?? "N/A",
+            petName: pet?.petName ?? "Unknown Pet",
             doctor: doctor ? `${doctor.qualification ?? 'Dr.'} (${doctor.specialization ?? 'General'})` : 'Unknown',
             doctorName: doctor?.name ?? doctor?.qualification ?? 'Doctor',
-            petType: apt.petType ?? "Pet",
+            petType: apt.petType ?? pet?.petSpecies ?? "Pet",
+            petBreed: pet?.petBreed ?? "",
+            petAge: pet?.petAge ?? null,
             date: appointmentDate,
             time: slot ? `${slot.startTime ?? slot.from} - ${slot.endTime ?? slot.to}` : (apt.time ?? 'N/A'),
             startTime: slot?.startTime ?? slot?.from,
@@ -116,6 +120,7 @@ const Appointment = () => {
             fullDoctor: doctor,
             fullSlot: slot,
             fullUser: user,
+            fullPet: pet,
             hospitalName: doctor?.hospitalClinicName ?? doctor?.hospital ?? apt.hospitalName ?? '',
             hospitalAddress: doctor?.hospitalClinicAddress ?? apt.hospitalAddress ?? '',
             doctorBio: doctor?.bio ?? '',
@@ -310,6 +315,11 @@ const Appointment = () => {
           </div>
           
           <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Pet Name:</span>
+            <span className="font-semibold text-gray-900">{appointment.petName}</span>
+          </div>
+          
+          <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Doctor:</span>
             <span className="font-semibold text-gray-900">{appointment.doctorName}</span>
           </div>
@@ -459,14 +469,16 @@ const Appointment = () => {
               </div>
             </div>
             <div className="bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-2xl p-4 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-teal-100 text-sm">Total Appointments</p>
-                  <p className="text-3xl font-bold">{appointments.length}</p>
-                </div>
-                <PawPrint className="w-12 h-12 opacity-80" />
-              </div>
-            </div>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-teal-100 text-sm">Total Appointments</p>
+      <p className="text-3xl font-bold">{appointments.length}</p>
+    </div>
+
+    <PawPrint className="w-12 h-12 opacity-80" />
+  </div>
+</div>
+
           </div>
         )}
 
@@ -536,11 +548,11 @@ const Appointment = () => {
                     // Edit Mode
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1">Pet ID</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Pet Name</label>
                         <input
                           type="text"
-                          name="pet"
-                          value={editAppointment.pet}
+                          name="petName"
+                          value={editAppointment.petName}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] transition"
                         />
@@ -627,9 +639,12 @@ const Appointment = () => {
                         <div>
                           <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                             <PawPrint size={14} className="text-[#52B2AD]" />
-                            <span className="font-semibold">Pet ID</span>
+                            <span className="font-semibold">Pet Name</span>
                           </div>
-                          <p className="font-medium text-gray-800">#{appointment.pet}</p>
+                          <p className="font-medium text-gray-800">{appointment.petName}</p>
+                          {appointment.petBreed && (
+                            <p className="text-xs text-gray-500">{appointment.petBreed}</p>
+                          )}
                         </div>
                         
                         <div>

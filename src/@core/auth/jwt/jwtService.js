@@ -2,14 +2,8 @@ import axios from 'axios'
 import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.29.199:8080/'
+// axios.defaults.baseURL = 'http://192.168.1.7:8080/'
 axios.defaults.baseURL = 'http://35.206.66.49:8080/'
-
-// Optional: Environment-based configuration
-// const API_BASE_URL = process.env.NODE_ENV === 'production' 
-//   ? 'http://34.61.254.251:8080/' 
-//   : 'http://localhost:8080/';
-// axios.defaults.baseURL = API_BASE_URL;
 
 export default class JwtService {
   // ** jwtConfig <= Will be used by this service
@@ -26,23 +20,38 @@ export default class JwtService {
     axios.interceptors.request.use(
       (config) => {
         console.log('Making request to:', config.url);
-        
+
         // ** Get token from localStorage
         const accessToken = this.getToken()
 
         // ** If token is present add it to request's Authorization Header
         if (accessToken) {
           // ** eslint-disable-next-line no-param-reassign
+          config.headers = config.headers || {}
           config.headers.Authorization = `${this.jwtConfig.tokenType} ${accessToken}`
           console.log('Added Authorization header');
         } else {
           console.log('No access token found');
         }
-        
-        // Add common headers for CORS
-        config.headers['Content-Type'] = 'application/json';
-        config.headers['Access-Control-Allow-Origin'] = '*';
-        
+
+        // IMPORTANT:
+        // - If request data is FormData, DO NOT set Content-Type (let axios/browser set multipart boundary)
+        // - For non-FormData requests, default to application/json if not provided
+        if (config.data instanceof FormData) {
+          // ensure we do not force Content-Type
+          if (config.headers && config.headers['Content-Type']) {
+            delete config.headers['Content-Type']
+          }
+        } else {
+          config.headers = config.headers || {}
+          config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json'
+        }
+
+        // DO NOT set Access-Control-Allow-Origin from client side
+        if (config.headers && config.headers['Access-Control-Allow-Origin']) {
+          delete config.headers['Access-Control-Allow-Origin']
+        }
+
         return config
       },
       (error) => {
@@ -51,7 +60,7 @@ export default class JwtService {
       }
     )
 
-    // ** Add request/response interceptor
+    // ** Response Interceptor
     axios.interceptors.response.use(
       (response) => {
         console.log('Response received:', response.status);
@@ -63,15 +72,12 @@ export default class JwtService {
         const { config, response } = error
         const originalRequest = config
 
-        // Handle 401 Unauthorized responses
+        // Handle 401 Unauthorized responses (example)
         if (response && response.status === 401) {
-          console.log('Unauthorized access - redirecting to login');
-          // Optional: Clear token and redirect
-          // localStorage.removeItem('accessToken');
-          // localStorage.removeItem('userData');
-          // window.location.href = '/login';
+          console.log('Unauthorized access - consider redirecting to login or refreshing token');
+          // optional: handle refresh token flow here
         }
-        
+
         // Handle network errors
         if (!response) {
           console.error('Network error - check if backend is running');
@@ -124,7 +130,6 @@ export default class JwtService {
 
   verifyOtp(otpData, token) {
     console.log('Calling verify OTP API');
-    // Use the token passed as parameter (from Redux)
     return axios.post(`${this.jwtConfig.otpVerifyEndPoint}/${token}`, otpData);
   }
 
@@ -140,7 +145,7 @@ export default class JwtService {
     console.log('Calling create doctor API');
     return axios.post(this.jwtConfig.updateDpctorEndPoint, payload, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
         "Content-Type": "application/json",
       },
     });
@@ -168,7 +173,7 @@ export default class JwtService {
   getUserByMobile(mobileNumber) {
     console.log('Calling get user by mobile API');
     return axios.get(`${this.jwtConfig.getUserByMobileEndPoint}`, {
-      params: { phoneNumber: mobileNumber }, // matches @RequestParam
+      params: { phoneNumber: mobileNumber },
     });
   }
 
@@ -191,7 +196,7 @@ export default class JwtService {
     console.log('Calling update pet API');
     return axios.put(`${this.jwtConfig.updatePetEndPoint}${petId}`, ...payload, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
         "Content-Type": "application/json",
       },
     });
@@ -201,7 +206,7 @@ export default class JwtService {
     console.log('Calling delete pet API');
     return axios.delete(`${this.jwtConfig.deletePetEndPoint}${petId}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
       },
     });
   }
@@ -224,7 +229,6 @@ export default class JwtService {
     });
   }
 
-  // NEW METHOD: Get DoctorDay ID by doctorId and day
   getDoctorDayId(doctorId, day) {
     console.log('Calling get doctor day ID API');
     return axios.get(`${this.jwtConfig.fetDoctorDayIdByDoctorAndDay}/${doctorId}/day/${day}/id`);
@@ -244,7 +248,7 @@ export default class JwtService {
     console.log('Calling cancel appointment API');
     return axios.delete(`${this.jwtConfig.cancelAppointmentEndpoint}/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
       },
     });
   }
@@ -253,7 +257,7 @@ export default class JwtService {
     console.log('Calling create appointment API with payload:', payload);
     return axios.post(`${this.jwtConfig.createAppointmentEndpoint}/${id}/days`, payload, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
         "Content-Type": "application/json",
       },
     });
@@ -263,4 +267,49 @@ export default class JwtService {
      console.log('Calling get my appointments API');
     return axios.get(this.jwtConfig.getBookedAppoinmentEndpoint);
   }
+
+  /**
+   * METAVET Walker KYC - expects a FormData instance
+   * Example usage from component:
+   *   const fd = new FormData();
+   *   fd.append('fullLegalName', 'Test');
+   *   fd.append('petCareCertificationDoc', file);
+   *   await useJwt.metavetToWalkerKyc(fd);
+   */
+  metavetToWalkerKyc(formData) {
+    if (!(formData instanceof FormData)) {
+      console.warn('metavetToWalkerKyc expects a FormData instance - sending as-is')
+    }
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.metavetToWalkerKycEndpoint, formData)
+  }
+
+  metavetToGroomerKyc(formData) {
+    if (!(formData instanceof FormData)) {
+      console.warn('metavetToGroomerKyc expects a FormData instance - sending as-is')
+    }
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.metavetToGroomerKyCEndpoint, formData)
+  }
+
+   metavetToBehaviouristKyc(formData) {
+    if (!(formData instanceof FormData)) {
+      console.warn('metavetToBehaviourist expects a FormData instance - sending as-is')
+    }
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.metavetToBehaviouristKycEndPoint, formData)
+  }
+
+  walkerToClientKyc(formData) {
+    if (!(formData instanceof FormData)) {
+      console.warn('metavetToBehaviourist expects a FormData instance - sending as-is')
+    }
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.walkerToClientKyc, formData)
+  }
+
+
+
+
+
 }

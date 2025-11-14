@@ -125,31 +125,50 @@ export default function BookAppointmentForm({
       setAvailableSlots([]);
       try {
         const resp = await useJwt.getDoctorByDay(dayName);
-        const data = Array.isArray(resp?.data) ? resp.data : resp?.data?.results || [];
-        setDoctors(data || []);
+        // normalize response structure
+        const rawData = Array.isArray(resp?.data) ? resp.data : resp?.data?.results || [];
+        // filter only APPROVED doctors
+        const approved = (rawData || []).filter(
+          (r) => (r.doctor && String(r.doctor.doctorProfileStatus || "").toUpperCase() === "APPROVED")
+        );
 
-        // extract unique specializations
+        if (!approved.length) {
+          // no approved doctors for the selected day
+          setDoctors([]);
+          setVisibleDoctors([]);
+          setSpecializations([]);
+          setSelectedSpecialization("");
+          setDoctorsError(`No approved doctors available for ${dayName}. Please choose another date.`);
+          setDoctorsLoading(false);
+          return;
+        }
+
+        setDoctors(approved || []);
+
+        // extract unique specializations from approved doctors
         const specs = Array.from(
-          new Set((data || []).map((r) => (r.doctor?.specialization || "").trim()).filter(Boolean))
+          new Set((approved || []).map((r) => (r.doctor?.specialization || "").trim()).filter(Boolean))
         );
         setSpecializations(specs);
 
+        // if initialValues doctor is present, try to select it only if it's in approved list
         if (initialValues?.doctorId) {
           const initialDoctorId = Number(initialValues.doctorId) || initialValues.doctorId;
-          const matched = (data || []).find(
+          const matched = (approved || []).find(
             (doc) => doc.doctorId === initialDoctorId || String(doc.doctorId) === String(initialDoctorId)
           );
           if (matched) {
             const spec = matched.doctor?.specialization || "";
             setSelectedSpecialization(spec);
-            setVisibleDoctors((data || []).filter((d) => (spec ? d.doctor?.specialization === spec : true)));
+            setVisibleDoctors((approved || []).filter((d) => (spec ? d.doctor?.specialization === spec : true)));
             upd({ doctorId: matched.doctorId, doctorDayId: matched.doctorDayId });
             setDoctorsLoading(false);
             return;
           }
         }
 
-        setVisibleDoctors(data || []);
+        // otherwise show all approved doctors
+        setVisibleDoctors(approved || []);
       } catch (err) {
         console.error("Error fetching doctors:", err);
         const message = err?.response?.data?.message || err?.message || "Failed to fetch doctors.";
@@ -334,7 +353,6 @@ export default function BookAppointmentForm({
 
       console.log("Booking Appointment with payload:", payload);
 
-debugger
       const response = await useJwt.bookAppointment(payload);
       
       console.log("Appointment Booked Successfully:", response.data);
@@ -395,20 +413,29 @@ debugger
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Date Field */}
         <div>
-          <label htmlFor="appointmentDate" className="block text-xs font-semibold text-gray-600 mb-1">
-            Date *
-          </label>
-          <input
-            id="appointmentDate"
-            name="appointmentDate"
-            value={form.appointmentDate}
-            onChange={handleDateChange}
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-            required
-          />
-          {appointmentDay && <div className="mt-1 text-xs text-gray-600">Day: {appointmentDay}</div>}
-        </div>
+  <label
+    htmlFor="appointmentDate"
+    className="block text-xs font-semibold text-gray-600 mb-1"
+  >
+    Date *
+  </label>
+
+  <input
+    id="appointmentDate"
+    name="appointmentDate"
+    value={form.appointmentDate}
+    onChange={handleDateChange}
+    type="date"
+    min={new Date().toISOString().split("T")[0]}   // ⬅ prevents selecting older dates
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+    required
+  />
+
+  {appointmentDay && (
+    <div className="mt-1 text-xs text-gray-600">Day: {appointmentDay}</div>
+  )}
+</div>
+
 
         {/* Doctors Loading State */}
         {doctorsLoading && (
@@ -416,8 +443,9 @@ debugger
         )}
 
         {!doctorsLoading && doctorsError && (
-          <div className="md:col-span-2 text-sm text-red-600" role="alert">
-            Error loading doctors: {doctorsError}
+          <div className="md:col-span-2 text-sm text-primary-600" role="alert">
+            {/* Error loading doctors:  */}
+            {doctorsError}
           </div>
         )}
 
@@ -481,7 +509,7 @@ debugger
                     >
                       <option value="">Select a pet</option>
                       {pets.map((p) => (
-                        <option key={p.pid} value={p.pid}>
+                        <option key={p.id} value={p.id}>
                           {p.petName} {p.petSpecies ? `• ${p.petSpecies}` : ""} {p.petBreed ? `(${p.petBreed})` : ""}
                         </option>
                       ))}

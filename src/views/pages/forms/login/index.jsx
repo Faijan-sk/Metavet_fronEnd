@@ -81,38 +81,56 @@ const LoginForm = ({ onSubmit }) => {
               Phone Number
             </label>
             <div className="relative">
-              <input
-                type="text"
-                {...register('phone_number', {
-                  required: 'Phone Number is required',
-                  pattern: {
-                    value: /^[0-9]{10}$/,
-                    message: 'Please enter a valid 10-digit phone number',
-                  },
-                })}
-                className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 focus:bg-white text-sm sm:text-base md:text-lg ${
-                  errors.phone_number
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-200 focus:border-primary hover:border-gray-300'
-                }`}
-                placeholder="Enter your 10-digit phone number"
-              />
-              {errors.phone_number && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <svg
-                    className="h-4 w-4 sm:h-5 sm:w-5 text-red-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              )}
-            </div>
+  <input
+    type="text"
+    inputMode="numeric"
+    maxLength={10}
+    {...register("phone_number", {
+      required: "Phone Number is required",
+      pattern: {
+        value: /^[0-9]{10}$/,
+        message: "Please enter a valid 10-digit phone number",
+      },
+      // optional: normalize value to digits-only before storing
+      setValueAs: (val) => (typeof val === "string" ? val.replace(/\D/g, "").slice(0, 10) : val),
+    })}
+    onInput={(e) => {
+      // strip non-digits and limit to 10 chars (handles typing & mobile input)
+      const el = e.target;
+      el.value = el.value.replace(/\D/g, "").slice(0, 10);
+    }}
+    onPaste={(e) => {
+      // sanitize paste: allow only first 10 digits
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData("text");
+      const digits = (paste || "").replace(/\D/g, "").slice(0, 10);
+      const el = e.target;
+      el.value = digits;
+      // inform react-hook-form about the sanitized value
+      if (typeof el.dispatchEvent === "function") {
+        const event = new Event("input", { bubbles: true });
+        el.dispatchEvent(event);
+      }
+    }}
+    aria-invalid={errors.phone_number ? "true" : "false"}
+    className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none focus:ring-0 transition-all duration-200 bg-gray-50 focus:bg-white text-sm sm:text-base md:text-lg ${
+      errors.phone_number ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-primary hover:border-gray-300"
+    }`}
+    placeholder="Enter your 10-digit phone number"
+  />
+  {errors.phone_number && (
+    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+      <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </div>
+  )}
+</div>
+
             {errors.phone_number && (
               <p className="text-red-500 text-xs sm:text-sm flex items-center mt-1">
                 <svg

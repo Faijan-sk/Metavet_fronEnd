@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import userJwt from "./../../../../enpoints/jwt/useJwt"
 
 const BehaviourSpecialistKYC = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,9 @@ const BehaviourSpecialistKYC = () => {
     businessLicenseFile: null,
 
     servicesOffered: [],
+    servicesOtherText: '',
     specializations: [],
+    specializationOtherText: '',
     serviceRadius: '',
 
     declarations: {
@@ -42,6 +45,23 @@ const BehaviourSpecialistKYC = () => {
     signature: '',
     signatureDate: ''
   })
+
+  // --- helper maps to match backend enum names ---
+  const servicesMap = {
+    'Behavioural Consultation': 'BEHAVIOURAL_CONSULTATION',
+    'Training': 'TRAINING',
+    'Follow-up': 'FOLLOW_UP',
+    'Virtual Sessions': 'VIRTUAL_SESSIONS',
+    'Other': 'OTHER'
+  }
+
+  const specializationsMap = {
+    'Aggression': 'AGGRESSION',
+    'Separation Anxiety': 'SEPARATION_ANXIETY',
+    'Obedience': 'OBEDIENCE',
+    'Puppy Training': 'PUPPY_TRAINING',
+    'Other': 'OTHER'
+  }
 
   // Generic setter with regex validation (allows empty)
   const setIfValid = (field, value, regex) => {
@@ -67,16 +87,155 @@ const BehaviourSpecialistKYC = () => {
     setFormData(prev => ({ ...prev, [field]: file }))
   }
 
-  const handleSubmit = (e) => {
+  // Build and send FormData to backend
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // simple required checks
+
+    // basic client-side validation
     if (!formData.fullLegalName || !formData.email) {
-      alert('Please fill in required fields: Full legal name and email.')
+      // alert('Please fill in required fields: Full legal name and email.')
       return
     }
 
-    console.log('Behaviour Specialist KYC submitted:', formData)
-    alert('Provider KYC submitted — check console for payload.')
+    if (!formData.declarations.infoTrue || !formData.declarations.verifyOK || !formData.declarations.abideStandards) {
+      // alert('Please accept all declarations before submitting.')
+      return
+    }
+
+    if (!formData.signature || !formData.signatureDate) {
+      // alert('Signature and date are required.')
+      return
+    }
+
+    try {
+      const fd = new FormData()
+
+      // --- scalar fields ---
+      fd.append('fullLegalName', formData.fullLegalName)
+      if (formData.businessName) fd.append('businessName', formData.businessName)
+      fd.append('email', formData.email)
+      if (formData.phone) fd.append('phone', formData.phone)
+      if (formData.address) fd.append('address', formData.address)
+      if (formData.serviceArea) fd.append('serviceArea', formData.serviceArea)
+      if (formData.yearsExperience) fd.append('yearsExperience', formData.yearsExperience)
+
+      // --- Professional credentials ---
+      // backend expects "hasBehaviouralCertifications" and "behaviouralCertificateDoc"
+      if (formData.hasCertifications !== null) {
+        fd.append('hasBehaviouralCertifications', String(!!formData.hasCertifications))
+      }
+      if (formData.certificationDetails) fd.append('behaviouralCertificateDetails', formData.certificationDetails)
+      if (formData.certFile) {
+        fd.append('behaviouralCertificateDoc', formData.certFile, formData.certFile.name)
+      }
+
+      if (formData.educationBackground) fd.append('educationBackground', formData.educationBackground)
+
+      // --- Insurance ---
+      if (formData.hasInsurance !== null) fd.append('hasInsurance', String(!!formData.hasInsurance))
+      if (formData.insuranceProvider) fd.append('insuranceProvider', formData.insuranceProvider)
+      if (formData.insurancePolicyNumber) fd.append('insurancePolicyNumber', formData.insurancePolicyNumber)
+      if (formData.insuranceExpiry) fd.append('insuranceExpiry', formData.insuranceExpiry) // yyyy-mm-dd okay for LocalDate
+      if (formData.insuranceFile) fd.append('insuranceDoc', formData.insuranceFile, formData.insuranceFile.name)
+
+      // --- Criminal check ---
+      if (formData.criminalCheck !== null) fd.append('hasCriminalCheck', String(!!formData.criminalCheck))
+      if (formData.criminalCheckFile) fd.append('criminalRecordDoc', formData.criminalCheckFile, formData.criminalCheckFile.name)
+
+      // --- Liability insurance ---
+      if (formData.liabilityInsurance !== null) fd.append('liabilityInsurance', String(!!formData.liabilityInsurance))
+      if (formData.liabilityFile) fd.append('liabilityInsuranceDoc', formData.liabilityFile, formData.liabilityFile.name)
+
+      // --- Business license ---
+      if (formData.businessLicense !== null) fd.append('hasBusinessLicense', String(!!formData.businessLicense))
+      if (formData.businessLicenseFile) fd.append('businessLicenseDoc', formData.businessLicenseFile, formData.businessLicenseFile.name)
+
+      // --- Practice details lists (send enum names expected by backend) ---
+      if (formData.servicesOffered && formData.servicesOffered.length > 0) {
+        formData.servicesOffered.forEach(label => {
+          const enumVal = servicesMap[label] || label
+          fd.append('servicesOffered', enumVal)
+        })
+      }
+      if (formData.servicesOtherText) fd.append('servicesOtherText', formData.servicesOtherText)
+
+      if (formData.specializations && formData.specializations.length > 0) {
+        formData.specializations.forEach(label => {
+          const enumVal = specializationsMap[label] || label
+          fd.append('specializations', enumVal)
+        })
+      }
+      if (formData.specializationOtherText) fd.append('specializationOtherText', formData.specializationOtherText)
+
+      if (formData.serviceRadius) fd.append('serviceRadius', formData.serviceRadius)
+
+      // --- Declarations & signature ---
+      fd.append('infoTrue', String(!!formData.declarations.infoTrue))
+      fd.append('verifyOk', String(!!formData.declarations.verifyOK))
+      fd.append('abideStandards', String(!!formData.declarations.abideStandards))
+
+      fd.append('signature', formData.signature)
+      fd.append('signatureDate', formData.signatureDate)
+
+      // send to backend using your provided service
+      const resp = await userJwt.metavetToBehaviouristKyc(fd)
+
+      // response handling
+      if (resp && resp.status >= 200 && resp.status < 300) {
+        // alert('Behaviourist KYC created successfully.')
+        // reset the form
+        setFormData({
+          fullLegalName: '',
+          businessName: '',
+          email: '',
+          phone: '',
+          address: '',
+          serviceArea: '',
+          yearsExperience: '',
+
+          hasCertifications: null,
+          certificationDetails: '',
+          certFile: null,
+
+          educationBackground: '',
+          hasInsurance: null,
+          insuranceProvider: '',
+          insurancePolicyNumber: '',
+          insuranceExpiry: '',
+          insuranceFile: null,
+
+          criminalCheck: null,
+          criminalCheckFile: null,
+
+          liabilityInsurance: null,
+          liabilityFile: null,
+          businessLicense: null,
+          businessLicenseFile: null,
+
+          servicesOffered: [],
+          servicesOtherText: '',
+          specializations: [],
+          specializationOtherText: '',
+          serviceRadius: '',
+
+          declarations: {
+            infoTrue: false,
+            verifyOK: false,
+            abideStandards: false
+          },
+
+          signature: '',
+          signatureDate: ''
+        })
+      } else {
+        const msg = resp && resp.data ? resp.data : 'Unexpected server response.'
+        // alert('Submission failed: ' + msg)
+      }
+    } catch (err) {
+      console.error('Error submitting Behaviourist KYC', err)
+      const serverMsg = err?.response?.data || err.message || 'Network or server error'
+      // alert('Failed to submit: ' + serverMsg)
+    }
   }
 
   return (
@@ -85,7 +244,7 @@ const BehaviourSpecialistKYC = () => {
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🧠 Metavet → Behaviour Specialist KYC</h1>
         <p className="text-center text-gray-600 mb-6">Provider Onboarding — Behaviour & Training Specialists</p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
           {/* Personal & Business Information */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🏢 Personal & Business Information</h2>
@@ -117,10 +276,11 @@ const BehaviourSpecialistKYC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Email *</label>
+                  {/* FIX: direct setter so user can type partial email freely */}
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setIfValid('email', e.target.value, /^[^\s@]+@[^\s@]+\.[^\s@]+$/u)}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="you@example.com"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     required
@@ -128,15 +288,20 @@ const BehaviourSpecialistKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setIfValid('phone', e.target.value, /^[0-9+\-\s]{0,20}$/u)}
-                    placeholder="+91 98765 43210"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
-                </div>
+  <label className="block font-medium text-gray-700 mb-2">Phone</label>
+  <input
+    type="tel"
+    value={formData.phone}
+    maxLength={10}   // ⛔ hard limit — user cannot type more than 10 chars
+    onChange={(e) => {
+      const val = e.target.value.slice(0, 10);   // ⛔ software limit — auto trim >10
+      setIfValid('phone', val, /^[0-9]{0,10}$/u);
+    }}
+    placeholder="9876543210"
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+  />
+</div>
+
 
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Address</label>
@@ -453,9 +618,9 @@ const BehaviourSpecialistKYC = () => {
                   {formData.servicesOffered.includes('Other') && (
                     <input
                       type="text"
-                      value={formData.serviceRadius}
-                      onChange={(e) => setIfValid('serviceRadius', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
-                      placeholder="Describe other services or radius"
+                      value={formData.servicesOtherText}
+                      onChange={(e) => setIfValid('servicesOtherText', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
+                      placeholder="Describe other services"
                       className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
                   )}
@@ -480,8 +645,8 @@ const BehaviourSpecialistKYC = () => {
                   {formData.specializations.includes('Other') && (
                     <input
                       type="text"
-                      value={formData.serviceRadius}
-                      onChange={(e) => setIfValid('serviceRadius', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
+                      value={formData.specializationOtherText}
+                      onChange={(e) => setIfValid('specializationOtherText', e.target.value, /^[A-Za-z0-9\s,.'-]*$/u)}
                       placeholder="Please specify other specialization"
                       className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
@@ -544,7 +709,7 @@ const BehaviourSpecialistKYC = () => {
                   value={formData.signature}
                   onChange={(e) => setIfValid('signature', e.target.value, /^[A-Za-z\s.'-]*$/u)}
                   placeholder="Full name as signature"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus;border-primary"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
 
@@ -554,7 +719,7 @@ const BehaviourSpecialistKYC = () => {
                   type="date"
                   value={formData.signatureDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus;border-primary"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
             </div>
