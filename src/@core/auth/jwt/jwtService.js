@@ -2,7 +2,7 @@ import axios from 'axios'
 import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.1.7:8080/'
+// axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 axios.defaults.baseURL = 'http://35.206.66.49:8080/'
 
 export default class JwtService {
@@ -302,10 +302,32 @@ export default class JwtService {
 
   walkerToClientKyc(formData) {
     if (!(formData instanceof FormData)) {
-      console.warn('metavetToBehaviourist expects a FormData instance - sending as-is')
+      console.warn('walker to client expects a FormData instance - sending as-is')
     }
     // No Content-Type header here; interceptor handles FormData case
     return axios.post(this.jwtConfig.walkerToClientKyc, formData)
+  }
+
+ groomerToClientKyc(formData) {
+
+    if (!(formData instanceof FormData)) {
+      console.warn('groomer to client kyc expect a data instance')
+    }
+
+
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.groomerToClientKyc, formData)
+  }
+
+   behaviouristToClientKyc(formData) {
+
+    if (!(formData instanceof FormData)) {
+      console.warn('behaviourist to client kyc expect a data instance')
+    }
+
+
+    // No Content-Type header here; interceptor handles FormData case
+    return axios.post(this.jwtConfig.behaviouristToClientKyc, formData)
   }
 
 

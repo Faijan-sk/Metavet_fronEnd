@@ -30,6 +30,8 @@ const BehaviouralConcern = lazy(() =>
 );
 import WalkerKyc from "./views/pages/kyc/walker-kyc/index"
 import Behaviourist  from "./views/pages/kyc/behaviourist-kyc/index"
+import BehavioristToClient from "./views/pages/kyc/behaviourist-kyc/behaviouristToClient"
+import GroomerToClientKyc from "./views/pages/kyc/groomer-kyc/GroomerToClientKyc"
 const GroomerKyc = lazy(() => import("./views/pages/kyc/groomer-kyc/index"));
 const KennelsBoarding = lazy(() => import("./views/pages/kennels/boarding"));
 const DogTraining = lazy(() => import("./views/pages/dogtraining"));
@@ -125,10 +127,19 @@ const App = () => {
                 />
                 <Route path="/blood-work" element={<Bloodwork />} />
                 <Route path="/grooming" element={<Grooming />} />
+
+
+
                 <Route path="/groomer-kyc" element={<GroomerKyc />} />
                 <Route path="/walker-kyc" element={<WalkerKyc />} />
                 <Route path="/walkerTo-client-Kyc" element={<WalkerToClientKyc />} />
                 <Route path="/behaviourist-kyc" element={<Behaviourist/>} />
+                <Route path="/behaviouristTo-client-kyc" element={<BehavioristToClient/>} />
+                <Route path="/groomerTo-client-kyc" element={<GroomerToClientKyc/>} />
+
+
+
+
                 <Route path="/kennels-boarding" element={<KennelsBoarding />} />
                 <Route path="/dog-training" element={<DogTraining />} />
                 <Route path="/dental" element={<Dental />} />

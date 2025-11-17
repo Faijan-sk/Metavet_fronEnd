@@ -53,5 +53,7 @@ export default {
   metavetToWalkerKycEndpoint : '/api/walkerkyc/create',
   metavetToGroomerKyCEndpoint : '/groomerkyc/create',
   metavetToBehaviouristKycEndPoint: '/api/behaviouristkyc/create',
-  walkerToClientKyc : '/api/walker-kyc'
+  walkerToClientKyc : '/api/walker-kyc',
+  groomerToClientKyc : '/api/groomer-kyc',
+  behaviouristToClientKyc : '/api/behaviorist-kyc',
 }

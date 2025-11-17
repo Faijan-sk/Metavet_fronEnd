@@ -52,8 +52,12 @@ const Header = () => {
           { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
            { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
           { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
+
+          
            { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
-            // { label: 'KYC Groomer to Client', path: '/behaviourist-kyc' },
+            { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
+            { label: 'KYC Behaviourist  to Client', path: '/behaviouristTo-client-kyc' },
+       
         ],
       },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
