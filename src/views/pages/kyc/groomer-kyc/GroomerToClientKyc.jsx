@@ -144,7 +144,7 @@ const Index = () => {
 
       console.log('Submission response:', respData)
       // alert('Form submitted successfully!')
-      alert("Form Submitted Sucesfully")
+      // alert("Form Submitted Sucesfully")
       
       setTimeout(()=>{
 setFormData(initialFormState)
@@ -158,7 +158,7 @@ setFormData(initialFormState)
 
       // Try to show more helpful error message when possible
       const msg = error?.response?.data ?? error?.message ?? 'Unknown error'
-      alert('Error submitting the form — ' + JSON.stringify(msg))
+      // alert('Error submitting the form — ' + JSON.stringify(msg))
     } finally {
       setSubmitting(false)
     }
