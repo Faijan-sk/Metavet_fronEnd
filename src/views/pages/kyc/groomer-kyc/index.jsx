@@ -773,7 +773,7 @@ const PetGroomerKYC = () => {
                   type="text"
                   value={formData.servicesPrices}
                   onChange={(e) => setIfValid('servicesPrices', e.target.value, /^[A-Za-z0-9\s,.'-:/₹]*$/u)}
-                  placeholder="e.g., Full groom: ₹800"
+                  placeholder="e.g., Full groom: $800"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
