@@ -31,7 +31,7 @@ const Index = () => {
     addOns: [],
     selectedPetUid: ''
   })
-  
+
   const initialFormState = {
   groomingFrequency: '',
   lastGroomingDate: '',
@@ -144,9 +144,11 @@ const Index = () => {
 
       console.log('Submission response:', respData)
       // alert('Form submitted successfully!')
+      alert("Form Submitted Sucesfully")
+      
       setTimeout(()=>{
 setFormData(initialFormState)
-      } , 1000)
+      } , 500)
       
 
       // Optional: reset or keep values — here we'll preserve values but turn off submitting
