@@ -50,9 +50,9 @@ export default {
   storageRefreshTokenKeyName: 'refresh',
 
   //KYC 
-  metavetToWalkerKycEndpoint : '/api/walkerkyc/create',
+  metavetToWalkerKycEndpoint : '/walkerkyc/create',
   metavetToGroomerKyCEndpoint : '/groomerkyc/create',
-  metavetToBehaviouristKycEndPoint: '/api/behaviouristkyc/create',
+  metavetToBehaviouristKycEndPoint: '/behaviouristkyc/create',
   walkerToClientKyc : '/api/walker-kyc',
   groomerToClientKyc : '/api/groomer-kyc',
   behaviouristToClientKyc : '/api/behaviorist-kyc',

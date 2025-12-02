@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
 const PetWalkerProviderKYC = () => {
+ 
   const [formData, setFormData] = useState({
     fullLegalName: '',
     businessName: '',
@@ -12,7 +13,7 @@ const PetWalkerProviderKYC = () => {
     yearsExperience: '',
 
     hasPetCareCertifications: null,
-    hasPetCareCertificationsDetails: '',
+    petCareCertificationsDetails: '',
     petCareCertificationDoc: null,
 
     bondedOrInsured: null,
@@ -22,15 +23,15 @@ const PetWalkerProviderKYC = () => {
     petFirstAidCertificateDoc: null,
 
     criminalCheck: null,
-    crimialRecordDoc: null,
+    criminalRecordDoc: null,
 
     liabilityInsurance: null,
     liabilityProvider: '',
     liabilityPolicyNumber: '',
     insuranceExpiry: '',
-    liabilityInsuaranceDoc: null,
+    liabilityInsuranceDoc: null,
 
-    hasBusinessLicenseDoc: null,
+    hasBusinessLicense: null,
     businessLicenseDoc: null,
 
     walkRadius: '',
@@ -66,6 +67,10 @@ const PetWalkerProviderKYC = () => {
       throw new Error('Please fill required fields: Full legal name and email')
     }
 
+    if (!formData.phone || !formData.address || !formData.serviceArea) {
+      throw new Error('Please fill phone, address and service area')
+    }
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
@@ -85,7 +90,7 @@ const PetWalkerProviderKYC = () => {
       throw new Error('Please upload Pet First Aid Certificate document')
     }
 
-    if (formData.criminalCheck === true && !formData.crimialRecordDoc) {
+    if (formData.criminalCheck === true && !formData.criminalRecordDoc) {
       throw new Error('Please upload Criminal Record document')
     }
 
@@ -99,7 +104,7 @@ const PetWalkerProviderKYC = () => {
       if (!formData.insuranceExpiry) {
         throw new Error('Please enter Insurance Expiry date')
       }
-      if (!formData.liabilityInsuaranceDoc) {
+      if (!formData.liabilityInsuranceDoc) {
         throw new Error('Please upload Liability Insurance document')
       }
     }
@@ -139,7 +144,7 @@ const PetWalkerProviderKYC = () => {
       // Create FormData object
       const formDataToSend = new FormData()
 
-      // Add all text fields
+      // Add all text fields (must match DTO field names)
       formDataToSend.append('fullLegalName', formData.fullLegalName)
       if (formData.businessName) formDataToSend.append('businessName', formData.businessName)
       formDataToSend.append('email', formData.email)
@@ -152,8 +157,8 @@ const PetWalkerProviderKYC = () => {
       if (formData.hasPetCareCertifications !== null) {
         formDataToSend.append('hasPetCareCertifications', formData.hasPetCareCertifications)
         if (formData.hasPetCareCertifications === true) {
-          if (formData.hasPetCareCertificationsDetails) {
-            formDataToSend.append('hasPetCareCertificationsDetails', formData.hasPetCareCertificationsDetails)
+          if (formData.petCareCertificationsDetails) {
+            formDataToSend.append('petCareCertificationsDetails', formData.petCareCertificationsDetails)
           }
           if (formData.petCareCertificationDoc) {
             formDataToSend.append('petCareCertificationDoc', formData.petCareCertificationDoc)
@@ -177,8 +182,8 @@ const PetWalkerProviderKYC = () => {
 
       if (formData.criminalCheck !== null) {
         formDataToSend.append('criminalCheck', formData.criminalCheck)
-        if (formData.criminalCheck === true && formData.crimialRecordDoc) {
-          formDataToSend.append('crimialRecordDoc', formData.crimialRecordDoc)
+        if (formData.criminalCheck === true && formData.criminalRecordDoc) {
+          formDataToSend.append('criminalRecordDoc', formData.criminalRecordDoc)
         }
       }
 
@@ -195,15 +200,15 @@ const PetWalkerProviderKYC = () => {
           if (formData.insuranceExpiry) {
             formDataToSend.append('insuranceExpiry', formData.insuranceExpiry)
           }
-          if (formData.liabilityInsuaranceDoc) {
-            formDataToSend.append('liabilityInsuaranceDoc', formData.liabilityInsuaranceDoc)
+          if (formData.liabilityInsuranceDoc) {
+            formDataToSend.append('liabilityInsuranceDoc', formData.liabilityInsuranceDoc)
           }
         }
       }
 
-      if (formData.hasBusinessLicenseDoc !== null) {
-        formDataToSend.append('hasBusinessLicenseDoc', formData.hasBusinessLicenseDoc)
-        if (formData.hasBusinessLicenseDoc === true && formData.businessLicenseDoc) {
+      if (formData.hasBusinessLicense !== null) {
+        formDataToSend.append('hasBusinessLicense', formData.hasBusinessLicense)
+        if (formData.hasBusinessLicense === true && formData.businessLicenseDoc) {
           formDataToSend.append('businessLicenseDoc', formData.businessLicenseDoc)
         }
       }
@@ -221,6 +226,9 @@ const PetWalkerProviderKYC = () => {
       if (formData.signature) formDataToSend.append('signature', formData.signature)
       if (formData.signatureDate) formDataToSend.append('signatureDate', formData.signatureDate)
 
+      // Debug (optional)
+      // for (let [k, v] of formDataToSend.entries()) { console.log(k, v) }
+
       // Call API
       console.log("*******body****************", formDataToSend)
       const response = await useJwt.metavetToWalkerKyc(formDataToSend)
@@ -228,15 +236,10 @@ const PetWalkerProviderKYC = () => {
       console.log('Success:', response.data)
       setSuccess(true)
       setError(null)
-      
-      // Reset form on success
-      setTimeout(() => {
-        window.location.reload() // Or navigate to success page
-      }, 2000)
 
     } catch (err) {
       console.error('Error submitting form:', err)
-      const errorMessage = err.response?.data || err.message || 'Failed to submit form. Please try again.'
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to submit form. Please try again.'
       setError(errorMessage)
       setSuccess(false)
     } finally {
@@ -312,44 +315,36 @@ const PetWalkerProviderKYC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-  <label className="block font-medium text-gray-700 mb-2">Email *</label>
-  <input
-    type="email"
-    value={formData.email}
-    onChange={(e) => {
-      // allow only letters, numbers, @ and .
-      const filtered = e.target.value.replace(/[^A-Za-z0-9@.]/g, '');
-      setFormData(prev => ({ ...prev, email: filtered }));
-    }}
-    placeholder="you@example.com"
-    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-    required
-  />
-</div>
-
-
+                <div>
+                  <label className="block font-medium text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => {
+                      const filtered = e.target.value.replace(/[^A-Za-z0-9@.]/g, '');
+                      setFormData(prev => ({ ...prev, email: filtered }));
+                    }}
+                    placeholder="you@example.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    required
+                  />
+                </div>
 
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Phone</label>
                   <input
-  type="tel"
-  value={formData.phone}
-  onChange={(e) => {
-    // remove all non-digit characters
-    let value = e.target.value.replace(/\D/g, '');
-
-    // limit to max 10 digits
-    if (value.length > 10) {
-      value = value.slice(0, 10);
-    }
-
-    setFormData(prev => ({ ...prev, phone: value }));
-  }}
-  placeholder="9876543210"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length > 10) {
+                        value = value.slice(0, 10);
+                      }
+                      setFormData(prev => ({ ...prev, phone: value }));
+                    }}
+                    placeholder="9876543210"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
                 </div>
 
                 <div>
@@ -382,8 +377,8 @@ const PetWalkerProviderKYC = () => {
                     type="text"
                     inputMode="numeric"
                     value={formData.yearsExperience}
-                    onChange={(e) => setIfValid('yearsExperience', e.target.value, /^[0-9\- ]*$/u)}
-                    placeholder="e.g., 2 or 1-3"
+                    onChange={(e) => setIfValid('yearsExperience', e.target.value, /^[0-9]*$/u)}
+                    placeholder="e.g., 2"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -427,8 +422,8 @@ const PetWalkerProviderKYC = () => {
                     <div className="mt-2 ml-4 space-y-2">
                       <input
                         type="text"
-                        value={formData.hasPetCareCertificationsDetails}
-                        onChange={(e) => setIfValid('hasPetCareCertificationsDetails', e.target.value, /^[A-Za-z0-9,\s\/.-]*$/u)}
+                        value={formData.petCareCertificationsDetails}
+                        onChange={(e) => setIfValid('petCareCertificationsDetails', e.target.value, /^[A-Za-z0-9,\s\/.-]*$/u)}
                         placeholder="List certifications (or brief details)"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -562,11 +557,11 @@ const PetWalkerProviderKYC = () => {
                       <input
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        onChange={(e) => handleFileChange('crimialRecordDoc', e.target.files[0])}
+                        onChange={(e) => handleFileChange('criminalRecordDoc', e.target.files[0])}
                         className="mt-1"
                       />
-                      {formData.crimialRecordDoc && (
-                        <p className="text-sm text-green-600">✓ {formData.crimialRecordDoc.name}</p>
+                      {formData.criminalRecordDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.criminalRecordDoc.name}</p>
                       )}
                     </div>
                   )}
@@ -631,11 +626,11 @@ const PetWalkerProviderKYC = () => {
                       <input
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        onChange={(e) => handleFileChange('liabilityInsuaranceDoc', e.target.files[0])}
+                        onChange={(e) => handleFileChange('liabilityInsuranceDoc', e.target.files[0])}
                         className="mt-1"
                       />
-                      {formData.liabilityInsuaranceDoc && (
-                        <p className="text-sm text-green-600">✓ {formData.liabilityInsuaranceDoc.name}</p>
+                      {formData.liabilityInsuranceDoc && (
+                        <p className="text-sm text-green-600">✓ {formData.liabilityInsuranceDoc.name}</p>
                       )}
                     </div>
                   )}
@@ -648,9 +643,9 @@ const PetWalkerProviderKYC = () => {
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="hasBusinessLicenseDoc"
-                      checked={formData.hasBusinessLicenseDoc === true}
-                      onChange={() => handleRadio('hasBusinessLicenseDoc', true)}
+                      name="hasBusinessLicense"
+                      checked={formData.hasBusinessLicense === true}
+                      onChange={() => handleRadio('hasBusinessLicense', true)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">Yes</span>
@@ -659,15 +654,15 @@ const PetWalkerProviderKYC = () => {
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="radio"
-                      name="hasBusinessLicenseDoc"
-                      checked={formData.hasBusinessLicenseDoc === false}
-                      onChange={() => handleRadio('hasBusinessLicenseDoc', false)}
+                      name="hasBusinessLicense"
+                      checked={formData.hasBusinessLicense === false}
+                      onChange={() => handleRadio('hasBusinessLicense', false)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">No</span>
                   </label>
 
-                  {formData.hasBusinessLicenseDoc === true && (
+                  {formData.hasBusinessLicense === true && (
                     <div className="mt-2 ml-4">
                       <label className="block text-sm text-gray-600">Upload license *</label>
                       <input
@@ -692,23 +687,20 @@ const PetWalkerProviderKYC = () => {
 
             <div className="space-y-4">
               <div>
-  <label className="block font-medium text-gray-700 mb-2">Walk Radius / Coverage Area</label>
-  <input
-    type="text"
-    value={formData.walkRadius}
-    onChange={(e) => {
-      // allow only digits
-      const filtered = e.target.value.replace(/[^0-9]/g, '');
+                <label className="block font-medium text-gray-700 mb-2">Walk Radius / Coverage Area</label>
+                <input
+                  type="text"
+                  value={formData.walkRadius}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData(prev => ({ ...prev, walkRadius: filtered }));
+                  }}
+                  placeholder="e.g., 5"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
 
-      setFormData(prev => ({ ...prev, walkRadius: filtered }));
-    }}
-    placeholder="e.g., 5"
-    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-  />
-</div>
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md-grid-cols-2 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">Maximum Pets per Walk</label>
                   <input
@@ -729,9 +721,9 @@ const PetWalkerProviderKYC = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>In-app</option>
-                    <option>Text</option>
-                    <option>Call</option>
+                    <option value="IN_APP">In-app</option>
+                    <option value="TEXT">Text</option>
+                    <option value="CALL">Call</option>
                   </select>
                 </div>
               </div>
@@ -785,17 +777,16 @@ const PetWalkerProviderKYC = () => {
                 />
               </div>
 
-             <div>
-  <label className="block font-medium text-gray-700 mb-2">Date *</label>
-  <input
-    type="date"
-    value={formData.signatureDate}
-    min={new Date().toISOString().split("T")[0]}   // 🚫 Prevent past dates
-    onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
-    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-  />
-</div>
-
+              <div>
+                <label className="block font-medium text-gray-700 mb-2">Date *</label>
+                <input
+                  type="date"
+                  value={formData.signatureDate}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setFormData(prev => ({ ...prev, signatureDate: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
             </div>
           </section>
 
@@ -803,7 +794,7 @@ const PetWalkerProviderKYC = () => {
             <button
               type="submit"
               onClick={handleSubmitButtonClick}
-              disabled={loading} // only disabled while loading; user can attempt submit to see message
+              disabled={loading}
               className={`w-full font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary ${
                 loading
                   ? 'bg-gray-400 cursor-not-allowed text-white'

@@ -186,7 +186,8 @@ const PetBehaviorForm = () => {
         //   },
         //   body: JSON.stringify(payload)
         // })
-        apiResponse = await useJwt.behaviouristToClientKyc(payload)
+console.log("&&&&&&&&&&&&&&&&&" , payload)
+        // apiResponse = await useJwt.behaviouristToClientKyc(payload)
 
 
       }
@@ -196,37 +197,37 @@ const PetBehaviorForm = () => {
       let responseData = null
 
       // If apiResponse is a fetch Response (has ok property)
-      if (apiResponse && typeof apiResponse.ok === 'boolean') {
-        if (apiResponse.ok) {
-          responseData = await apiResponse.json().catch(() => null)
-          success = true
-        } else {
-          // try to parse error body
-          let errBody = null
-          try { errBody = await apiResponse.text() } catch (e) { errBody = null }
-          throw new Error(errBody || `Server responded with status ${apiResponse.status}`)
-        }
-      } else if (apiResponse && apiResponse.data !== undefined) {
-        // axios-like response (data field)
-        responseData = apiResponse.data
-        success = true
-      } else if (apiResponse !== null && apiResponse !== undefined) {
-        // some other wrapper that returns plain object
-        responseData = apiResponse
-        success = true
-      }
+      // if (apiResponse && typeof apiResponse.ok === 'boolean') {
+      //   if (apiResponse.ok) {
+      //     responseData = await apiResponse.json().catch(() => null)
+      //     success = true
+      //   } else {
+      //     // try to parse error body
+      //     let errBody = null
+      //     try { errBody = await apiResponse.text() } catch (e) { errBody = null }
+      //     throw new Error(errBody || `Server responded with status ${apiResponse.status}`)
+      //   }
+      // } else if (apiResponse && apiResponse.data !== undefined) {
+      //   // axios-like response (data field)
+      //   responseData = apiResponse.data
+      //   success = true
+      // } else if (apiResponse !== null && apiResponse !== undefined) {
+      //   // some other wrapper that returns plain object
+      //   responseData = apiResponse
+      //   success = true
+      // }
 
-      if (success) {
-        setSubmitStatus({ type: 'success', message: 'Form submitted successfully!' })
-        console.log('Behaviorist KYC created response:', responseData)
+      // if (success) {
+      //   setSubmitStatus({ type: 'success', message: 'Form submitted successfully!' })
+      //   console.log('Behaviorist KYC created response:', responseData)
 
-        // Reset / reload (preserve your original behavior)
-        setTimeout(() => {
-          window.location.reload()
-        }, 2000)
-      } else {
-        throw new Error('Unknown response from API')
-      }
+      //   // Reset / reload (preserve your original behavior)
+      //   setTimeout(() => {
+      //     window.location.reload()
+      //   }, 2000)
+      // } else {
+      //   throw new Error('Unknown response from API')
+      // }
 
     } catch (error) {
       console.error('Error submitting form:', error)
