@@ -1,57 +1,60 @@
 import React, { useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
+// 🔹 1. Initial state ko function me nikalo
+const getInitialFormData = () => ({
+  fullLegalName: '',
+  businessName: '',
+  hasBusinessLicense: null,
+  businessLicenseDoc: null,
+  email: '',
+  phone: '',
+  address: '',
+  serviceLocationType: '',
+  yearsExperience: '',
+
+  hasGroomingCert: null,
+  groomingCertDetails: '',
+  GroomingCertificateDoc: null,
+
+  hasFirstAidCert: null,
+  firstAidCertificateDoc: null,
+
+  hasInsurance: null,
+  insuranceProvider: '',
+  insurancePolicyNumber: '',
+  insuranceExpiry: '',
+  insuranceDoc: null,
+
+  criminalCheck: null,
+  crimialRecordDoc: null,
+
+  liabilityInsurance: null,
+  liabilityProvider: '',
+  liabilityPolicyNumber: '',
+  liabilityExpiry: '',
+  liabilityInsuaranceDoc: null,
+
+  hasIncidentPolicy: null,
+  incidentPolicyDetails: '',
+
+  servicesOffered: [],
+  servicesOtherText: '',
+  servicesPrices: '',
+  averageAppointmentDuration: '',
+  serviceRadius: '',
+
+  declarationAccuracy: false,
+  declarationConsentVerify: false,
+  declarationComply: false,
+
+  signature: '',
+  signatureDate: ''
+})
+
 const PetGroomerKYC = () => {
-  const [formData, setFormData] = useState({
-    fullLegalName: '',
-    businessName: '',
-    hasBusinessLicense: null,
-    businessLicenseDoc: null,
-    email: '',
-    phone: '',
-    address: '',
-    serviceLocationType: '',
-    yearsExperience: '',
-
-    hasGroomingCert: null,
-    groomingCertDetails: '',
-    GroomingCertificateDoc: null,
-
-    hasFirstAidCert: null,
-    firstAidCertificateDoc: null,
-
-    hasInsurance: null,
-    insuranceProvider: '',
-    insurancePolicyNumber: '',
-    insuranceExpiry: '',
-    insuranceDoc: null,
-
-    criminalCheck: null,
-    crimialRecordDoc: null,
-
-    liabilityInsurance: null,
-    liabilityProvider: '',
-    liabilityPolicyNumber: '',
-    liabilityExpiry: '',
-    liabilityInsuaranceDoc: null,
-
-    hasIncidentPolicy: null,
-    incidentPolicyDetails: '',
-
-    servicesOffered: [],
-    servicesOtherText: '',
-    servicesPrices: '',
-    averageAppointmentDuration: '',
-    serviceRadius: '',
-
-    declarationAccuracy: false,
-    declarationConsentVerify: false,
-    declarationComply: false,
-
-    signature: '',
-    signatureDate: ''
-  })
-
+  // 🔹 2. yahan function se initial state lo
+  const [formData, setFormData] = useState(getInitialFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' })
 
@@ -62,17 +65,16 @@ const PetGroomerKYC = () => {
   }
 
   const handleRadio = (field, val) => setFormData(prev => ({ ...prev, [field]: val }))
-  
   const handleFileChange = (field, file) => setFormData(prev => ({ ...prev, [field]: file }))
-  
   const handleCheckboxArray = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].includes(value) ? prev[field].filter(i => i !== value) : [...prev[field], value]
+      [field]: prev[field].includes(value)
+        ? prev[field].filter(i => i !== value)
+        : [...prev[field], value]
     }))
   }
 
-  // Map frontend service names to backend enum values
   const mapServiceToEnum = (service) => {
     const serviceMap = {
       'Full Groom (bath + cut)': 'FULL_GROOM',
@@ -86,7 +88,6 @@ const PetGroomerKYC = () => {
     return serviceMap[service] || service
   }
 
-  // Map frontend location type to backend enum
   const mapLocationTypeToEnum = (locationType) => {
     const locationMap = {
       'Mobile': 'MOBILE',
@@ -97,135 +98,136 @@ const PetGroomerKYC = () => {
   }
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
-  setSubmitStatus({ type: '', message: '' })
+    e.preventDefault()
+    setSubmitStatus({ type: '', message: '' })
 
-  // Validate required fields
-  if (!formData.fullLegalName || !formData.email) {
-    setSubmitStatus({ type: 'error', message: 'Please fill required fields: Full legal name and email' })
-    return
-  }
-
-  if (!formData.declarationAccuracy || !formData.declarationConsentVerify || !formData.declarationComply) {
-    setSubmitStatus({ type: 'error', message: 'All declarations must be checked' })
-    return
-  }
-
-  if (formData.hasBusinessLicense === true && !formData.businessLicenseDoc) {
-    setSubmitStatus({ type: 'error', message: 'Business License document is required' })
-    return
-  }
-
-  if (formData.hasGroomingCert === true && !formData.GroomingCertificateDoc) {
-    setSubmitStatus({ type: 'error', message: 'Grooming Certificate document is required' })
-    return
-  }
-
-  if (formData.hasFirstAidCert === true && !formData.firstAidCertificateDoc) {
-    setSubmitStatus({ type: 'error', message: 'First Aid Certificate document is required' })
-    return
-  }
-
-  if (formData.hasInsurance === true && !formData.insuranceDoc) {
-    setSubmitStatus({ type: 'error', message: 'Insurance document is required' })
-    return
-  }
-
-  if (formData.criminalCheck === true && !formData.crimialRecordDoc) {
-    setSubmitStatus({ type: 'error', message: 'Criminal Record document is required' })
-    return
-  }
-
-  if (formData.liabilityInsurance === true) {
-    if (
-      !formData.liabilityProvider ||
-      !formData.liabilityPolicyNumber ||
-      !formData.liabilityExpiry ||
-      !formData.liabilityInsuaranceDoc
-    ) {
-      setSubmitStatus({ type: 'error', message: 'All liability insurance fields and document are required' })
+    // validations...
+    if (!formData.fullLegalName || !formData.email) {
+      setSubmitStatus({ type: 'error', message: 'Please fill required fields: Full legal name and email' })
       return
     }
-  }
 
-  setIsSubmitting(true)
-
-  try {
-    const apiFormData = new FormData()
-
-    // --------- append fields yahan same hi rahenge ---------
-    apiFormData.append('fullLegalName', formData.fullLegalName)
-    if (formData.businessName) apiFormData.append('businessName', formData.businessName)
-    if (formData.hasBusinessLicense !== null) apiFormData.append('hasBusinessLicense', formData.hasBusinessLicense)
-    apiFormData.append('email', formData.email)
-    if (formData.phone) apiFormData.append('phone', formData.phone)
-    if (formData.address) apiFormData.append('address', formData.address)
-    if (formData.serviceLocationType) apiFormData.append('serviceLocationType', mapLocationTypeToEnum(formData.serviceLocationType))
-    if (formData.yearsExperience) apiFormData.append('yearsExperience', formData.yearsExperience)
-
-    if (formData.hasGroomingCert !== null) apiFormData.append('hasGroomingCert', formData.hasGroomingCert)
-    if (formData.groomingCertDetails) apiFormData.append('groomingCertDetails', formData.groomingCertDetails)
-    if (formData.hasFirstAidCert !== null) apiFormData.append('hasFirstAidCert', formData.hasFirstAidCert)
-
-    if (formData.hasInsurance !== null) apiFormData.append('hasInsurance', formData.hasInsurance)
-    if (formData.insuranceProvider) apiFormData.append('insuranceProvider', formData.insuranceProvider)
-    if (formData.insurancePolicyNumber) apiFormData.append('insurancePolicyNumber', formData.insurancePolicyNumber)
-    if (formData.insuranceExpiry) apiFormData.append('insuranceExpiry', formData.insuranceExpiry)
-
-    if (formData.criminalCheck !== null) apiFormData.append('criminalCheck', formData.criminalCheck)
-
-    if (formData.liabilityInsurance !== null) apiFormData.append('liabilityInsurance', formData.liabilityInsurance)
-    if (formData.liabilityProvider) apiFormData.append('liabilityProvider', formData.liabilityProvider)
-    if (formData.liabilityPolicyNumber) apiFormData.append('liabilityPolicyNumber', formData.liabilityPolicyNumber)
-    if (formData.liabilityExpiry) apiFormData.append('liabilityExpiry', formData.liabilityExpiry)
-
-    if (formData.hasIncidentPolicy !== null) apiFormData.append('hasIncidentPolicy', formData.hasIncidentPolicy)
-    if (formData.incidentPolicyDetails) apiFormData.append('incidentPolicyDetails', formData.incidentPolicyDetails)
-
-    if (formData.servicesOffered.length > 0) {
-      formData.servicesOffered.forEach(service => {
-        apiFormData.append('servicesOffered', mapServiceToEnum(service))
-      })
+    if (!formData.declarationAccuracy || !formData.declarationConsentVerify || !formData.declarationComply) {
+      setSubmitStatus({ type: 'error', message: 'All declarations must be checked' })
+      return
     }
-    if (formData.servicesOtherText) apiFormData.append('servicesOtherText', formData.servicesOtherText)
-    if (formData.servicesPrices) apiFormData.append('servicesPrices', formData.servicesPrices)
-    if (formData.averageAppointmentDuration) apiFormData.append('averageAppointmentDuration', formData.averageAppointmentDuration)
-    if (formData.serviceRadius) apiFormData.append('serviceRadius', formData.serviceRadius)
 
-    apiFormData.append('declarationAccuracy', formData.declarationAccuracy)
-    apiFormData.append('declarationConsentVerify', formData.declarationConsentVerify)
-    apiFormData.append('declarationComply', formData.declarationComply)
-    if (formData.signature) apiFormData.append('signature', formData.signature)
-    if (formData.signatureDate) apiFormData.append('signatureDate', formData.signatureDate)
+    if (formData.hasBusinessLicense === true && !formData.businessLicenseDoc) {
+      setSubmitStatus({ type: 'error', message: 'Business License document is required' })
+      return
+    }
 
-    if (formData.businessLicenseDoc) apiFormData.append('businessLicenseDoc', formData.businessLicenseDoc)
-    if (formData.GroomingCertificateDoc) apiFormData.append('GroomingCertificateDoc', formData.GroomingCertificateDoc)
-    if (formData.firstAidCertificateDoc) apiFormData.append('firstAidCertificateDoc', formData.firstAidCertificateDoc)
-    if (formData.insuranceDoc) apiFormData.append('insuranceDoc', formData.insuranceDoc)
-    if (formData.crimialRecordDoc) apiFormData.append('crimialRecordDoc', formData.crimialRecordDoc)
-    if (formData.liabilityInsuaranceDoc) apiFormData.append('liabilityInsuaranceDoc', formData.liabilityInsuaranceDoc)
+    if (formData.hasGroomingCert === true && !formData.GroomingCertificateDoc) {
+      setSubmitStatus({ type: 'error', message: 'Grooming Certificate document is required' })
+      return
+    }
 
-    console.log('Submitting FormData:', [...apiFormData.entries()])
+    if (formData.hasFirstAidCert === true && !formData.firstAidCertificateDoc) {
+      setSubmitStatus({ type: 'error', message: 'First Aid Certificate document is required' })
+      return
+    }
 
-    // ✅ yahan await zaroor lagao
-    const response = await useJwt.metavetToGroomerKyc(apiFormData)
-    console.log('******** API Response ********', response)
+    if (formData.hasInsurance === true && !formData.insuranceDoc) {
+      setSubmitStatus({ type: 'error', message: 'Insurance document is required' })
+      return
+    }
 
-    setSubmitStatus({ type: 'success', message: 'Groomer KYC submitted successfully!' })
+    if (formData.criminalCheck === true && !formData.crimialRecordDoc) {
+      setSubmitStatus({ type: 'error', message: 'Criminal Record document is required' })
+      return
+    }
 
-    // 🔹 Agar sirf form clear karna ho (page reload nahi):
-    // setFormData(initialStateYahan);  // apni initial state object ko yahan use karo
+    if (formData.liabilityInsurance === true) {
+      if (
+        !formData.liabilityProvider ||
+        !formData.liabilityPolicyNumber ||
+        !formData.liabilityExpiry ||
+        !formData.liabilityInsuaranceDoc
+      ) {
+        setSubmitStatus({ type: 'error', message: 'All liability insurance fields and document are required' })
+        return
+      }
+    }
 
-  } catch (error) {
-    console.error('Error submitting form:', error)
-    setSubmitStatus({
-      type: 'error',
-      message: error?.response?.data || 'Failed to submit KYC. Please try again.'
-    })
-  } finally {
-    setIsSubmitting(false)
+    setIsSubmitting(true)
+
+    try {
+      const apiFormData = new FormData()
+
+      // append fields ...
+      apiFormData.append('fullLegalName', formData.fullLegalName)
+      if (formData.businessName) apiFormData.append('businessName', formData.businessName)
+      if (formData.hasBusinessLicense !== null) apiFormData.append('hasBusinessLicense', formData.hasBusinessLicense)
+      apiFormData.append('email', formData.email)
+      if (formData.phone) apiFormData.append('phone', formData.phone)
+      if (formData.address) apiFormData.append('address', formData.address)
+      if (formData.serviceLocationType) apiFormData.append('serviceLocationType', mapLocationTypeToEnum(formData.serviceLocationType))
+      if (formData.yearsExperience) apiFormData.append('yearsExperience', formData.yearsExperience)
+
+      if (formData.hasGroomingCert !== null) apiFormData.append('hasGroomingCert', formData.hasGroomingCert)
+      if (formData.groomingCertDetails) apiFormData.append('groomingCertDetails', formData.groomingCertDetails)
+      if (formData.hasFirstAidCert !== null) apiFormData.append('hasFirstAidCert', formData.hasFirstAidCert)
+
+      if (formData.hasInsurance !== null) apiFormData.append('hasInsurance', formData.hasInsurance)
+      if (formData.insuranceProvider) apiFormData.append('insuranceProvider', formData.insuranceProvider)
+      if (formData.insurancePolicyNumber) apiFormData.append('insurancePolicyNumber', formData.insurancePolicyNumber)
+      if (formData.insuranceExpiry) apiFormData.append('insuranceExpiry', formData.insuranceExpiry)
+
+      if (formData.criminalCheck !== null) apiFormData.append('criminalCheck', formData.criminalCheck)
+
+      if (formData.liabilityInsurance !== null) apiFormData.append('liabilityInsurance', formData.liabilityInsurance)
+      if (formData.liabilityProvider) apiFormData.append('liabilityProvider', formData.liabilityProvider)
+      if (formData.liabilityPolicyNumber) apiFormData.append('liabilityPolicyNumber', formData.liabilityPolicyNumber)
+      if (formData.liabilityExpiry) apiFormData.append('liabilityExpiry', formData.liabilityExpiry)
+
+      if (formData.hasIncidentPolicy !== null) apiFormData.append('hasIncidentPolicy', formData.hasIncidentPolicy)
+      if (formData.incidentPolicyDetails) apiFormData.append('incidentPolicyDetails', formData.incidentPolicyDetails)
+
+      if (formData.servicesOffered.length > 0) {
+        formData.servicesOffered.forEach(service => {
+          apiFormData.append('servicesOffered', mapServiceToEnum(service))
+        })
+      }
+      if (formData.servicesOtherText) apiFormData.append('servicesOtherText', formData.servicesOtherText)
+      if (formData.servicesPrices) apiFormData.append('servicesPrices', formData.servicesPrices)
+      if (formData.averageAppointmentDuration) apiFormData.append('averageAppointmentDuration', formData.averageAppointmentDuration)
+      if (formData.serviceRadius) apiFormData.append('serviceRadius', formData.serviceRadius)
+
+      apiFormData.append('declarationAccuracy', formData.declarationAccuracy)
+      apiFormData.append('declarationConsentVerify', formData.declarationConsentVerify)
+      apiFormData.append('declarationComply', formData.declarationComply)
+      if (formData.signature) apiFormData.append('signature', formData.signature)
+      if (formData.signatureDate) apiFormData.append('signatureDate', formData.signatureDate)
+
+      if (formData.businessLicenseDoc) apiFormData.append('businessLicenseDoc', formData.businessLicenseDoc)
+      if (formData.GroomingCertificateDoc) apiFormData.append('GroomingCertificateDoc', formData.GroomingCertificateDoc)
+      if (formData.firstAidCertificateDoc) apiFormData.append('firstAidCertificateDoc', formData.firstAidCertificateDoc)
+      if (formData.insuranceDoc) apiFormData.append('insuranceDoc', formData.insuranceDoc)
+      if (formData.crimialRecordDoc) apiFormData.append('crimialRecordDoc', formData.crimialRecordDoc)
+      if (formData.liabilityInsuaranceDoc) apiFormData.append('liabilityInsuaranceDoc', formData.liabilityInsuaranceDoc)
+
+      console.log('Submitting FormData:', [...apiFormData.entries()])
+
+      const response = await useJwt.metavetToGroomerKyc(apiFormData)
+      console.log('******** API Response ********', response)
+
+      setSubmitStatus({ type: 'success', message: 'Groomer KYC submitted successfully!' })
+
+      // 🔹 3. SUCCESS ke baad form reset
+      setFormData(getInitialFormData())
+      // (optional) agar form ke native controls bhi reset karne hain:
+      // e.target.reset()
+
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      setSubmitStatus({
+        type: 'error',
+        message: error?.response?.data || 'Failed to submit KYC. Please try again.'
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
 
 
   return (

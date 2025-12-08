@@ -1,51 +1,53 @@
 import React, { useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
+// 🔹 Initial state helper
+const getInitialFormData = () => ({
+  fullLegalName: '',
+  businessName: '',
+  email: '',
+  phone: '',
+  address: '',
+  serviceArea: '',
+  yearsExperience: '',
+
+  hasPetCareCertifications: null,
+  petCareCertificationsDetails: '',
+  petCareCertificationDoc: null,
+
+  bondedOrInsured: null,
+  bondedOrInsuredDoc: null,
+
+  hasFirstAid: null,
+  petFirstAidCertificateDoc: null,
+
+  criminalCheck: null,
+  criminalRecordDoc: null,
+
+  liabilityInsurance: null,
+  liabilityProvider: '',
+  liabilityPolicyNumber: '',
+  insuranceExpiry: '',
+  liabilityInsuranceDoc: null,
+
+  hasBusinessLicense: null,
+  businessLicenseDoc: null,
+
+  walkRadius: '',
+  maxPetsPerWalk: '',
+  preferredCommunication: '',
+
+  declarationAccurate: false,
+  declarationVerifyOk: false,
+  declarationComply: false,
+
+  signature: '',
+  signatureDate: ''
+})
+
 const PetWalkerProviderKYC = () => {
- 
-  const [formData, setFormData] = useState({
-    fullLegalName: '',
-    businessName: '',
-    email: '',
-    phone: '',
-    address: '',
-    serviceArea: '',
-    yearsExperience: '',
 
-    hasPetCareCertifications: null,
-    petCareCertificationsDetails: '',
-    petCareCertificationDoc: null,
-
-    bondedOrInsured: null,
-    bondedOrInsuredDoc: null,
-
-    hasFirstAid: null,
-    petFirstAidCertificateDoc: null,
-
-    criminalCheck: null,
-    criminalRecordDoc: null,
-
-    liabilityInsurance: null,
-    liabilityProvider: '',
-    liabilityPolicyNumber: '',
-    insuranceExpiry: '',
-    liabilityInsuranceDoc: null,
-
-    hasBusinessLicense: null,
-    businessLicenseDoc: null,
-
-    walkRadius: '',
-    maxPetsPerWalk: '',
-    preferredCommunication: '',
-
-    declarationAccurate: false,
-    declarationVerifyOk: false,
-    declarationComply: false,
-
-    signature: '',
-    signatureDate: ''
-  })
-
+  const [formData, setFormData] = useState(getInitialFormData)   // 🔹 use helper here
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
@@ -226,16 +228,20 @@ const PetWalkerProviderKYC = () => {
       if (formData.signature) formDataToSend.append('signature', formData.signature)
       if (formData.signatureDate) formDataToSend.append('signatureDate', formData.signatureDate)
 
-      // Debug (optional)
-      // for (let [k, v] of formDataToSend.entries()) { console.log(k, v) }
-
       // Call API
       console.log("*******body****************", formDataToSend)
       const response = await useJwt.metavetToWalkerKyc(formDataToSend)
       console.log("response *************" , response)
       console.log('Success:', response.data)
+
       setSuccess(true)
       setError(null)
+
+      // 🔹 Reset form after successful submit
+      setFormData(getInitialFormData())
+
+      // (optional) agar native form bhi reset karna ho:
+      // e.target.reset()
 
     } catch (err) {
       console.error('Error submitting form:', err)
@@ -264,7 +270,6 @@ const PetWalkerProviderKYC = () => {
     }
     // otherwise allow form submit to proceed (form's onSubmit will run)
   }
-
   return (
     <div className="min-h-screen px-4 py-8 bg-gray-50">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">

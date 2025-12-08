@@ -1,50 +1,54 @@
 import React, { useState } from 'react'
 import userJwt from "./../../../../enpoints/jwt/useJwt"
 
+// 🔹 Helper: initial form state yahan rakha
+const getInitialFormData = () => ({
+  fullLegalName: '',
+  businessName: '',
+  email: '',
+  phone: '',
+  address: '',
+  serviceArea: '',
+  yearsExperience: '',
+
+  hasCertifications: null,
+  certificationDetails: '',
+  certFile: null,
+
+  educationBackground: '',
+  hasInsurance: null,
+  insuranceProvider: '',
+  insurancePolicyNumber: '',
+  insuranceExpiry: '',
+  insuranceFile: null,
+
+  criminalCheck: null,
+  criminalCheckFile: null,
+
+  liabilityInsurance: null,
+  liabilityFile: null,
+  businessLicense: null,
+  businessLicenseFile: null,
+
+  servicesOffered: [],
+  servicesOtherText: '',
+  specializations: [],
+  specializationOtherText: '',
+  serviceRadius: '',
+
+  declarations: {
+    infoTrue: false,
+    verifyOK: false,
+    abideStandards: false
+  },
+
+  signature: '',
+  signatureDate: ''
+})
+
 const BehaviourSpecialistKYC = () => {
-  const [formData, setFormData] = useState({
-    fullLegalName: '',
-    businessName: '',
-    email: '',
-    phone: '',
-    address: '',
-    serviceArea: '',
-    yearsExperience: '',
-
-    hasCertifications: null,
-    certificationDetails: '',
-    certFile: null,
-
-    educationBackground: '',
-    hasInsurance: null,
-    insuranceProvider: '',
-    insurancePolicyNumber: '',
-    insuranceExpiry: '',
-    insuranceFile: null,
-
-    criminalCheck: null,
-    criminalCheckFile: null,
-
-    liabilityInsurance: null,
-    liabilityFile: null,
-    businessLicense: null,
-    businessLicenseFile: null,
-
-    servicesOffered: [],
-    servicesOtherText: '',
-    specializations: [],
-    specializationOtherText: '',
-    serviceRadius: '',
-
-    declarations: {
-      infoTrue: false,
-      verifyOK: false,
-      abideStandards: false
-    },
-
-    signature: '',
-    signatureDate: ''
-  })
+  // 🔹 Ab state helper se aa rahi hai
+  const [formData, setFormData] = useState(getInitialFormData)
 
   // --- helper maps to match backend enum names ---
   const servicesMap = {
@@ -135,7 +139,7 @@ const BehaviourSpecialistKYC = () => {
       if (formData.hasInsurance !== null) fd.append('hasInsurance', String(!!formData.hasInsurance))
       if (formData.insuranceProvider) fd.append('insuranceProvider', formData.insuranceProvider)
       if (formData.insurancePolicyNumber) fd.append('insurancePolicyNumber', formData.insurancePolicyNumber)
-      if (formData.insuranceExpiry) fd.append('insuranceExpiry', formData.insuranceExpiry) // yyyy-mm-dd okay for LocalDate
+      if (formData.insuranceExpiry) fd.append('insuranceExpiry', formData.insuranceExpiry)
       if (formData.insuranceFile) fd.append('insuranceDoc', formData.insuranceFile, formData.insuranceFile.name)
 
       // --- Criminal check ---
@@ -180,53 +184,11 @@ const BehaviourSpecialistKYC = () => {
       // send to backend using your provided service
       const resp = await userJwt.metavetToBehaviouristKyc(fd)
 
-      // response handling
       if (resp && resp.status >= 200 && resp.status < 300) {
         // alert('Behaviourist KYC created successfully.')
-        // reset the form
-        setFormData({
-          fullLegalName: '',
-          businessName: '',
-          email: '',
-          phone: '',
-          address: '',
-          serviceArea: '',
-          yearsExperience: '',
 
-          hasCertifications: null,
-          certificationDetails: '',
-          certFile: null,
-
-          educationBackground: '',
-          hasInsurance: null,
-          insuranceProvider: '',
-          insurancePolicyNumber: '',
-          insuranceExpiry: '',
-          insuranceFile: null,
-
-          criminalCheck: null,
-          criminalCheckFile: null,
-
-          liabilityInsurance: null,
-          liabilityFile: null,
-          businessLicense: null,
-          businessLicenseFile: null,
-
-          servicesOffered: [],
-          servicesOtherText: '',
-          specializations: [],
-          specializationOtherText: '',
-          serviceRadius: '',
-
-          declarations: {
-            infoTrue: false,
-            verifyOK: false,
-            abideStandards: false
-          },
-
-          signature: '',
-          signatureDate: ''
-        })
+        // 🔹 SUCCESS: form reset with helper
+        setFormData(getInitialFormData())
       } else {
         const msg = resp && resp.data ? resp.data : 'Unexpected server response.'
         // alert('Submission failed: ' + msg)
