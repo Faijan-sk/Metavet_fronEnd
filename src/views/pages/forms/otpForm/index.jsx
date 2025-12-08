@@ -254,7 +254,7 @@ const handleOtpSubmit = async (data) => {
     }
 
     try {
-      debugger
+      
       const res = await jwt.login(loginPayload);
       console.log("resend otp", res);
       
