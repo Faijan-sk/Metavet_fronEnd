@@ -1,6 +1,52 @@
 import React, { useEffect, useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
+// Initial empty form state (so we can reset easily after success)
+const initialFormData = {
+  petUid: '',
+  petNames: '',
+  breedType: '',
+  age: '',
+  petSpecies: '',
+
+  energyLevel: '',
+  walkingExperience: '',
+  preferredWalkType: '',
+  preferredWalkDuration: '',
+  customWalkDuration: '',
+  frequency: '',
+  frequencyOther: '',
+  preferredTimeOfDay: '',
+  preferredStartDate: '',
+
+  leashBehavior: [],
+  leashBehaviorOther: '',
+  knownTriggers: '',
+  socialCompatibility: '',
+  handlingNotes: [],
+  handlingNotesOther: '',
+  comfortingMethods: '',
+
+  medicalConditions: null,
+  medicalConditionsDetails: '',
+  medications: null,
+  medicationsDetails: '',
+  emergencyVetInfo: '',
+
+  startingLocation: '',
+  addressMeetingPoint: '',
+  accessInstructions: '',
+  backupContact: '',
+  postWalkPreferences: [],
+
+  additionalServices: [],
+  additionalServicesOther: '',
+
+  consent: false,
+  signature: '',
+  signatureDate: ''
+}
+
 const PetWalkerKYC = () => {
   const [pets, setPets] = useState([])
   const [loadingPets, setLoadingPets] = useState(false)
@@ -11,51 +57,7 @@ const PetWalkerKYC = () => {
   const [apiError, setApiError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null)
 
-  // Add hidden pet fields to initial state so they exist and are sent on submit
-  const [formData, setFormData] = useState({
-    petUid: '',
-    petNames: '',
-    breedType: '',
-    age: '',
-    petSpecies: '',
-
-    energyLevel: '',
-    walkingExperience: '',
-    preferredWalkType: '',
-    preferredWalkDuration: '',
-    customWalkDuration: '',
-    frequency: '',
-    frequencyOther: '',
-    preferredTimeOfDay: '',
-    preferredStartDate: '',
-
-    leashBehavior: [],
-    leashBehaviorOther: '',
-    knownTriggers: '',
-    socialCompatibility: '',
-    handlingNotes: [],
-    handlingNotesOther: '',
-    comfortingMethods: '',
-
-    medicalConditions: null,
-    medicalConditionsDetails: '',
-    medications: null,
-    medicationsDetails: '',
-    emergencyVetInfo: '',
-
-    startingLocation: '',
-    addressMeetingPoint: '',
-    accessInstructions: '',
-    backupContact: '',
-    postWalkPreferences: [],
-
-    additionalServices: [],
-    additionalServicesOther: '',
-
-    consent: false,
-    signature: '',
-    signatureDate: ''
-  })
+  const [formData, setFormData] = useState(initialFormData)
 
   // Generic setter that validates input against a provided regex.
   // Allows empty string so users can clear fields.
@@ -127,7 +129,6 @@ const PetWalkerKYC = () => {
         setPetsError(null)
         const response = await useJwt.getAllPetsByOwner()
 
-        // Defensive extraction because useJwt may return axios response or direct payload
         const items = response?.data?.data ?? response?.data ?? response ?? []
         const arr = Array.isArray(items) ? items : (Array.isArray(items.data) ? items.data : [])
         setPets(arr)
@@ -144,19 +145,15 @@ const PetWalkerKYC = () => {
   }, [])
 
   const buildPayloadForBackend = (raw) => {
-    // Convert string-number fields to numbers (if provided)
     const ageNum = raw.age === '' || raw.age === null ? null : Number(raw.age)
-    const customDurNum = raw.customWalkDuration === '' || raw.customWalkDuration === null
-      ? null
-      : Number(raw.customWalkDuration)
+    const customDurNum =
+      raw.customWalkDuration === '' || raw.customWalkDuration === null
+        ? null
+        : Number(raw.customWalkDuration)
 
-    // Ensure boolean fields are actual booleans or null
     const medicalConditions = raw.medicalConditions === null ? null : !!raw.medicalConditions
     const medications = raw.medications === null ? null : !!raw.medications
     const consent = !!raw.consent
-
-    // Dates: backend expects ISO local dates like "2025-11-14" which HTML date inputs already provide
-    // Arrays are left as-is (checkbox arrays)
 
     return {
       petUid: raw.petUid || null,
@@ -210,17 +207,61 @@ const PetWalkerKYC = () => {
     setApiError(null)
     setSuccessMessage(null)
 
-    // Basic client-side validations (a few important ones)
+    // -------- Client-side validations (important ones matching backend) --------
+    const errors = []
+
+    if (!formData.petUid) {
+      errors.push("Please select your pet.")
+    }
+
     if (!formData.consent) {
-      setApiError("Consent is required to proceed.")
-      return
+      errors.push("Consent is required to proceed.")
     }
     if (!formData.signature || formData.signature.trim() === '') {
-      setApiError("Signature is required.")
-      return
+      errors.push("Signature is required.")
     }
     if (!formData.signatureDate) {
-      setApiError("Signature date is required.")
+      errors.push("Signature date is required.")
+    }
+
+    if (formData.preferredWalkDuration === 'Custom') {
+      if (!formData.customWalkDuration || Number(formData.customWalkDuration) <= 0) {
+        errors.push("Custom walk duration must be greater than 0.")
+      }
+    }
+
+    if (formData.frequency === 'Other') {
+      if (!formData.frequencyOther || formData.frequencyOther.trim() === '') {
+        errors.push("Please specify the frequency when 'Other' is selected.")
+      }
+    }
+
+    if (formData.leashBehavior.includes('Other')) {
+      if (!formData.leashBehaviorOther || formData.leashBehaviorOther.trim() === '') {
+        errors.push("Please specify leash behavior details when 'Other' is selected.")
+      }
+    }
+
+    if (formData.handlingNotes.includes('Other')) {
+      if (!formData.handlingNotesOther || formData.handlingNotesOther.trim() === '') {
+        errors.push("Please specify handling notes when 'Other' is selected.")
+      }
+    }
+
+    if (formData.medicalConditions === true) {
+      if (!formData.medicalConditionsDetails || formData.medicalConditionsDetails.trim() === '') {
+        errors.push("Please provide medical condition details when 'Medical Conditions' is Yes.")
+      }
+    }
+
+    if (formData.medications === true) {
+      if (!formData.medicationsDetails || formData.medicationsDetails.trim() === '') {
+        errors.push("Please provide medication details when 'Medications' is Yes.")
+      }
+    }
+
+    if (errors.length > 0) {
+      setApiError(errors.join(' '))
       return
     }
 
@@ -228,81 +269,80 @@ const PetWalkerKYC = () => {
     console.log('Submitting Walker KYC payload:', payload)
 
     setSubmitting(true)
-    // try {
-    //   // Try to obtain token from useJwt if available
-    //   let token = null
-    //   try {
-    //     token = (typeof useJwt.getToken === 'function') ? useJwt.getToken() : null
-    //   } catch (tErr) {
-    //     // ignore - not all useJwt implementations have getToken
-    //     token = null
-    //   }
+    try {
+      // Axios-style call: useJwt.walkerToClientKyc(payload) expected to be axios.post(...)
+      const res = await useJwt.walkerToClientKyc(payload)
+      const data = res?.data ?? res
 
-    //   const headers = {
-    //     'Content-Type': 'application/json'
-    //   }
-    //   if (token) headers['Authorization'] = `Bearer ${token}`
-
-    //   // NOTE: replace the base URL if your backend runs under a different host/port
-    //   const res = await fetch('/api/walker-kyc', {
-    //     method: 'POST',
-    //     headers,
-    //     body: JSON.stringify(payload)
-    //   })
-
-    const res = await useJwt.walkerToClientKyc(payload)
-
-      if (!res.ok) {
-        // try to parse JSON error message, else fallback to text
-        let errText = null
-        try {
-          const body = await res.json()
-          // backend may return string message or structured error
-          errText = body?.message ?? JSON.stringify(body)
-        } catch (jsonErr) {
-          errText = await res.text()
-        }
-        setApiError(`Submission failed (${res.status}): ${errText}`)
-        console.error('Submission failed:', res.status, errText)
+      if (data && data.success === false) {
+        const backendMsg = data.details || data.message || 'Submission failed due to validation error.'
+        setApiError(backendMsg)
+        console.error('Submission failed (backend validation):', data)
         return
       }
 
-      const result = await res.json()
-      console.log('Submission successful:', result)
+      console.log('Submission successful:', data)
       setSuccessMessage('Walker KYC submitted successfully.')
-      // optionally clear form or redirect — here we keep it and disable submit briefly
-      // Resetting some fields (but keep pet selection) — change if you want full clear:
-      // setFormData({ ...initial empty state... }) -- omitted to avoid accidental loss
-    // } catch (err) {
-    //   console.error('Submission error:', err)
-    //   setApiError(err?.message ?? String(err))
-    // } finally {
-    //   setSubmitting(false)
-    // }
+
+      // ✅ Reset full form & selection after successful submit
+      setFormData(initialFormData)
+      setSelectedPetId('')
+    } catch (err) {
+      console.error('Submission error:', err)
+      // Handle axios error shape
+      const backend = err?.response?.data
+      let message = err?.message ?? 'Unknown error during submission.'
+      if (backend) {
+        message = backend.details || backend.message || message
+      }
+      setApiError(`Submission failed: ${message}`)
+    } finally {
+      setSubmitting(false)
+    }
   }
+
+  // Today's date (YYYY-MM-DD) for min/max in date inputs
+  const today = new Date().toISOString().split("T")[0]
 
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🚶‍♂️ Pet Walker → Client KYC Summary</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">
+          🚶‍♂️ Pet Walker → Client KYC Summary
+        </h1>
         <p className="text-center text-gray-600 mb-4">Metavet Pet Walking Services</p>
 
-       
-        {successMessage && <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">{successMessage}</div>}
+        {successMessage && (
+          <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
+            {successMessage}
+          </div>
+        )}
+
+        {apiError && (
+          <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
+            {apiError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Pet & Routine Overview */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🟦 Pet & Routine Overview</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              🟦 Pet & Routine Overview
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Select your pet:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Select your pet:
+                </label>
 
                 {loadingPets ? (
                   <div className="text-sm text-gray-500">Loading pets...</div>
                 ) : petsError ? (
-                  <div className="text-sm text-red-500">Error loading pets: {petsError}</div>
+                  <div className="text-sm text-red-500">
+                    Error loading pets: {petsError}
+                  </div>
                 ) : (
                   <select
                     value={selectedPetId}
@@ -319,9 +359,11 @@ const PetWalkerKYC = () => {
                 )}
               </div>
 
-              {/* Pet Name - HIDDEN from user, but kept in state and will be sent on submit */}
+              {/* Pet Name - hidden */}
               <div className="hidden">
-                <label className="block font-medium text-gray-700 mb-2">Pet Name(s):</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Pet Name(s):
+                </label>
                 <input
                   type="text"
                   value={formData.petNames}
@@ -332,9 +374,11 @@ const PetWalkerKYC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Breed/Type - hidden from user but kept in code */}
+                {/* Breed/Type - hidden */}
                 <div className="hidden">
-                  <label className="block font-medium text-gray-700 mb-2">Breed/Type:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Breed/Type:
+                  </label>
                   <input
                     type="text"
                     value={formData.breedType}
@@ -343,9 +387,11 @@ const PetWalkerKYC = () => {
                   />
                 </div>
 
-                {/* Age - hidden from user but kept in code */}
+                {/* Age - hidden */}
                 <div className="hidden">
-                  <label className="block font-medium text-gray-700 mb-2">Age:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Age:
+                  </label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -359,7 +405,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Energy Level:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Energy Level:
+                  </label>
                   <select
                     value={formData.energyLevel}
                     onChange={(e) => handleInputChange('energyLevel', e.target.value)}
@@ -373,7 +421,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Walking Experience:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Walking Experience:
+                  </label>
                   <select
                     value={formData.walkingExperience}
                     onChange={(e) => handleInputChange('walkingExperience', e.target.value)}
@@ -388,7 +438,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Preferred Walk Type:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Preferred Walk Type:
+                  </label>
                   <select
                     value={formData.preferredWalkType}
                     onChange={(e) => handleInputChange('preferredWalkType', e.target.value)}
@@ -404,7 +456,9 @@ const PetWalkerKYC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Preferred Walk Duration:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Preferred Walk Duration:
+                  </label>
                   <div className="space-y-2">
                     {['15', '30', '60', 'Custom'].map(d => (
                       <label key={d} className="flex items-center space-x-2 cursor-pointer">
@@ -416,7 +470,9 @@ const PetWalkerKYC = () => {
                           onChange={(e) => handleInputChange('preferredWalkDuration', e.target.value)}
                           className="w-4 h-4 text-primary"
                         />
-                        <span className="text-gray-700">{d === 'Custom' ? 'Custom → Please specify' : d + ' minutes'}</span>
+                        <span className="text-gray-700">
+                          {d === 'Custom' ? 'Custom → Please specify' : d + ' minutes'}
+                        </span>
                       </label>
                     ))}
 
@@ -436,7 +492,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Frequency:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Frequency:
+                  </label>
                   <div className="space-y-2">
                     {['Daily', 'Weekly', 'As needed', 'Other'].map(opt => (
                       <label key={opt} className="flex items-center space-x-2 cursor-pointer">
@@ -448,7 +506,9 @@ const PetWalkerKYC = () => {
                           onChange={(e) => handleInputChange('frequency', e.target.value)}
                           className="w-4 h-4 text-primary"
                         />
-                        <span className="text-gray-700">{opt}{opt === 'Other' ? ' → Please specify' : ''}</span>
+                        <span className="text-gray-700">
+                          {opt}{opt === 'Other' ? ' → Please specify' : ''}
+                        </span>
                       </label>
                     ))}
 
@@ -465,7 +525,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Preferred Time of Day:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Preferred Time of Day:
+                  </label>
                   <select
                     value={formData.preferredTimeOfDay}
                     onChange={(e) => handleInputChange('preferredTimeOfDay', e.target.value)}
@@ -480,24 +542,25 @@ const PetWalkerKYC = () => {
                 </div>
               </div>
 
-             <div>
-  <label className="block font-medium text-gray-700 mb-2">
-    Preferred Start Date:
-  </label>
+              <div>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Preferred Start Date:
+                </label>
 
-  <input
-    type="date"
-    value={formData.preferredStartDate}
-    min={new Date().toISOString().split("T")[0]} // ⛔ prevents past dates
-    onChange={(e) => handleInputChange("preferredStartDate", e.target.value)}
-    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-  />
-</div>
+                <input
+                  type="date"
+                  value={formData.preferredStartDate}
+                  min={today} // backend: @FutureOrPresent
+                  onChange={(e) => handleInputChange("preferredStartDate", e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
 
-
-              {/* Species - hidden from user but kept in code */}
+              {/* Species - hidden */}
               <div className="hidden">
-                <label className="block font-medium text-gray-700 mb-2">Species:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Species:
+                </label>
                 <input
                   type="text"
                   value={formData.petSpecies}
@@ -510,11 +573,15 @@ const PetWalkerKYC = () => {
 
           {/* Behavior & Handling */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🟦 Behavior & Handling</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              🟦 Behavior & Handling
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Leash Behavior:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Leash Behavior:
+                </label>
                 <div className="space-y-2">
                   {['Pulls', 'Walks nicely', 'Lunges at other dogs', 'Reactive', 'Other'].map(opt => (
                     <label key={opt} className="flex items-center space-x-2 cursor-pointer">
@@ -541,7 +608,9 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Known Triggers:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Known Triggers:
+                </label>
                 <textarea
                   value={formData.knownTriggers}
                   onChange={(e) => setIfValid('knownTriggers', e.target.value, /^[A-Za-z0-9\s,.'"-]*$/u)}
@@ -553,7 +622,9 @@ const PetWalkerKYC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Social Compatibility:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Social Compatibility:
+                  </label>
                   <select
                     value={formData.socialCompatibility}
                     onChange={(e) => handleInputChange('socialCompatibility', e.target.value)}
@@ -567,7 +638,9 @@ const PetWalkerKYC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Handling Notes:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Handling Notes:
+                  </label>
                   <div className="space-y-2">
                     {['Needs harness', 'Wears muzzle', 'Prefers calm approach', 'Avoids stairs', 'Other'].map(opt => (
                       <label key={opt} className="flex items-center space-x-2 cursor-pointer">
@@ -595,7 +668,9 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Comforting Methods or Cues:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Comforting Methods or Cues:
+                </label>
                 <textarea
                   value={formData.comfortingMethods}
                   onChange={(e) => setIfValid('comfortingMethods', e.target.value, /^[A-Za-z0-9\s,.'"-]*$/u)}
@@ -609,11 +684,15 @@ const PetWalkerKYC = () => {
 
           {/* Health & Safety */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🟦 Health & Safety</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              🟦 Health & Safety
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Medical Conditions:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Medical Conditions:
+                </label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -650,7 +729,9 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Medications:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Medications:
+                </label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -676,23 +757,23 @@ const PetWalkerKYC = () => {
 
                   {formData.medications === true && (
                     <textarea
-  value={formData.medicationsDetails}
-  onChange={(e) => {
-    const allowed = e.target.value.replace(/[^A-Za-z0-9\s.,]/g, ""); 
-    setIfValid("medicationsDetails", allowed, /^[A-Za-z0-9\s.,]*$/);
-  }}
-  rows="2"
-  placeholder="Name, dosage, timing..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
-
+                      value={formData.medicationsDetails}
+                      onChange={(e) => {
+                        const allowed = e.target.value.replace(/[^A-Za-z0-9\s.,]/g, "")
+                        setIfValid("medicationsDetails", allowed, /^[A-Za-z0-9\s.,]*$/)
+                      }}
+                      rows="2"
+                      placeholder="Name, dosage, timing..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Emergency Vet Info:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Emergency Vet Info:
+                </label>
                 <input
                   type="text"
                   value={formData.emergencyVetInfo}
@@ -706,11 +787,15 @@ const PetWalkerKYC = () => {
 
           {/* Access & Logistics */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🟦 Access & Logistics</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              🟦 Access & Logistics
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Starting Location:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Starting Location:
+                </label>
                 <select
                   value={formData.startingLocation}
                   onChange={(e) => handleInputChange('startingLocation', e.target.value)}
@@ -725,7 +810,9 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Address or Meeting Point:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Address or Meeting Point:
+                </label>
                 <input
                   type="text"
                   value={formData.addressMeetingPoint}
@@ -737,7 +824,9 @@ const PetWalkerKYC = () => {
 
               {(formData.startingLocation === 'Home' || formData.startingLocation === 'Apartment') && (
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Access Instructions:</label>
+                  <label className="block font-medium text-gray-700 mb-2">
+                    Access Instructions:
+                  </label>
                   <textarea
                     value={formData.accessInstructions}
                     onChange={(e) => setIfValid('accessInstructions', e.target.value, /^[A-Za-z0-9\s,.'"#:\/ -]*$/u)}
@@ -749,7 +838,9 @@ const PetWalkerKYC = () => {
               )}
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Backup Contact (optional):</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Backup Contact (optional):
+                </label>
                 <input
                   type="text"
                   value={formData.backupContact}
@@ -760,7 +851,9 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Post-Walk Preferences:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Post-Walk Preferences:
+                </label>
                 <div className="space-y-2">
                   {['Text update', 'Photo update', 'Walk summary in app'].map(opt => (
                     <label key={opt} className="flex items-center space-x-2 cursor-pointer">
@@ -780,11 +873,15 @@ const PetWalkerKYC = () => {
 
           {/* Services & Add-ons */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">🟦 Services & Add-ons</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              🟦 Services & Add-ons
+            </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Additional Services:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Additional Services:
+                </label>
                 <div className="space-y-2">
                   {['Feeding', 'Water', 'Towel Dry', 'Medication'].map(opt => (
                     <label key={opt} className="flex items-center space-x-2 cursor-pointer">
@@ -824,7 +921,9 @@ const PetWalkerKYC = () => {
 
           {/* Consent & Signature */}
           <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">✅ Consent & Signature</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
+              ✅ Consent & Signature
+            </h2>
 
             <div className="space-y-4">
               <label className="flex items-start space-x-2">
@@ -834,11 +933,15 @@ const PetWalkerKYC = () => {
                   onChange={(e) => handleInputChange('consent', e.target.checked)}
                   className="w-4 h-4 text-primary mt-1"
                 />
-                <span className="text-gray-700">I confirm that the information provided is accurate and consent to share it with my assigned walker through the Metavet platform.</span>
+                <span className="text-gray-700">
+                  I confirm that the information provided is accurate and consent to share it with my assigned walker through the Metavet platform.
+                </span>
               </label>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Signature (type full name):</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Signature (type full name):
+                </label>
                 <input
                   type="text"
                   value={formData.signature}
@@ -849,24 +952,27 @@ const PetWalkerKYC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Date:</label>
+                <label className="block font-medium text-gray-700 mb-2">
+                  Date:
+                </label>
                 <input
-  type="date"
-  value={formData.signatureDate}
-  min={new Date().toISOString().split("T")[0]}   // ⛔ blocks all past dates
-  onChange={(e) => handleInputChange('signatureDate', e.target.value)}
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                  type="date"
+                  value={formData.signatureDate}
+                  max={today}  // ✅ @PastOrPresent: blocks future dates
+                  onChange={(e) => handleInputChange('signatureDate', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
               </div>
             </div>
           </section>
- {apiError && <div className="mb-4 text-red-600 bg-red-50 p-3 rounded">{apiError}</div>}
+
           <div className="pt-6">
             <button
               type="submit"
               disabled={submitting}
-              className={`w-full ${submitting ? 'opacity-60 cursor-not-allowed' : 'bg-primary hover:opacity-90'} text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
+              className={`w-full ${
+                submitting ? 'opacity-60 cursor-not-allowed' : 'bg-primary hover:opacity-90'
+              } text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
             >
               {submitting ? 'Submitting...' : 'Submit Walker KYC'}
             </button>
