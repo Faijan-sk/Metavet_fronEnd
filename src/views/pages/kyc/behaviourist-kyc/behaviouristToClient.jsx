@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import useJwt from "./../../../../enpoints/jwt/useJwt"
+import useJwt from "./../../../../enpoints/Jwt/useJwt"  // 👈 yahi path agar tumhare project me hai
 
 const PetBehaviorForm = () => {
   const [formData, setFormData] = useState({
-    // NEW: selected pet UID (keeps all your existing fields)
+    // NOT SENT TO BACKEND, only for UI
     selectedPetUid: '',
 
     // Step 1: Behavioral Concern Overview
@@ -22,7 +22,7 @@ const PetBehaviorForm = () => {
     seriousIncidents: '',
 
     // Step 3: Training & Tools History
-    workedWithTrainer: null,
+    workedWithTrainer: null, // backend @NotNull
     trainerApproaches: '',
     currentTrainingTools: [],
     otherTrainingTool: '',
@@ -34,9 +34,9 @@ const PetBehaviorForm = () => {
     offLeashTime: '',
     timeAlone: '',
     exerciseStimulation: '',
-    otherPets: null,
+    otherPets: null, // backend @NotNull
     otherPetsDetails: '',
-    childrenInHome: null,
+    childrenInHome: null, // backend @NotNull
     childrenAges: '',
     petResponseWithChildren: '',
     homeEnvironment: '',
@@ -52,13 +52,14 @@ const PetBehaviorForm = () => {
     consentAccuracy: false
   })
 
-  // local UI state for pets list + loading/errors
-  const [pets, setPets] = useState([]) // always prefer array here
+  const [pets, setPets] = useState([])
   const [petsLoading, setPetsLoading] = useState(true)
   const [petsError, setPetsError] = useState(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' })
+
+  // ---------- Helpers ----------
 
   const handleCheckboxArray = (field, value) => {
     setFormData(prev => ({
@@ -69,7 +70,8 @@ const PetBehaviorForm = () => {
     }))
   }
 
-  const handleRadio = (field, val) => setFormData(prev => ({ ...prev, [field]: val }))
+  const handleRadio = (field, val) =>
+    setFormData(prev => ({ ...prev, [field]: val }))
 
   const setIfValid = (field, value, regex) => {
     if (value === '' || regex.test(value)) {
@@ -77,161 +79,325 @@ const PetBehaviorForm = () => {
     }
   }
 
+  // ---------- SUBMIT ----------
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitStatus({ type: '', message: '' })
 
-    // Validation
+    // ---------- FRONTEND VALIDATIONS (mirror backend) ----------
+
     if (!formData.selectedPetUid) {
-      setSubmitStatus({ type: 'error', message: 'Please select a pet from the dropdown' })
+      setSubmitStatus({ type: 'error', message: 'Please select a pet from the dropdown.' })
       return
     }
 
-    if (formData.behavioralChallenges.length === 0) {
-      setSubmitStatus({ type: 'error', message: 'Please select at least one behavioral challenge' })
+    if (!Array.isArray(formData.behavioralChallenges) || formData.behavioralChallenges.length === 0) {
+      setSubmitStatus({ type: 'error', message: 'Please select at least one behavioral challenge.' })
       return
     }
 
-    if (formData.behavioralChallenges.includes('Aggression') && !formData.aggressionBiteDescription) {
-      setSubmitStatus({ type: 'error', message: 'Please describe aggression incidents' })
+    if (!formData.behaviorStartTime) {
+      setSubmitStatus({ type: 'error', message: 'Please select when the behavior first began.' })
       return
     }
 
-    if (formData.behavioralChallenges.includes('Other') && !formData.otherBehaviorDescription) {
-      setSubmitStatus({ type: 'error', message: 'Please describe other behavioral challenge' })
+    if (!formData.behaviorFrequency) {
+      setSubmitStatus({ type: 'error', message: 'Please select how frequently the issue occurs.' })
+      return
+    }
+
+    if (
+      formData.behavioralChallenges.includes('Aggression') &&
+      !formData.aggressionBiteDescription.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please describe aggression or biting incidents.'
+      })
+      return
+    }
+
+    if (
+      formData.behavioralChallenges.includes('Other') &&
+      !formData.otherBehaviorDescription.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please describe the "Other" behavioral challenge.'
+      })
+      return
+    }
+
+    if (
+      formData.behaviorFrequency === 'Only in specific situations' &&
+      !formData.specificSituationsDescription.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please describe the specific situations where the behavior occurs.'
+      })
+      return
+    }
+
+    if (formData.workedWithTrainer === null) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please specify if you have worked with a trainer or behaviourist before.'
+      })
+      return
+    }
+
+    if (
+      formData.workedWithTrainer === true &&
+      !formData.trainerApproaches.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please describe what approaches the trainer used and what did/didn’t work.'
+      })
+      return
+    }
+
+    if (
+      formData.currentTrainingTools.includes('Other') &&
+      !formData.otherTrainingTool.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please specify the "Other" training tool you are using.'
+      })
+      return
+    }
+
+    if (
+      formData.petMotivation === 'Yes' &&
+      !formData.favoriteRewards.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please specify your pet’s favorite rewards.'
+      })
+      return
+    }
+
+    if (formData.otherPets === null) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please specify if there are other pets in the household.'
+      })
+      return
+    }
+
+    if (
+      formData.otherPets === true &&
+      !formData.otherPetsDetails.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please provide details about other pets in the household.'
+      })
+      return
+    }
+
+    if (formData.childrenInHome === null) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please specify if there are children in the home.'
+      })
+      return
+    }
+
+    if (formData.childrenInHome === true) {
+      if (!formData.childrenAges.trim()) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'Please specify the ages of the children in the home.'
+        })
+        return
+      }
+      if (!formData.petResponseWithChildren.trim()) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'Please describe how your pet responds with children.'
+        })
+        return
+      }
+    }
+
+    if (!formData.homeEnvironment) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please select your home environment.'
+      })
+      return
+    }
+
+    if (
+      formData.homeEnvironment === 'Other' &&
+      !formData.homeEnvironmentOther.trim()
+    ) {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please describe your home environment.'
+      })
       return
     }
 
     if (!formData.consentAccuracy) {
-      setSubmitStatus({ type: 'error', message: 'Please confirm accuracy of information' })
+      setSubmitStatus({
+        type: 'error',
+        message: 'Please confirm that the information provided is accurate (consent checkbox).'
+      })
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // Build payload that matches your backend DTO shape.
-      // Note: backend expects lists for behavioralChallenges, aggressiveBehaviors, currentTrainingTools.
+      // ---------- BUILD PAYLOAD EXACTLY LIKE DTO ----------
       const payload = {
-        // map selectedPetUid -> petUid (your backend service expects petUid)
         petUid: formData.selectedPetUid,
 
         // Step 1
-        behavioralChallenges: Array.isArray(formData.behavioralChallenges) ? formData.behavioralChallenges : (formData.behavioralChallenges ? [formData.behavioralChallenges] : []),
-        aggressionBiteDescription: formData.aggressionBiteDescription,
-        otherBehaviorDescription: formData.otherBehaviorDescription,
-        behaviorStartTime: formData.behaviorStartTime,
-        behaviorFrequency: formData.behaviorFrequency,
-        specificSituationsDescription: formData.specificSituationsDescription,
+        behavioralChallenges: Array.isArray(formData.behavioralChallenges)
+          ? formData.behavioralChallenges
+          : (formData.behavioralChallenges
+            ? [formData.behavioralChallenges]
+            : []),
+        aggressionBiteDescription: formData.aggressionBiteDescription || null,
+        otherBehaviorDescription: formData.otherBehaviorDescription || null,
+        behaviorStartTime: formData.behaviorStartTime || '',
+        behaviorFrequency: formData.behaviorFrequency || '',
+        specificSituationsDescription: formData.specificSituationsDescription || null,
 
         // Step 2
-        knownTriggers: formData.knownTriggers,
-        behaviorProgress: formData.behaviorProgress,
-        behaviorProgressContext: formData.behaviorProgressContext,
-        aggressiveBehaviors: Array.isArray(formData.aggressiveBehaviors) ? formData.aggressiveBehaviors : (formData.aggressiveBehaviors ? [formData.aggressiveBehaviors] : []),
-        seriousIncidents: formData.seriousIncidents,
+        knownTriggers: formData.knownTriggers || null,
+        behaviorProgress: formData.behaviorProgress || null,
+        behaviorProgressContext: formData.behaviorProgressContext || null,
+        aggressiveBehaviors: Array.isArray(formData.aggressiveBehaviors)
+          ? formData.aggressiveBehaviors
+          : (formData.aggressiveBehaviors
+            ? [formData.aggressiveBehaviors]
+            : []),
+        seriousIncidents: formData.seriousIncidents || null,
 
         // Step 3
         workedWithTrainer: formData.workedWithTrainer,
-        trainerApproaches: formData.trainerApproaches,
-        currentTrainingTools: Array.isArray(formData.currentTrainingTools) ? formData.currentTrainingTools : (formData.currentTrainingTools ? [formData.currentTrainingTools] : []),
-        otherTrainingTool: formData.otherTrainingTool,
-        petMotivation: formData.petMotivation,
-        favoriteRewards: formData.favoriteRewards,
+        trainerApproaches: formData.trainerApproaches || null,
+        currentTrainingTools: Array.isArray(formData.currentTrainingTools)
+          ? formData.currentTrainingTools
+          : (formData.currentTrainingTools
+            ? [formData.currentTrainingTools]
+            : []),
+        otherTrainingTool: formData.otherTrainingTool || null,
+        petMotivation: formData.petMotivation || null,
+        favoriteRewards: formData.favoriteRewards || null,
 
         // Step 4
-        walksPerDay: formData.walksPerDay,
-        offLeashTime: formData.offLeashTime,
-        timeAlone: formData.timeAlone,
-        exerciseStimulation: formData.exerciseStimulation,
+        walksPerDay: formData.walksPerDay || null,
+        offLeashTime: formData.offLeashTime || null,
+        timeAlone: formData.timeAlone || null,
+        exerciseStimulation: formData.exerciseStimulation || null,
         otherPets: formData.otherPets,
-        otherPetsDetails: formData.otherPetsDetails,
+        otherPetsDetails: formData.otherPetsDetails || null,
         childrenInHome: formData.childrenInHome,
-        childrenAges: formData.childrenAges,
-        petResponseWithChildren: formData.petResponseWithChildren,
-        homeEnvironment: formData.homeEnvironment,
-        homeEnvironmentOther: formData.homeEnvironmentOther,
+        childrenAges: formData.childrenAges || null,
+        petResponseWithChildren: formData.petResponseWithChildren || null,
+        homeEnvironment: formData.homeEnvironment || '',
+        homeEnvironmentOther: formData.homeEnvironmentOther || null,
 
         // Step 5
-        successOutcome: formData.successOutcome,
-        openToAdjustments: formData.openToAdjustments,
-        preferredSessionType: formData.preferredSessionType,
-        additionalNotes: formData.additionalNotes,
+        successOutcome: formData.successOutcome || null,
+        openToAdjustments: formData.openToAdjustments || null,
+        preferredSessionType: formData.preferredSessionType || null,
+        additionalNotes: formData.additionalNotes || null,
 
         // Consent
         consentAccuracy: formData.consentAccuracy
       }
 
-      console.log('Submitting behavior form payload:', payload)
+      console.log('Submitting behavior form payload (JSON):', payload)
 
-      // Primary attempt: call useJwt helper methods if available (most projects have some helper)
-      let apiResponse = null
-      if (useJwt && typeof useJwt.createBehavioristKyc === 'function') {
-        // Preferred explicit helper name
-        apiResponse = await useJwt.createBehavioristKyc(payload)
-      } else if (useJwt && typeof useJwt.submitPetBehavior === 'function') {
-        // Alternative helper name (some projects use generic submit functions)
-        apiResponse = await useJwt.submitPetBehavior(payload)
-      } else if (useJwt && typeof useJwt.post === 'function') {
-        // Generic wrapper that accepts (path, payload)
-        apiResponse = await useJwt.post('/api/behaviorist-kyc', payload)
-      } else {
-        // Fallback to fetch directly (no assumption about auth wrapper).
-        // If your app needs Authorization header, ensure token is available in localStorage or update this to read token from your auth store.
-        // apiResponse = await fetch('/api/behaviorist-kyc', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json'
-        //     // if you need auth: 'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        //   },
-        //   body: JSON.stringify(payload)
-        // })
-console.log("&&&&&&&&&&&&&&&&&" , payload)
-        // apiResponse = await useJwt.behaviouristToClientKyc(payload)
+      // 🔥 yahi line se API hit hogi:
+      const apiResponse = await useJwt.behaviouristToClientKyc(payload)
 
-
-      }
-
-      // Normalize response handling: check for fetch Response vs axios-like
+      // ---------- Axios style response handling ----------
       let success = false
+      let backendMessage = 'Behaviorist KYC created successfully.'
       let responseData = null
 
-      // If apiResponse is a fetch Response (has ok property)
-      // if (apiResponse && typeof apiResponse.ok === 'boolean') {
-      //   if (apiResponse.ok) {
-      //     responseData = await apiResponse.json().catch(() => null)
-      //     success = true
-      //   } else {
-      //     // try to parse error body
-      //     let errBody = null
-      //     try { errBody = await apiResponse.text() } catch (e) { errBody = null }
-      //     throw new Error(errBody || `Server responded with status ${apiResponse.status}`)
-      //   }
-      // } else if (apiResponse && apiResponse.data !== undefined) {
-      //   // axios-like response (data field)
-      //   responseData = apiResponse.data
-      //   success = true
-      // } else if (apiResponse !== null && apiResponse !== undefined) {
-      //   // some other wrapper that returns plain object
-      //   responseData = apiResponse
-      //   success = true
-      // }
+      if (apiResponse && apiResponse.data) {
+        responseData = apiResponse.data
+        success = apiResponse.data.success !== false
+        if (apiResponse.data.message) {
+          backendMessage = apiResponse.data.message
+        }
+      } else {
+        // Agar tumhara behaviouristToClientKyc direct JSON return kare to:
+        responseData = apiResponse
+        success = true
+      }
 
-      // if (success) {
-      //   setSubmitStatus({ type: 'success', message: 'Form submitted successfully!' })
-      //   console.log('Behaviorist KYC created response:', responseData)
+      if (success) {
+        setSubmitStatus({
+          type: 'success',
+          message: backendMessage
+        })
 
-      //   // Reset / reload (preserve your original behavior)
-      //   setTimeout(() => {
-      //     window.location.reload()
-      //   }, 2000)
-      // } else {
-      //   throw new Error('Unknown response from API')
-      // }
+        // reset (pet selection ko rehne do)
+        setFormData(prev => ({
+          ...prev,
+          behavioralChallenges: [],
+          aggressionBiteDescription: '',
+          otherBehaviorDescription: '',
+          behaviorStartTime: '',
+          behaviorFrequency: '',
+          specificSituationsDescription: '',
+          knownTriggers: '',
+          behaviorProgress: '',
+          behaviorProgressContext: '',
+          aggressiveBehaviors: [],
+          seriousIncidents: '',
+          workedWithTrainer: null,
+          trainerApproaches: '',
+          currentTrainingTools: [],
+          otherTrainingTool: '',
+          petMotivation: '',
+          favoriteRewards: '',
+          walksPerDay: '',
+          offLeashTime: '',
+          timeAlone: '',
+          exerciseStimulation: '',
+          otherPets: null,
+          otherPetsDetails: '',
+          childrenInHome: null,
+          childrenAges: '',
+          petResponseWithChildren: '',
+          homeEnvironment: '',
+          homeEnvironmentOther: '',
+          successOutcome: '',
+          openToAdjustments: '',
+          preferredSessionType: '',
+          additionalNotes: '',
+          consentAccuracy: false
+        }))
+      } else {
+        const msg =
+          (responseData && responseData.message) ||
+          'Failed to submit behaviorist KYC. Please check your inputs and try again.'
+        setSubmitStatus({ type: 'error', message: msg })
+      }
 
     } catch (error) {
       console.error('Error submitting form:', error)
-      const msg = (error && error.message) ? error.message : 'Failed to submit form. Please try again.'
+      const msg =
+        (error &&
+          error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        'Failed to submit form. Please try again.'
       setSubmitStatus({
         type: 'error',
         message: msg
@@ -241,23 +407,17 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
     }
   }
 
+  // ---------- FETCH PETS ON MOUNT ----------
+
   useEffect(() => {
-    // fetch pets by owner on mount
     let mounted = true
 
-    async function fetPetByOwner() {
+    async function fetchPetByOwner() {
       setPetsLoading(true)
       setPetsError(null)
       try {
-        // Await the response (important)
         const response = await useJwt.getAllPetsByOwner()
 
-        // Try to normalize response to an array of pets.
-        // Handle common shapes:
-        // 1) { data: [ ... ] }
-        // 2) { data: { data: [ ... ] } }
-        // 3) raw array [...]
-        // 4) { pets: [...] } (less likely)
         let petList = []
 
         if (Array.isArray(response)) {
@@ -268,27 +428,25 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
           petList = response.data.data
         } else if (response && Array.isArray(response.pets)) {
           petList = response.pets
-        } else {
-          // unexpected shape; try to salvage by checking nested values
-          // if response.data is an object containing numeric keys (rare), try Object.values
-          if (response && response.data && typeof response.data === 'object') {
-            const possible = Object.values(response.data).filter(v => Array.isArray(v)).flat()
-            if (possible.length) petList = possible
-          }
+        } else if (response && response.data && typeof response.data === 'object') {
+          const possible = Object.values(response.data).filter(v => Array.isArray(v)).flat()
+          if (possible.length) petList = possible
         }
 
         if (!Array.isArray(petList)) {
-          // ensure fallback to empty array
           petList = []
         }
 
         if (mounted) {
           setPets(petList)
           if (petList.length === 1) {
-            // default select the only pet
-            setFormData(prev => ({ ...prev, selectedPetUid: petList[0].uid || petList[0].id || '' }))
+            const first = petList[0]
+            const uidVal = first.uid || first.id || ''
+            setFormData(prev => ({
+              ...prev,
+              selectedPetUid: uidVal
+            }))
           }
-          // If we got no pets but response contained something, log it to help debug
           if (petList.length === 0) {
             console.warn('getAllPetsByOwner returned no pet array. Raw response:', response)
           }
@@ -303,23 +461,31 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
       }
     }
 
-    fetPetByOwner()
+    fetchPetByOwner()
 
     return () => { mounted = false }
-  }, [])
+  }, [])  // 👈 useJwt dependency ki zaroorat nahi, yeh imported singleton hai
+
+  // ---------- RENDER ----------
 
   return (
-    <div className="min-h-screen px-4 py-8 ">
+    <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">
           🐾 Pet Behaviourist → Client KYC
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          Help us understand your pet's behavioral needs
+          Help us understand your pet&apos;s behavioral needs
         </p>
 
         {submitStatus.message && (
-          <div className={`mb-6 p-4 rounded-lg ${submitStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          <div
+            className={`mb-6 p-4 rounded-lg ${
+              submitStatus.type === 'success'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
+          >
             {submitStatus.message}
           </div>
         )}
@@ -336,23 +502,29 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
           ) : (
             <select
               value={formData.selectedPetUid}
-              onChange={(e) => setFormData(prev => ({ ...prev, selectedPetUid: e.target.value }))}
+              onChange={(e) =>
+                setFormData(prev => ({ ...prev, selectedPetUid: e.target.value }))
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="">-- Select a pet --</option>
-              {Array.isArray(pets) && pets.map((pet) => {
-                const optionValue = pet.uid || pet.id || ''
-                const optionLabel = pet.petName ? `${pet.petName}${pet.petSpecies ? ` (${pet.petSpecies})` : ''}` : (pet.petInfo || optionValue)
-                return (
-                  <option key={optionValue || optionLabel} value={optionValue}>
-                    {optionLabel}
-                  </option>
-                )
-              })}
+              {Array.isArray(pets) &&
+                pets.map((pet) => {
+                  const optionValue = pet.uid || pet.id || ''
+                  const optionLabel = pet.petName
+                    ? `${pet.petName}${pet.petSpecies ? ` (${pet.petSpecies})` : ''}`
+                    : (pet.petInfo || optionValue)
+                  return (
+                    <option key={optionValue || optionLabel} value={optionValue}>
+                      {optionLabel}
+                    </option>
+                  )
+                })}
             </select>
           )}
         </div>
 
+        {/* =================== FORM =================== */}
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Step 1: Behavioral Concern Overview */}
           <section>
@@ -361,6 +533,7 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
             </h2>
 
             <div className="space-y-4">
+              {/* 1. Behavioral challenges */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. What behavioral challenge(s) are you seeking help with? *
@@ -394,7 +567,9 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                       </label>
                       <textarea
                         value={formData.aggressionBiteDescription}
-                        onChange={(e) => setFormData(prev => ({ ...prev, aggressionBiteDescription: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData(prev => ({ ...prev, aggressionBiteDescription: e.target.value }))
+                        }
                         rows="3"
                         placeholder="Please describe any biting incidents..."
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -408,7 +583,12 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                       <input
                         type="text"
                         value={formData.otherBehaviorDescription}
-                        onChange={(e) => setFormData(prev => ({ ...prev, otherBehaviorDescription: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            otherBehaviorDescription: e.target.value
+                          }))
+                        }
                         placeholder="Describe other behavioral challenge"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -417,9 +597,10 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 </div>
               </div>
 
+              {/* 2. behaviorStartTime */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  2. When did the behavior first begin?
+                  2. When did the behavior first begin? *
                 </label>
                 <div className="space-y-2">
                   {['As a puppy', 'Within the last year', 'Recently (last 3 months)'].map(opt => (
@@ -437,9 +618,10 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 </div>
               </div>
 
+              {/* 3. behaviorFrequency */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  3. How frequently does the issue occur?
+                  3. How frequently does the issue occur? *
                 </label>
                 <div className="space-y-2">
                   {['Daily', 'Weekly', 'Occasionally', 'Only in specific situations'].map(opt => (
@@ -460,7 +642,12 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                       <input
                         type="text"
                         value={formData.specificSituationsDescription}
-                        onChange={(e) => setFormData(prev => ({ ...prev, specificSituationsDescription: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            specificSituationsDescription: e.target.value
+                          }))
+                        }
                         placeholder="Please describe the specific situations"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -478,24 +665,23 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
             </h2>
 
             <div className="space-y-4">
+              {/* knownTriggers */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. Are there known triggers for the behavior?
                 </label>
-               <textarea
-  value={formData.knownTriggers}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, ""); 
-    setFormData(prev => ({ ...prev, knownTriggers: cleaned }));
-  }}
-  rows="3"
-  placeholder="e.g., other dogs visitors car rides being left alone"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
-
+                <textarea
+                  value={formData.knownTriggers}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, knownTriggers: e.target.value }))
+                  }
+                  rows="3"
+                  placeholder="e.g., other dogs, visitors, car rides, being left alone"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
               </div>
 
+              {/* behaviorProgress */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Has the behavior worsened or improved over time?
@@ -515,29 +701,34 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                   ))}
                   <div className="mt-2">
                     <input
-  type="text"
-  value={formData.behaviorProgressContext}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, ""); 
-    setFormData(prev => ({
-      ...prev,
-      behaviorProgressContext: cleaned
-    }));
-  }}
-  placeholder="Optional: Add context"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                      type="text"
+                      value={formData.behaviorProgressContext}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          behaviorProgressContext: e.target.value
+                        }))
+                      }
+                      placeholder="Optional: Add context"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   </div>
                 </div>
               </div>
 
+              {/* aggressiveBehaviors */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Has your pet shown any aggressive behavior?
                 </label>
                 <div className="space-y-2">
-                  {['Growling', 'Snapping', 'Lunging', 'Biting (human or animal)', 'No aggression observed'].map(opt => (
+                  {[
+                    'Growling',
+                    'Snapping',
+                    'Lunging',
+                    'Biting (human or animal)',
+                    'No aggression observed'
+                  ].map(opt => (
                     <label key={opt} className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -551,24 +742,20 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 </div>
               </div>
 
+              {/* seriousIncidents */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   4. Please describe any serious incidents or close calls, if any.
                 </label>
                 <textarea
-  value={formData.seriousIncidents}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      seriousIncidents: cleaned
-    }));
-  }}
-  rows="3"
-  placeholder="Describe any serious incidents..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                  value={formData.seriousIncidents}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, seriousIncidents: e.target.value }))
+                  }
+                  rows="3"
+                  placeholder="Describe any serious incidents..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
               </div>
             </div>
           </section>
@@ -580,9 +767,10 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
             </h2>
 
             <div className="space-y-4">
+              {/* workedWithTrainer */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  1. Have you worked with a trainer or behaviourist before?
+                  1. Have you worked with a trainer or behaviourist before? *
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -609,27 +797,26 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                   {formData.workedWithTrainer === true && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
-                        What approaches were used? What did/didn't work?
+                        What approaches were used? What did/didn&apos;t work?
                       </label>
                       <textarea
-  value={formData.trainerApproaches}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      trainerApproaches: cleaned
-    }));
-  }}
-  rows="3"
-  placeholder="Describe your experience..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                        value={formData.trainerApproaches}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            trainerApproaches: e.target.value
+                          }))
+                        }
+                        rows="3"
+                        placeholder="Describe your experience..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* currentTrainingTools */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Are you currently using any training tools or methods?
@@ -649,25 +836,24 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
 
                   {formData.currentTrainingTools.includes('Other') && (
                     <div className="ml-6 mt-2">
-                     <input
-  type="text"
-  value={formData.otherTrainingTool}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      otherTrainingTool: cleaned
-    }));
-  }}
-  placeholder="Please specify"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                      <input
+                        type="text"
+                        value={formData.otherTrainingTool}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            otherTrainingTool: e.target.value
+                          }))
+                        }
+                        placeholder="Please specify"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* petMotivation */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Is your pet food or toy motivated?
@@ -694,7 +880,12 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                       <input
                         type="text"
                         value={formData.favoriteRewards}
-                        onChange={(e) => setFormData(prev => ({ ...prev, favoriteRewards: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            favoriteRewards: e.target.value
+                          }))
+                        }
                         placeholder="e.g., chicken treats, tennis ball"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -712,9 +903,10 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
             </h2>
 
             <div className="space-y-4">
+              {/* Daily routine */}
               <div>
                 <label className="block font-medium text-gray-700 mb-3">
-                  1. Describe your pet's daily routine:
+                  1. Describe your pet&apos;s daily routine:
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -731,60 +923,51 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Off-leash time</label>
                     <input
-  type="text"
-  value={formData.offLeashTime}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      offLeashTime: cleaned
-    }));
-  }}
-  placeholder="e.g., 30 minutes"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                      type="text"
+                      value={formData.offLeashTime}
+                      onChange={(e) =>
+                        setFormData(prev => ({ ...prev, offLeashTime: e.target.value }))
+                      }
+                      placeholder="e.g., 30 minutes"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Time spent alone</label>
-                   <input
-  type="text"
-  value={formData.timeAlone}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      timeAlone: cleaned
-    }));
-  }}
-  placeholder="e.g., 4 hours"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                    <input
+                      type="text"
+                      value={formData.timeAlone}
+                      onChange={(e) =>
+                        setFormData(prev => ({ ...prev, timeAlone: e.target.value }))
+                      }
+                      placeholder="e.g., 4 hours"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Exercise & stimulation</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Exercise & stimulation
+                    </label>
                     <input
-  type="text"
-  value={formData.exerciseStimulation}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      exerciseStimulation: cleaned
-    }));
-  }}
-  placeholder="e.g., fetch, puzzle toys"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                      type="text"
+                      value={formData.exerciseStimulation}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          exerciseStimulation: e.target.value
+                        }))
+                      }
+                      placeholder="e.g., fetch, puzzle toys"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
                   </div>
                 </div>
               </div>
 
+              {/* otherPets */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  2. Other pets in the household?
+                  2. Other pets in the household? *
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -814,27 +997,26 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                         List types, ages, and how they get along:
                       </label>
                       <textarea
-  value={formData.otherPetsDetails}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      otherPetsDetails: cleaned
-    }));
-  }}
-  rows="3"
-  placeholder="e.g., 1 cat (3 years), gets along well"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                        value={formData.otherPetsDetails}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            otherPetsDetails: e.target.value
+                          }))
+                        }
+                        rows="3"
+                        placeholder="e.g., 1 cat (3 years), gets along well"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* childrenInHome */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  3. Are there children in the home?
+                  3. Are there children in the home? *
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -863,47 +1045,44 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">What ages?</label>
                         <input
-  type="text"
-  value={formData.childrenAges}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      childrenAges: cleaned
-    }));
-  }}
-  placeholder="e.g., 5 and 8 years old"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                          type="text"
+                          value={formData.childrenAges}
+                          onChange={(e) =>
+                            setFormData(prev => ({
+                              ...prev,
+                              childrenAges: e.target.value
+                            }))
+                          }
+                          placeholder="e.g., 5 and 8 years old"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">
                           How does your pet respond with children?
                         </label>
-                       <textarea
-  value={formData.petResponseWithChildren}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      petResponseWithChildren: cleaned
-    }));
-  }}
-  rows="2"
-  placeholder="Describe interaction..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                        <textarea
+                          value={formData.petResponseWithChildren}
+                          onChange={(e) =>
+                            setFormData(prev => ({
+                              ...prev,
+                              petResponseWithChildren: e.target.value
+                            }))
+                          }
+                          rows="2"
+                          placeholder="Describe interaction..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                        />
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* homeEnvironment */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  4. What kind of home environment do you live in?
+                  4. What kind of home environment do you live in? *
                 </label>
                 <div className="space-y-2">
                   {['Apartment', 'House with yard', 'Shared/communal', 'Other'].map(opt => (
@@ -922,19 +1101,17 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                   {formData.homeEnvironment === 'Other' && (
                     <div className="ml-6 mt-2">
                       <input
-  type="text"
-  value={formData.homeEnvironmentOther}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      homeEnvironmentOther: cleaned
-    }));
-  }}
-  placeholder="Please describe"
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                        type="text"
+                        value={formData.homeEnvironmentOther}
+                        onChange={(e) =>
+                          setFormData(prev => ({
+                            ...prev,
+                            homeEnvironmentOther: e.target.value
+                          }))
+                        }
+                        placeholder="Please describe"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
                     </div>
                   )}
                 </div>
@@ -949,26 +1126,23 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
             </h2>
 
             <div className="space-y-4">
+              {/* successOutcome */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. What would a successful outcome look like to you?
                 </label>
                 <textarea
-  value={formData.successOutcome}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      successOutcome: cleaned
-    }));
-  }}
-  rows="4"
-  placeholder="Describe your goals and expectations..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                  value={formData.successOutcome}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, successOutcome: e.target.value }))
+                  }
+                  rows="4"
+                  placeholder="Describe your goals and expectations..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
               </div>
 
+              {/* openToAdjustments */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Are you open to adjusting your routine or environment?
@@ -989,6 +1163,7 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 </div>
               </div>
 
+              {/* preferredSessionType */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Preferred session type:
@@ -1009,24 +1184,23 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 </div>
               </div>
 
+              {/* additionalNotes */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  4. Any other notes, concerns, or expectations you'd like to share?
+                  4. Any other notes, concerns, or expectations you&apos;d like to share?
                 </label>
                 <textarea
-  value={formData.additionalNotes}
-  onChange={(e) => {
-    const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, "");
-    setFormData(prev => ({
-      ...prev,
-      additionalNotes: cleaned
-    }));
-  }}
-  rows="4"
-  placeholder="Share any additional information..."
-  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-/>
-
+                  value={formData.additionalNotes}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      additionalNotes: e.target.value
+                    }))
+                  }
+                  rows="4"
+                  placeholder="Share any additional information..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                />
               </div>
             </div>
           </section>
@@ -1042,16 +1216,20 @@ console.log("&&&&&&&&&&&&&&&&&" , payload)
                 <input
                   type="checkbox"
                   checked={formData.consentAccuracy}
-                  onChange={(e) => setFormData(prev => ({ ...prev, consentAccuracy: e.target.checked }))}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, consentAccuracy: e.target.checked }))
+                  }
                   className="w-4 h-4 text-primary mt-1 rounded"
                 />
                 <span className="text-gray-700">
-                  I confirm that the information provided is accurate and agree to share this with my assigned behaviour specialist through the Metavet platform. *
+                  I confirm that the information provided is accurate and agree to share this with
+                  my assigned behaviour specialist through the Metavet platform. *
                 </span>
               </label>
             </div>
           </section>
 
+          {/* Submit button */}
           <div className="pt-6">
             <button
               type="submit"
