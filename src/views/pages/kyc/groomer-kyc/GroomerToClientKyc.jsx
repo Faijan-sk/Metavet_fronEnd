@@ -3,12 +3,14 @@ import useJwt from '../../../../enpoints/jwt/useJwt'
 
 const HEALTH_CONDITION_MAP = {
   'Skin issues': 'SKIN_ISSUES',
-  'Ear infections': 'EAR_INFECTIONS',
+  'Ear infections': 'EAR_INFECTION',
   'Arthritis': 'ARTHRITIS',
   'Allergies': 'ALLERGIES',
   'None': 'NONE',
   'Other': 'OTHER'
 }
+
+
 
 const BEHAVIOR_ISSUE_MAP = {
   'Nervousness/anxiety': 'NERVOUSNESS_ANXIETY',
@@ -246,7 +248,7 @@ const Index = () => {
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">
           🧼 Pet Groomer → Client KYC
         </h1>
-        <p className="text-center text-gray-600 mb-6">Metavet Pet Grooming Services</p>
+        <p className="text-center text-gray-600 mb-6">Metavet Pet Grooming Services </p>
 
         {/* Global success / error messages */}
         {apiSuccess && (

@@ -2,11 +2,11 @@ import axios from 'axios'
 import jwtDefaultConfig from './jwtDefaultConfig'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.29.199:8080/'
-axios.defaults.baseURL = 'http://34.71.120.171:8080/'
+axios.defaults.baseURL = 'http://192.168.29.199:8080/'
+// axios.defaults.baseURL = 'http://34.71.120.171:8080/'
 
 export default class JwtService {
-  // ** jwtConfig <= Will be used by this service
+  // ** jwtConfig <= Will be used by this service 
   jwtConfig = { ...jwtDefaultConfig }
   // ** For Refreshing Token 
   isAlreadyFetchingAccessToken = false
