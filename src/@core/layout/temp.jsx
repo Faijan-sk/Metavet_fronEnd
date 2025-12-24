@@ -41,10 +41,11 @@ const Header = () => {
   // Memoized navigation items
   const baseNavItems = useMemo(() => {
     const shouldShowPets = !userInfo || userInfo?.userType === 1;
-
+    const serviceProvider = !userInfo || userInfo?.userType === 3 ;
     return [
       ...(shouldShowPets ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
       { name: 'Appointment', path: '/appointment', active: true },
+  // { name: 'Appointments', path: '/service-appointment', active: true },
        {
         name: 'KYC',
         hasDropdown: true, 
@@ -63,22 +64,13 @@ const Header = () => {
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
       // { name: 'Health Record', path: '/healthrecord', active: true },
       {
-        name: 'Services',
+        name: 'Pet Services',
         hasDropdown: true, 
         dropdownItems: [
-          { label: 'Teleconsultation', path: '/teleconsultation' },
-          { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
-          { label: 'Blood Work', path: '/blood-work' },
-          { label: 'Grooming', path: '/grooming' },
-          { label: 'Groomers to Client KYC', path: '/groomer-kyc' },
-          { label: 'Kennels/Boarding', path: '/kennels-boarding' },
-          { label: 'Training', path: '/dog-training' },
-          { label: 'Dental', path: '/dental' },
-          { label: 'Vaccines', path: '/vaccines' },
-          { label: 'Parasite Prevention', path: '/parasite-prevention' },
-          { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
-          { label: 'Nutrition', path: '/nutrition' },
-          { label: 'Behaviour', path: '/behaviour' },
+
+           { label: 'Pet Grooming', path: '/' },
+        { label: 'Pet Behaviourist', path: '/' },
+        { label: 'Pet Walker', path: '/' }, 
         ],
       },
     ]
@@ -109,6 +101,18 @@ const Header = () => {
       name: 'Resources',
       hasDropdown: true,
       dropdownItems: [
+         { label: 'Teleconsultation', path: '/teleconsultation' },
+          { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
+          { label: 'Blood Work', path: '/blood-work' },
+          { label: 'Grooming', path: '/grooming' },
+          { label: 'Kennels/Boarding', path: '/kennels-boarding' },
+          { label: 'Training', path: '/dog-training' },
+          { label: 'Dental', path: '/dental' },
+          { label: 'Vaccines', path: '/vaccines' },
+          { label: 'Parasite Prevention', path: '/parasite-prevention' },
+          { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
+          { label: 'Nutrition', path: '/nutrition' },
+          { label: 'Behaviour', path: '/behaviour' },
         { label: 'Blogs', path: '/blogs' },
         { label: 'Pet Health', path: '/pet-health' },
         { label: 'Choosing Your Pet', path: '/choosing-pet' },
