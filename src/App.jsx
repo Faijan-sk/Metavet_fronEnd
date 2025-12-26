@@ -11,7 +11,10 @@ import SignUp from "./views/pages/forms/registerUser/index";
 import DoctorProfileUpdate from "./views/pages/forms/updateForm/index";
 import WalkerToClientKyc from "./views/pages/kyc/walker-kyc/WalkerToClientKyc"
 import PetRecord from "./views/pages/pets/index";
+import PetServiceAppointment from "./views/pages/petServicesAppointment/index"
+
 // ** Pages
+
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
 const Appointment = lazy(() => import("./views/pages/appointment"));
 const HealthRecord = lazy(() => import("./views/pages/health-record"));
@@ -136,8 +139,8 @@ const App = () => {
                 <Route path="/behaviourist-kyc" element={<Behaviourist/>} />
                 <Route path="/behaviouristTo-client-kyc" element={<BehavioristToClient/>} />
                 <Route path="/groomerTo-client-kyc" element={<GroomerToClientKyc/>} />
-
-
+                <Route path="/service-appointment" element={<PetServiceAppointment />} />
+            
 
 
                 <Route path="/kennels-boarding" element={<KennelsBoarding />} />

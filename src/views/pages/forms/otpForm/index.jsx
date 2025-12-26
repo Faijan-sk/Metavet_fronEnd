@@ -173,6 +173,10 @@ const handleOtpSubmit = async (data) => {
     console.log('this otp response', apiResponse.data)
 
     localStorage.setItem("userInfo", JSON.stringify(apiResponse.data));
+    if(apiResponse.data.userType == 3){
+      console.log( ' service provider loged in ...................')
+      
+    }
 
     const { data: user, accessToken, refreshToken, success } = apiResponse;
 

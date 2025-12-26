@@ -8,6 +8,7 @@ export default {
   loginEndpoint: '/api/auth/login',
   otpVerifyEndPoint: '/api/auth/otp/verify-otp',
   getUserByMobileEndPoint : '/api/auth/user/byNumber',
+  serviceProviderCreateEndpoint : '/api/auth/service-provider/create',
   
   /*
   * Doctor EndPoints

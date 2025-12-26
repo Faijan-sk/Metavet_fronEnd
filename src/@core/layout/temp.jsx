@@ -8,7 +8,9 @@ import Logo from "./../../assets/MetavetImages/logo/navLogo.png"
 const getUserInfo = () => {
   try {
     const userInfo = localStorage.getItem("userInfo");
+    console.log(userInfo)
     return userInfo ? JSON.parse(userInfo) : null;
+
   } catch (error) {
     console.error('Error parsing userInfo:', error);
     return null;
@@ -35,30 +37,34 @@ const Header = () => {
   const [hoveredItem, setHoveredItem] = useState(null)
   const [openMobileDropdown, setOpenMobileDropdown] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
-  
+
   const userInfo = getUserInfo();
+  const serviceType = userInfo?.ServiceType;
+  console.log("USER SERVICE TYPE FROM NAVABR " ,  serviceType)
+
 
   // Memoized navigation items
   const baseNavItems = useMemo(() => {
     const shouldShowPets = !userInfo || userInfo?.userType === 1;
-    const serviceProvider = !userInfo || userInfo?.userType === 3 ;
+    const serviceProvider = userInfo?.userType === 3;
+    console.log(serviceProvider, 'serviceProvider check')
+    
     return [
-      ...(shouldShowPets ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
-      { name: 'Appointment', path: '/appointment', active: true },
-  // { name: 'Appointments', path: '/service-appointment', active: true },
-       {
+      ...(shouldShowPets  ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
+      // Appointment button - show only when user is NOT service provider (userType !== 3)
+      ...(!serviceProvider ? [{ name: 'Appointment', path: '/appointment', active: true }] : []),
+      // Appointments button - show only when user IS service provider (userType === 3)
+      ...(serviceProvider ? [{ name: 'Appointments', path: '/service-appointment', active: true }] : []),
+      {
         name: 'KYC',
         hasDropdown: true, 
         dropdownItems: [
           { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
-           { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
+          { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
           { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
-
-          
-           { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
-            { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
-            { label: 'KYC Behaviourist  to Client', path: '/behaviouristTo-client-kyc' },
-       
+          { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
+          { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
+          { label: 'KYC Behaviourist to Client', path: '/behaviouristTo-client-kyc' },
         ],
       },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
@@ -67,10 +73,9 @@ const Header = () => {
         name: 'Pet Services',
         hasDropdown: true, 
         dropdownItems: [
-
-           { label: 'Pet Grooming', path: '/' },
-        { label: 'Pet Behaviourist', path: '/' },
-        { label: 'Pet Walker', path: '/' }, 
+          { label: 'Pet Grooming', path: '/' },
+          { label: 'Pet Behaviourist', path: '/' },
+          { label: 'Pet Walker', path: '/' }, 
         ],
       },
     ]
@@ -101,18 +106,18 @@ const Header = () => {
       name: 'Resources',
       hasDropdown: true,
       dropdownItems: [
-         { label: 'Teleconsultation', path: '/teleconsultation' },
-          { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
-          { label: 'Blood Work', path: '/blood-work' },
-          { label: 'Grooming', path: '/grooming' },
-          { label: 'Kennels/Boarding', path: '/kennels-boarding' },
-          { label: 'Training', path: '/dog-training' },
-          { label: 'Dental', path: '/dental' },
-          { label: 'Vaccines', path: '/vaccines' },
-          { label: 'Parasite Prevention', path: '/parasite-prevention' },
-          { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
-          { label: 'Nutrition', path: '/nutrition' },
-          { label: 'Behaviour', path: '/behaviour' },
+        { label: 'Teleconsultation', path: '/teleconsultation' },
+        { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
+        { label: 'Blood Work', path: '/blood-work' },
+        { label: 'Grooming', path: '/grooming' },
+        { label: 'Kennels/Boarding', path: '/kennels-boarding' },
+        { label: 'Training', path: '/dog-training' },
+        { label: 'Dental', path: '/dental' },
+        { label: 'Vaccines', path: '/vaccines' },
+        { label: 'Parasite Prevention', path: '/parasite-prevention' },
+        { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
+        { label: 'Nutrition', path: '/nutrition' },
+        { label: 'Behaviour', path: '/behaviour' },
         { label: 'Blogs', path: '/blogs' },
         { label: 'Pet Health', path: '/pet-health' },
         { label: 'Choosing Your Pet', path: '/choosing-pet' },
