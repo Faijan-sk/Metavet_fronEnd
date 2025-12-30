@@ -147,13 +147,13 @@ const DoctorCard = ({ doctor, onFollow }) => (
           </div>
         </div>
 
-        <button
+        {/* <button
           onClick={() => onFollow(doctor)}
           className="flex items-center gap-2 bg-gradient-to-r from-[#52B2AD] to-[#42948f] text-white px-4 py-2 rounded-lg font-medium hover:from-[#42948f] hover:to-[#52B2AD] focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:ring-offset-2 transition-all duration-200 text-sm transform hover:scale-105"
         >
           Book
           <Plus className="w-4 h-4" />
-        </button>
+        </button> */}
       </div>
     </div>
   </div>

@@ -27,7 +27,8 @@ export default function CompleteYourKYC() {
 
 
   useEffect(() => {
-    switch (userInfo?.ServiceType) {
+    console.table(userInfo.serviceType)
+    switch (userInfo?.serviceType) {
       case "Pet_Groomer":
         setRedirectTo("/groomer-kyc");
         break;

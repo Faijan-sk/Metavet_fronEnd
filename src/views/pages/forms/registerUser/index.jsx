@@ -139,15 +139,15 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
 
 
-      if (data.userType == 3) {
-      const payloadForServiceProvider = {
-        uid: response.data.data.uid,
-        serviceType: selectedServiceType  
-      }
+    //   if (data.userType == 3) {
+    //   const payloadForServiceProvider = {
+    //     uid: response.data.data.uid,
+    //     serviceType: selectedServiceType  
+    //   }
 
-      const serviceResponse = await useJwt.createServiceProvider(payloadForServiceProvider);
-      console.log("Service Provider created:", serviceResponse.data);
-    }
+    //   const serviceResponse = await useJwt.createServiceProvider(payloadForServiceProvider);
+    //   console.log("Service Provider created:", serviceResponse.data);
+    // }
 
 
 
@@ -159,7 +159,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
             phone: receivedMobile
           }
         })
-      } else {
+      } else { 
         if (receivedToken) {
           navigate(`/otp-verification/${receivedToken}`, {
             state: {
@@ -176,16 +176,42 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     } catch (error) {
       console.error('❌ Signup failed:', error.response?.data || error.message)
 
-      const extractedErrors = extractValidationErrors(error.response);
+      // Clear previous errors
+      setErrorMsg('');
+      setValidationErrors([]);
+      setCurrentErrorIndex(0);
+      clearErrors();
 
-      if (extractedErrors.length > 0) {
-        setValidationErrors(extractedErrors);
-        setCurrentErrorIndex(0);
+      // Check for specific field errors in the response
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || '';
+      
+      // Handle specific field errors
+      if (errorMessage.toLowerCase().includes('email already exists') || 
+          errorMessage.toLowerCase().includes('email') && errorMessage.toLowerCase().includes('exist')) {
+        setError('email', {
+          type: 'manual',
+          message: 'This email is already registered. Please use a different email or sign in.'
+        });
         setErrorMsg('');
-      } else {
-        setErrorMsg(error.response?.data?.message || 'Signup failed');
-        setValidationErrors([]);
-        setCurrentErrorIndex(0);
+      } 
+      else if (errorMessage.toLowerCase().includes('phone') && errorMessage.toLowerCase().includes('exist')) {
+        setError('phoneNumber', {
+          type: 'manual',
+          message: 'This phone number is already registered. Please use a different number.'
+        });
+        setErrorMsg('');
+      }
+      else {
+        // Try to extract validation errors
+        const extractedErrors = extractValidationErrors(error.response);
+
+        if (extractedErrors.length > 0) {
+          setValidationErrors(extractedErrors);
+          setCurrentErrorIndex(0);
+        } else {
+          // Show general error message
+          setErrorMsg(error.response?.data?.message || error.response?.data?.error || 'Registration failed. Please try again.');
+        }
       }
     }
   }
@@ -281,8 +307,8 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
       <li
         key={option.value}
         onClick={() => {
-          setSelectedServiceType(option.value); // UI ke liye label
-          setValue("serviceType", option.value); // backend ke liye enum
+          setSelectedServiceType(option.value);
+          setValue("serviceType", option.value);
           setDropdownOpen(false);
           setServiceTypeError("");
          
@@ -327,7 +353,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
                 }}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg 
                   text-sm sm:text-base ${errors.firstName
-                    ? 'border-red-400 focus:border-red-500'
+                    ? 'border-red-400 focus:border-red-500 bg-red-50'
                     : 'border-gray-200 focus:border-primary hover:border-gray-300'
                   } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
                 placeholder="First name"
@@ -364,7 +390,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
                 }}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base 
                   ${errors.lastName
-                    ? 'border-red-400 focus:border-red-500'
+                    ? 'border-red-400 focus:border-red-500 bg-red-50'
                     : 'border-gray-200 focus:border-primary hover:border-gray-300'
                   } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
                 placeholder="Last name"
@@ -383,7 +409,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
                   {...register('countryCode', { required: 'Country code is required' })}
                   className={`w-full px-2 sm:px-3 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base 
                     ${errors.countryCode
-                      ? 'border-red-400 focus:border-red-500'
+                      ? 'border-red-400 focus:border-red-500 bg-red-50'
                       : 'border-gray-200 focus:border-primary hover:border-gray-300'
                     } bg-gray-50 focus:bg-white`}
                 >
@@ -419,7 +445,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
                   }}
                   className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base 
                     ${errors.phoneNumber
-                      ? 'border-red-400 focus:border-red-500'
+                      ? 'border-red-400 focus:border-red-500 bg-red-50'
                       : 'border-gray-200 focus:border-primary hover:border-gray-300'
                     } focus:outline-none bg-gray-50 focus:bg-white`}
                   placeholder="Enter 10-digit number"
@@ -465,7 +491,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
               }}
               className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 rounded-lg text-sm sm:text-base 
                 ${errors.email
-                  ? 'border-red-400 focus:border-red-500'
+                  ? 'border-red-400 focus:border-red-500 bg-red-50'
                   : 'border-gray-200 focus:border-primary hover:border-gray-300'
                 } focus:outline-none bg-gray-50 focus:bg-white transition-all duration-200`}
               placeholder="Enter your Gmail address"

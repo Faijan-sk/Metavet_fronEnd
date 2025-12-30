@@ -69,15 +69,15 @@ const Header = () => {
       },
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
       // { name: 'Health Record', path: '/healthrecord', active: true },
-      {
-        name: 'Pet Services',
-        hasDropdown: true, 
-        dropdownItems: [
-          { label: 'Pet Grooming', path: '/' },
-          { label: 'Pet Behaviourist', path: '/' },
-          { label: 'Pet Walker', path: '/' }, 
-        ],
-      },
+      // {
+      //   name: 'Pet Services',
+      //   hasDropdown: true, 
+      //   dropdownItems: [
+      //     { label: 'Pet Grooming', path: '/' },
+      //     { label: 'Pet Behaviourist', path: '/' },
+      //     { label: 'Pet Walker', path: '/' }, 
+      //   ],
+      // },
     ]
     
   }, [userInfo])
@@ -89,7 +89,7 @@ const Header = () => {
       hasDropdown: true,
       dropdownItems: [
         { label: 'What to Expect', path: '/what-to-expect' },
-        { label: 'Behavioural Concern ', path: '/behavioural-concern' },
+        // { label: 'Behavioural Concern ', path: '/behavioural-concern' },
         { label: 'Payment Options', path: '/payment-options' },
       ],
     },

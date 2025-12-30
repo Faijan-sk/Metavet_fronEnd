@@ -7,7 +7,7 @@ const getUserInfo = () => {
     const userInfo = localStorage.getItem("userInfo");
     return userInfo ? JSON.parse(userInfo) : null;
   } catch (error) {
-    console.error('Error parsing userInfo:', error);
+    console.error("Error parsing userInfo:", error);
     return null;
   }
 };
@@ -94,25 +94,37 @@ export default function BookAppointmentForm({
     setLoading(true);
     setError(null);
 
-    // Payload prepare karo
-    const payload = daysList.map(day => ({
+    // payload
+    const payload = daysList.map((day) => ({
       dayOfWeek: day.day,
-      startTime: day.startTime + ":00", // Add seconds
-      endTime: day.endTime + ":00",     // Add seconds
-      slotDurationMinutes: Number(slotDurationMinutes)
+      startTime: day.startTime + ":00",
+      endTime: day.endTime + ":00",
+      slotDurationMinutes: Number(slotDurationMinutes),
     }));
 
     try {
-        console.log("ddddddddddddddddddddddddddddddddddddd",payload)
       const response = await useJwt.createAppintment(userInfo.userId, payload);
-      
-      console.log('Appointment created:', response.data);
-      
+      console.log("Appointment created:", response.data);
+
       onCreated && onCreated(payload);
       onClose && onClose();
-    } catch (error) {
-      console.error('Error creating appointment:', error);
-      setError(error.response?.data?.message || 'Failed to create appointment. Please try again.');
+    } catch (err) {
+      console.error("Error creating appointment:", err);
+
+      // ====== CUSTOM ERROR MESSAGE ======
+      const backendDetails = err.response?.data?.details;
+
+      if (backendDetails && backendDetails.includes("already assigned")) {
+        // Extract day from backendDetails -> "Day SATURDAY is already assigned..."
+        const matched = backendDetails.match(/Day (\w+)/i);
+        const dayName = matched ? matched[1].toUpperCase() : "this day";
+        setError(`slot for the Day ${dayName} is already created`);
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Failed to create appointment. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -205,7 +217,7 @@ export default function BookAppointmentForm({
           </div>
         )}
 
-        {/* Slot duration field */}
+        {/* Slot duration */}
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
             Duration of Slot (in minutes)
