@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, ChevronDown } from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 
 const getUserInfo = () => {
@@ -27,9 +27,17 @@ export default function BookAppointmentForm({
     "SATURDAY",
   ];
 
+  const slotOptions = [15, 30, 45, 60, "CUSTOM"];
+
   const [selectedDay, setSelectedDay] = useState("");
   const [daysList, setDaysList] = useState([]);
-  const [slotDurationMinutes, setSlotDurationMinutes] = useState("");
+  const [dayDropdownOpen, setDayDropdownOpen] = useState(false);
+
+  // slot selection
+  const [slotType, setSlotType] = useState(""); // dropdown value
+  const [slotDurationMinutes, setSlotDurationMinutes] = useState(""); // input if custom
+  const [slotDropdownOpen, setSlotDropdownOpen] = useState(false);
+
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +49,13 @@ export default function BookAppointmentForm({
       setDaysList(initialValues.days);
     }
     if (initialValues?.slotDurationMinutes) {
-      setSlotDurationMinutes(initialValues.slotDurationMinutes);
+      // if matches dropdown, select option, else mark custom
+      if ([15, 30, 45, 60].includes(initialValues.slotDurationMinutes)) {
+        setSlotType(initialValues.slotDurationMinutes);
+      } else {
+        setSlotType("CUSTOM");
+        setSlotDurationMinutes(initialValues.slotDurationMinutes);
+      }
     }
   }, [initialValues]);
 
@@ -81,8 +95,10 @@ export default function BookAppointmentForm({
         return setError(`Start time must be before end for ${d.day}.`), false;
     }
 
-    if (!slotDurationMinutes || slotDurationMinutes <= 0)
-      return setError("Please enter valid slot duration (minutes)."), false;
+    if (!slotType) return setError("Select slot duration."), false;
+
+    if (slotType === "CUSTOM" && (!slotDurationMinutes || slotDurationMinutes <= 0))
+      return setError("Enter valid custom duration (minutes)."), false;
 
     return true;
   };
@@ -94,12 +110,14 @@ export default function BookAppointmentForm({
     setLoading(true);
     setError(null);
 
-    // payload
+    const duration =
+      slotType === "CUSTOM" ? Number(slotDurationMinutes) : Number(slotType);
+
     const payload = daysList.map((day) => ({
       dayOfWeek: day.day,
       startTime: day.startTime + ":00",
       endTime: day.endTime + ":00",
-      slotDurationMinutes: Number(slotDurationMinutes),
+      slotDurationMinutes: duration,
     }));
 
     try {
@@ -111,11 +129,9 @@ export default function BookAppointmentForm({
     } catch (err) {
       console.error("Error creating appointment:", err);
 
-      // ====== CUSTOM ERROR MESSAGE ======
       const backendDetails = err.response?.data?.details;
 
       if (backendDetails && backendDetails.includes("already assigned")) {
-        // Extract day from backendDetails -> "Day SATURDAY is already assigned..."
         const matched = backendDetails.match(/Day (\w+)/i);
         const dayName = matched ? matched[1].toUpperCase() : "this day";
         setError(`slot for the Day ${dayName} is already created`);
@@ -128,6 +144,16 @@ export default function BookAppointmentForm({
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDayLabel = (day) => {
+    return day ? day.charAt(0) + day.slice(1).toLowerCase() : "Choose a day";
+  };
+
+  const getSlotLabel = (slot) => {
+    if (!slot) return "Select Slot Duration";
+    if (slot === "CUSTOM") return "Custom";
+    return `${slot} minutes`;
   };
 
   return (
@@ -148,21 +174,43 @@ export default function BookAppointmentForm({
         {/* Day selector */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
               Select Day
             </label>
-            <select
-              value={selectedDay}
-              onChange={(e) => setSelectedDay(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD]"
-            >
-              <option value="">-- Choose day --</option>
-              {DAYS.map((d) => (
-                <option key={d} value={d}>
-                  {d.charAt(0) + d.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
+
+            <div className="relative">
+              <button
+                type="button"
+                className={`w-full px-3 py-2.5 border-2 rounded-lg text-left text-sm hover:border-[#52B2AD]/70 focus:border-[#52B2AD] focus:outline-none transition-all duration-200 flex items-center justify-between ${
+                  selectedDay
+                    ? "border-[#52B2AD] bg-white"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+                onClick={() => setDayDropdownOpen((prev) => !prev)}
+              >
+                <span className={selectedDay ? "text-gray-900" : "text-gray-500"}>
+                  {getDayLabel(selectedDay)}
+                </span>
+                <ChevronDown size={16} className="text-gray-400" />
+              </button>
+
+              {dayDropdownOpen && (
+                <ul className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                  {DAYS.map((d) => (
+                    <li
+                      key={d}
+                      onClick={() => {
+                        setSelectedDay(d);
+                        setDayDropdownOpen(false);
+                      }}
+                      className="px-3 py-2 text-sm cursor-pointer hover:bg-[#52B2AD] hover:text-white transition-colors"
+                    >
+                      {getDayLabel(d)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           <button
@@ -217,20 +265,57 @@ export default function BookAppointmentForm({
           </div>
         )}
 
-        {/* Slot duration */}
+        {/* Slot duration dropdown */}
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">
+          <label className="block text-sm font-semibold text-gray-800 mb-1">
             Duration of Slot (in minutes)
           </label>
-          <input
-            type="number"
-            value={slotDurationMinutes}
-            onChange={(e) => setSlotDurationMinutes(e.target.value)}
-            placeholder="e.g. 30, 45, 60"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD]"
-            required
-            min="1"
-          />
+
+          <div className="relative">
+            <button
+              type="button"
+              className={`w-full px-3 py-2.5 border-2 rounded-lg text-left text-sm hover:border-[#52B2AD]/70 focus:border-[#52B2AD] focus:outline-none transition-all duration-200 flex items-center justify-between ${
+                slotType
+                  ? "border-[#52B2AD] bg-white"
+                  : "border-gray-200 bg-gray-50"
+              }`}
+              onClick={() => setSlotDropdownOpen((prev) => !prev)}
+            >
+              <span className={slotType ? "text-gray-900" : "text-gray-500"}>
+                {getSlotLabel(slotType)}
+              </span>
+              <ChevronDown size={16} className="text-gray-400" />
+            </button>
+
+            {slotDropdownOpen && (
+              <ul className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                {slotOptions.map((opt) => (
+                  <li
+                    key={opt}
+                    onClick={() => {
+                      setSlotType(opt);
+                      setSlotDropdownOpen(false);
+                    }}
+                    className="px-3 py-2 text-sm cursor-pointer hover:bg-[#52B2AD] hover:text-white transition-colors"
+                  >
+                    {opt === "CUSTOM" ? "Custom" : `${opt} minutes`}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* custom input visible only when "CUSTOM" selected */}
+          {slotType === "CUSTOM" && (
+            <input
+              type="number"
+              value={slotDurationMinutes}
+              onChange={(e) => setSlotDurationMinutes(e.target.value)}
+              placeholder="Enter custom duration e.g. 120"
+              className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD]"
+              min="1"
+            />
+          )}
         </div>
 
         {error && (

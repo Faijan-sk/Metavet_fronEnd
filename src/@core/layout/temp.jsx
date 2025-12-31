@@ -307,7 +307,7 @@ const Header = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              Login
+              Login / SignUp
             </Link>
           )}
 
