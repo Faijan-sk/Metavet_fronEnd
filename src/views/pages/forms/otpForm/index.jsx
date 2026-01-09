@@ -23,10 +23,11 @@ const OTPVerification = ({ onSubmit, onBack, userInfo, formType }) => {
   // ** hooks
   const dispatch = useDispatch();
   const { token } = useParams();
+  
   const navigate = useNavigate();
   const {state} = useLocation();
   const otpDr = state?.otp;
-  
+  console.log( 'otpDrotpDrotpDr' ,otpDr)
   const {
     control,
     handleSubmit,

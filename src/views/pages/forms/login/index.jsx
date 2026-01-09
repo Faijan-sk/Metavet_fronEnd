@@ -30,8 +30,8 @@ const LoginForm = ({ onSubmit }) => {
     
       const response = await jwt.login(data)
       const loginData = response.data
-
-      const token = loginData.token
+      
+      const token = loginData.data.token
 
       // Set JWT tokens if available
       if (loginData?.accessToken) {
@@ -45,10 +45,11 @@ const LoginForm = ({ onSubmit }) => {
 
       reset()
 
+        console.log('TTTTTTTTTTTTTTTTTTTTt' , token)
       // Navigate to OTP Verification with dynamic OTP and phone
       navigate(`/otp-verification/${token}`, {
         state: {
-          otp: loginData.otp,
+          otp: loginData.data.otp,
           phone: data.phone_number,
         },
         replace: true,

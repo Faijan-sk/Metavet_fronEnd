@@ -49,3 +49,7 @@ th,
 td {
   @apply border-l-2 border-base-200;
 }
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+}

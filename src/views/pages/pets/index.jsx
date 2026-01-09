@@ -72,7 +72,7 @@ const ProfileModal = ({ open, onClose, pet, onEditClick, onDeleteSuccess }) => {
           <X size={20} />
         </button>
 
-        <div className="p-4">
+        <div>
           <PetProfileOne 
             pet={pet} 
             onEditClick={onEditClick}

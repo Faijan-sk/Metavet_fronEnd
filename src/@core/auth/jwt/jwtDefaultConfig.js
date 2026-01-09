@@ -23,6 +23,7 @@ export default {
   /*
   * Pet Endpoint
   */
+
   getAllPetsByOwnerEndpoint : '/api/pets/owner' ,
   addPetEndPoint : '/api/pets/create-with-image',
   addPetEndpointwithoutImage : '/api/pets/create',

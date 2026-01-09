@@ -3,7 +3,9 @@
 
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.1.15:8080/'
-  axios.defaults.baseURL = 'http://34.10.49.96:8080/'
+  // axios.defaults.baseURL = 'http://34.10.49.96:8080/'
+  axios.defaults.baseURL = 'http://192.168.1.19:8080/'
+
 
   export default class JwtService {
     
@@ -81,7 +83,6 @@
             // optional: handle refresh token flow here
           }
 
-          // Handle network errors
           if (!response) {
             console.error('Network error - check if backend is running');
           }
@@ -97,6 +98,7 @@
       )
     }
 
+    
     addSubscriber(callback) {
       this.subscribers.push(callback)
     }
