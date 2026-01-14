@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { X, Plus, ChevronDown } from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 
-const getUserInfo = () => {
-  try {
-    const userInfo = localStorage.getItem("userInfo");
-    return userInfo ? JSON.parse(userInfo) : null;
-  } catch (error) {
-    console.error("Error parsing userInfo:", error);
-    return null;
-  }
-};
+// const getUserInfo = () => {
+//   try {
+//     const userInfo = localStorage.getItem("userInfo");
+//     return userInfo ? JSON.parse(userInfo) : null;
+//   } catch (error) {
+//     console.error("Error parsing userInfo:", error);
+//     return null;
+//   }
+// };
 
 export default function BookAppointmentForm({
   onClose,
@@ -41,7 +41,7 @@ export default function BookAppointmentForm({
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const userInfo = getUserInfo();
+  // const userInfo = getUserInfo();
 
   // prefill if editing
   useEffect(() => {
@@ -121,7 +121,10 @@ export default function BookAppointmentForm({
     }));
 
     try {
-      const response = await useJwt.createAppintment(userInfo.userId, payload);
+      debugger
+      // const response = await useJwt.createAppintment(userInfo.userId, payload);
+            const response = await useJwt.createAppintment( payload);
+
       console.log("Appointment created:", response.data);
 
       onCreated && onCreated(payload);

@@ -152,6 +152,15 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
 
 
+
+
+
+
+
+
+    console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh',response)
+    console.log(receivedToken)
+
       if (response.data?.data?.userType === 2) {
         navigate(`/updateProfile/${receivedToken}`, {
           state: {

@@ -19,7 +19,10 @@ export default {
   getDoctorBySpecialityEndPoint:'api/doctors/specialization',
   getAllSpecializationEndPoint : 'api/doctors/specializations/available',
   getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
+  getOwnDays : "/api/doctor-days/getSelfDays",
+  getDoctorSlotByDate: '/api/doctor-days/getSelfAvailableSlots?date={date}',
 
+  
   /*
   * Pet Endpoint
   */
@@ -40,9 +43,9 @@ export default {
   bookAppointmentEndPoint : '/api/appointments/book',
   getAppointmentEndpoint: '/api/appointments/my-appointments',
   cancelAppointmentEndpoint : '/api/appointments/my-appointments',
-  createAppointmentEndpoint: '/api/doctor-days/doctor',
+  createAppointmentEndpoint: '/api/doctor-days/days',
   getBookedAppoinmentEndpoint : 'api/appointments/my-appointments-doctor?status=BOOKED',
-
+  bookOfflineAppointment : '/api/appointments/book-offline-simple',
   // ** This will be prefixed in authorization header with token
   // ? e.g. Authorization: Bearer <token>
   tokenType: 'Bearer',

@@ -4,7 +4,7 @@
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.1.15:8080/'
   // axios.defaults.baseURL = 'http://34.10.49.96:8080/'
-  axios.defaults.baseURL = 'http://192.168.1.19:8080/'
+  axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
 
   export default class JwtService {
@@ -264,15 +264,19 @@
       });
     }
 
-    createAppintment(id, payload) {
-      console.log('Calling create appointment API with payload:', payload);
-      return axios.post(`${this.jwtConfig.createAppointmentEndpoint}/${id}/days`, payload, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
-          "Content-Type": "application/json",
-        },
-      });
-    }
+    // createAppintment(id, payload) {
+    //   console.log('Calling create appointment API with payload:', payload);
+    //   return axios.post(`${this.jwtConfig.createAppointmentEndpoint}/days`, payload, {
+    //     headers: {
+    //       Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //   });
+    // }
+createAppintment(payload){
+  return axios.post(this.jwtConfig.createAppointmentEndpoint , payload)
+}
+
 
     getBookedAppointment(){
       console.log('Calling get my appointments API');
@@ -334,4 +338,18 @@
       // No Content-Type header here; interceptor handles FormData case
       return axios.post(this.jwtConfig.behaviouristToClientKyc, formData)
     }
+
+    getDoctorOwnDays(){
+      return axios.get(this.jwtConfig.getOwnDays)
+    }
+
+    getAvailableSlotByDoctortoDate(date){
+      return axios.get(this.jwtConfig.getDoctorSlotByDate.replace("{date}" , date))
+    }
+
+    bookOfflineAppointment(args){
+      return axios.post(this.jwtConfig.bookOfflineAppointment,args)
+    }
+
+
  }
