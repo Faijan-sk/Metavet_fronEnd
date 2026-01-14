@@ -1,165 +1,230 @@
-import { useState , useEffect} from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom"; // Add this importimport JwtService from "./../../../../@core/auth/jwt/jwtService";
+import { useLocation, useNavigate } from "react-router-dom";
+import JwtService from "./../../../../@core/auth/jwt/jwtService";
 import { useParams } from 'react-router-dom';
 import useJwt from '../../../../enpoints/jwt/useJwt'
 
-
 const DoctorProfileForm = ({ onSubmit }) => {
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
   const response = useSelector((state) => state.user.data);
-const [uid , setUid] =useState()
-const [phoneNumber , setPhoneNumber] = useState();
- const {state}=useLocation();
- const[token, setToken] = useState()
-console.log('the state in the update doctor : ' ,state?.phone)
-
-//   const {
-//   register,
-//   handleSubmit,
-//   formState: { errors },
-// } = useForm({
-//   defaultValues: {
-//     experienceYears: "12",
-//   hospitalClinicName: "Sunrise Medical Center",
-//   hospitalClinicAddress: "742 Evergreen Terrace, Apt 3B",
-//   pincode: "998855",
-//   address: "Suite 21B, Springfield Plaza",
-//   country: "United States",
-//   city: "Springfield",
-//   state: "Illinois",
-//   bio: "Dr. John Carter is a board-certified cardiologist with over a decade of experience in managing complex heart conditions and providing compassionate patient care.",
-//   consultationFee: "200",
-//   gender: "MALE",
-//   dateOfBirth: "1978-06-14",
-//   licenseNumber: "ILCARD78945",
-//   licenseIssueDate: "2010-04-15",
-//   licenseExpiryDate: "2030-04-14",
-//   qualification: "MBBS, MD (Cardiology)",
-//   specialization: "Cardiologist",
-//   previousWorkplace: "Mercy General Hospital",
-//   joiningDate: "2022-09-01",
-//   employmentType: "Full-time",
-//   isActive: true,
-//   emergencyContactNumber: "3125558976",
-//   },
-// })
-
-
-
-const {
-  register,
-  handleSubmit,
-  formState: { errors },
-} = useForm({
-  defaultValues: {
-    experienceYears: "",
-    hospitalClinicName: "",
-    hospitalClinicAddress: "",
-    pincode: "",
-    address: "",
-    country: "",
-    city: "",
-    state: "",
-    bio: "",
-    consultationFee: "",
-    gender: "",
-    dateOfBirth: "",
-    licenseNumber: "",
-    licenseIssueDate: "",
-    licenseExpiryDate: "",
-    qualification: "",
-    specialization: "",
-    previousWorkplace: "",
-    joiningDate: "",
-    employmentType: "",
-    isActive: false,
-    emergencyContactNumber: "",
-  },
-});
-
+  const [uid, setUid] = useState();
+  const [phoneNumber, setPhoneNumber] = useState();
+  const { state } = useLocation();
+  const [token, setToken] = useState();
   
-
-  // ✅ Form Submit
-
+  console.log('the state in the update doctor: ', state?.phone);
   
-  const handleFormSubmit = async (data) => {
-    console.log(data)
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const locationRef = useRef(null);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Google Autocomplete states
+  const autocompleteRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const searchLocation = async (value) => {
+    setLocationQuery(value);
+
+    if (value.length < 3) {
+      setLocationSuggestions([]);
+      return;
+    }
+
     try {
-      // Transform form data into API payload
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${value}&format=json&addressdetails=1&limit=5`
+      );
+
+      const data = await res.json();
+      setLocationSuggestions(data);
+    } catch (error) {
+      console.error("Location search error:", error);
+    }
+  };
+
+  const selectLocation = (item) => {
+    setLocationQuery(item.display_name);
+    setValue("hospitalClinicAddress", item.display_name);
+    setValue("latitude", item.lat);
+    setValue("longitude", item.lon);
+    setLocationSuggestions([]);
+  };
+
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          // Reverse geocoding to get address from coordinates
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+            );
+            const data = await res.json();
+
+            setLocationQuery(data.display_name);
+            setValue("hospitalClinicAddress", data.display_name);
+            setValue("latitude", latitude.toString());
+            setValue("longitude", longitude.toString());
+            setIsGettingLocation(false);
+          } catch (error) {
+            console.error("Error getting address:", error);
+            setIsGettingLocation(false);
+            alert("Failed to get address from location");
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          setIsGettingLocation(false);
+          alert("Unable to get your location. Please enable location access.");
+        }
+      );
+    } else {
+      setIsGettingLocation(false);
+      alert("Geolocation is not supported by your browser");
+    }
+  };
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      experienceYears: "",
+      hospitalClinicName: "",
+      hospitalClinicAddress: "",
+      pincode: "",
+      address: "",
+      country: "",
+      city: "",
+      state: "",
+      bio: "",
+      consultationFee: "",
+      gender: "",
+      dateOfBirth: "",
+      licenseNumber: "",
+      licenseIssueDate: "",
+      licenseExpiryDate: "",
+      qualification: "",
+      specialization: "",
+      previousWorkplace: "",
+      joiningDate: "",
+      employmentType: "",
+      isActive: true,
+      emergencyContactNumber: "",
+      latitude: "",
+      longitude: "",
+    },
+  });
+
+  // ✅ Form Submit Handler
+  const handleFormSubmit = async (data) => {
+    console.log("Form data:", data);
+    
+    if (!uid) {
+      setErrorMsg("User ID not found. Please try again.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      // Transform form data into API payload matching backend DTO
       const payload = {
         userId: uid,
-        experienceYears: Number(data?.experienceYears),
-        hospitalClinicName: data?.hospitalClinicName,
-        hospitalClinicAddress: data?.hospitalClinicAddress,
-        pincode: data?.pincode,
-        address: data?.address,
-        country: data?.country,
-        city: data?.city,
-        state: data?.state,
-        bio: data?.bio,
-        consultationFee: Number(data?.consultationFee),
-        gender: data?.gender.toUpperCase(), // ensure API expects MALE/FEMALE/OTHER
-        dateOfBirth: data?.dateOfBirth,
-        licenseNumber: data?.licenseNumber,
-        licenseIssueDate: data?.licenseIssueDate,
-        licenseExpiryDate: data?.licenseExpiryDate,
-        qualification: data?.qualification,
-        specialization: data?.specialization,
-        previousWorkplace: data?.previousWorkplace,
-        joiningDate: data?.joiningDate,
-        employmentType: data?.employmentType.toUpperCase(),
-        isActive: Boolean(data?.isActive),
-        emergencyContactNumber: data?.emergencyContactNumber,
+        experienceYears: parseInt(data.experienceYears, 10),
+        hospitalClinicName: data.hospitalClinicName.trim(),
+        hospitalClinicAddress: data.hospitalClinicAddress.trim(),
+        pincode: data.pincode.trim(),
+        address: data.address.trim(),
+        country: data.country.trim(),
+        city: data.city.trim(),
+        state: data.state.trim(),
+        bio: data.bio.trim(),
+        consultationFee: parseFloat(data.consultationFee),
+        gender: data.gender.toUpperCase(),
+        dateOfBirth: data.dateOfBirth,
+        licenseNumber: data.licenseNumber.toUpperCase().trim(),
+        licenseIssueDate: data.licenseIssueDate,
+        licenseExpiryDate: data.licenseExpiryDate || null,
+        qualification: data.qualification.trim(),
+        specialization: data.specialization.trim(),
+        previousWorkplace: data.previousWorkplace?.trim() || "",
+        joiningDate: data.joiningDate,
+        employmentType: data.employmentType.toUpperCase(),
+        isActive: Boolean(data.isActive),
+        emergencyContactNumber: data.emergencyContactNumber.trim(),
+        latitude: data.latitude || "",
+        longitude: data.longitude || "",
       };
 
+      console.log("Payload being sent:", payload);
+
+      // Call create doctor API
       const res = await useJwt.createDoctor(payload);
-
-      const loginPyaload = {
-        // phone_number: phoneNumber? phoneNumber : '1234567490' ,
-                phone_number: res.data.data.user.phoneNumber ,
-
- };
-    
-
-console.log('Login Payload' , loginPyaload)
-       let loginRes = await useJwt.login(loginPyaload);
-       const {data:loginData}=loginRes
-
       
-      
+      console.log("✅ Doctor created successfully:", res.data);
 
-      
-     navigate(`/otp-verification/${loginData?.token}`, {
-  state: {
-    otp: loginData?.otp, // dynamic OTP
-    phone: `${loginData?.phone_number}`, // dynamic mobile
-  },
-  replace:true
-});
+      // Prepare login payload with phone number
+      const loginPayload = {
+        phone_number: phoneNumber || state?.phone,
+      };
 
-          // navigate(, {
-          //   state: {
-          //     otp: state?.otp, // Use dynamic OTP from response
-          //     phone: phoneNumber // Use dynamic mobile from response
-          //   }
-          // })
-       
+      console.log("Login Payload:", loginPayload);
+
+      // Call login API to get OTP
+      let loginRes = await useJwt.login(loginPayload);
+      const { data: loginData } = loginRes;
+
+      // console.log("✅ Login response:", loginData.data.otp);
+debugger
+      // Navigate to OTP verification page
+      navigate(`/otp-verification/${loginData?.data?.token}`, {
+        state: {
+          otp: loginData?.data?.otp,
+          phone: `${loginData?.data?.phone_number}`,
+        },
+        replace: true
+      });
+
     } catch (error) {
-      console.error(
-        "❌ Profile update failed:",
-        error.response?.data || error.message
-      );
-      setErrorMsg(error.response?.data?.message || "Profile update failed");
+      console.error("❌ Doctor profile creation failed:", error);
+      
+      // Handle different error types
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Check for specific error messages
+        if (errorData.message) {
+          setErrorMsg(errorData.message);
+        } else if (errorData.error) {
+          setErrorMsg(errorData.error);
+        } else {
+          setErrorMsg("Failed to create doctor profile. Please check all fields.");
+        }
+        
+        console.error("Error details:", errorData);
+      } else if (error.message) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg("Network error. Please check your connection and try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-                console.log('this is token we are sendinto the otp page' ,token)
-
   };
-  
 
   // ✅ Common Input Class
   const inputClass = (err) =>
@@ -190,17 +255,20 @@ console.log('Login Payload' , loginPyaload)
       </p>
     ) : null;
 
-   useEffect(() => {
-    
+  // ✅ Fetch User by Mobile Number
+  useEffect(() => {
     const fetchUser = async () => {
       try {
         if (state?.phone) {
-          const res = await useJwt.getUserByMobile(state.phone);
-          console.log("✅ User fetched by mobile:", res.data?.uid);
-
-          setUid(res.data?.uid); // store UID if needed
-          setPhoneNumber(res.data?.phone)
+          console.log("Fetching user by mobile:", state.phone);
           
+          const res = await useJwt.getUserByMobile(state.phone);
+          console.log("✅ User fetched by mobile:", res.data);
+
+          setUid(res.data?.uid);
+          setPhoneNumber(res.data?.phoneNumber || state.phone);
+        } else {
+          setErrorMsg("Phone number not provided");
         }
       } catch (err) {
         console.error("❌ Failed to fetch user:", err.response?.data || err.message);
@@ -209,23 +277,18 @@ console.log('Login Payload' , loginPyaload)
     };
 
     fetchUser();
-  }, []);
-
-
-
+  }, [state?.phone]);
 
   return (
     <div className="my-20 bg-white shadow-lg border border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-12 xl:px-16 2xl:px-40 max-w-full mx-auto">
       {/* Header */}
       <div className="text-center mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-          Doctor Profile
+          Doctor Profile Registration
         </h2>
         <p className="text-gray-600 text-sm">
-          Complete your professional details
+          Complete your professional details to create your profile
         </p>
-        {/* <p>{response?.data?.firstName}</p>
-        <p>{response?.data?.userType}</p> */}
       </div>
 
       {/* Form */}
@@ -235,357 +298,412 @@ console.log('Login Payload' , loginPyaload)
       >
         {/* Experience */}
         <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Experience (Years)
-  </label>
-  <input
-    type="text"
-    {...register("experienceYears", {
-      required: "Experience is required",
-      pattern: {
-        value: /^[0-9]+$/,
-        message: "Only numeric values are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      // Allow only digits and control/navigation keys
-      if (
-        !/[0-9]/.test(e.key) &&
-        e.key !== "Backspace" &&
-        e.key !== "Tab" &&
-        e.key !== "ArrowLeft" &&
-        e.key !== "ArrowRight" &&
-        e.key !== "Delete"
-      ) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      // Remove non-numeric characters from pasted input
-      e.target.value = e.target.value.replace(/[^0-9]/g, "");
-    }}
-    className={inputClass(errors.experienceYears)}
-    placeholder="Enter total years"
-  />
-  <ErrorMsg message={errors.experienceYears?.message} />
-</div>
-
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Experience (Years) <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            {...register("experienceYears", {
+              required: "Experience is required",
+              pattern: {
+                value: /^[0-9]+$/,
+                message: "Only numeric values are allowed",
+              },
+              min: {
+                value: 0,
+                message: "Experience cannot be negative"
+              },
+              max: {
+                value: 50,
+                message: "Experience cannot exceed 50 years"
+              }
+            })}
+            onKeyDown={(e) => {
+              if (
+                !/[0-9]/.test(e.key) &&
+                e.key !== "Backspace" &&
+                e.key !== "Tab" &&
+                e.key !== "ArrowLeft" &&
+                e.key !== "ArrowRight" &&
+                e.key !== "Delete"
+              ) {
+                e.preventDefault();
+              }
+            }}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^0-9]/g, "");
+            }}
+            className={inputClass(errors.experienceYears)}
+            placeholder="Enter total years of experience"
+          />
+          <ErrorMsg message={errors.experienceYears?.message} />
+        </div>
 
         {/* Hospital + Pincode */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-    <label className="block text-sm font-semibold text-gray-800 mb-2">
-      Hospital/Clinic Name
-    </label>
-    <input
-      type="text"
-      {...register("hospitalClinicName", {
-        required: "Hospital/Clinic name is required",
-        pattern: {
-          value: /^[A-Za-z0-9.,\s]+$/,
-          message:
-            "Only letters, numbers, spaces, dots, and commas are allowed",
-        },
-      })}
-      onKeyDown={(e) => {
-        // Allow only letters, numbers, space, dot, comma, and editing keys
-        if (
-          !/[a-zA-Z0-9.,\s]/.test(e.key) &&
-          e.key !== "Backspace" &&
-          e.key !== "Tab" &&
-          e.key !== "ArrowLeft" &&
-          e.key !== "ArrowRight" &&
-          e.key !== "Delete"
-        ) {
-          e.preventDefault();
-        }
-      }}
-      onInput={(e) => {
-        // Remove any invalid characters (e.g., pasted text)
-        e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
-      }}
-      className={inputClass(errors.hospitalClinicName)}
-      placeholder="Hospital Name"
-    />
-    <ErrorMsg message={errors.hospitalClinicName?.message} />
-  </div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Hospital/Clinic Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("hospitalClinicName", {
+                required: "Hospital/Clinic name is required",
+                minLength: {
+                  value: 3,
+                  message: "Minimum 3 characters required"
+                },
+                maxLength: {
+                  value: 150,
+                  message: "Maximum 150 characters allowed"
+                },
+                pattern: {
+                  value: /^[A-Za-z0-9.,\s]+$/,
+                  message: "Only letters, numbers, spaces, dots, and commas are allowed",
+                },
+              })}
+              onKeyDown={(e) => {
+                if (
+                  !/[a-zA-Z0-9.,\s]/.test(e.key) &&
+                  e.key !== "Backspace" &&
+                  e.key !== "Tab" &&
+                  e.key !== "ArrowLeft" &&
+                  e.key !== "ArrowRight" &&
+                  e.key !== "Delete"
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
+              }}
+              className={inputClass(errors.hospitalClinicName)}
+              placeholder="Enter hospital/clinic name"
+            />
+            <ErrorMsg message={errors.hospitalClinicName?.message} />
+          </div>
+          
           <div>
-    <label className="block text-sm font-semibold text-gray-800 mb-2">
-      Pincode
-    </label>
-    <input
-      type="text"
-      {...register("pincode", {
-        required: "Pincode is required",
-        pattern: {
-          value: /^[0-9]+$/,
-          message: "Only numbers are allowed",
-        },
-      })}
-      onKeyDown={(e) => {
-        // Allow only digits and editing keys
-        if (
-          !/[0-9]/.test(e.key) &&
-          e.key !== "Backspace" &&
-          e.key !== "Tab" &&
-          e.key !== "ArrowLeft" &&
-          e.key !== "ArrowRight" &&
-          e.key !== "Delete"
-        ) {
-          e.preventDefault();
-        }
-      }}
-      onInput={(e) => {
-        // Remove non-numeric pasted content
-        e.target.value = e.target.value.replace(/[^0-9]/g, "");
-      }}
-      className={inputClass(errors.pincode)}
-      placeholder="411045"
-      maxLength={6} // Optional: limit to 6 digits for Indian pincodes
-    />
-    <ErrorMsg message={errors.pincode?.message} />
-  </div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Pincode <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("pincode", {
+                required: "Pincode is required",
+                pattern: {
+                  value: /^[0-9]{6}$/,
+                  message: "Pincode must be exactly 6 digits",
+                },
+              })}
+              onKeyDown={(e) => {
+                if (
+                  !/[0-9]/.test(e.key) &&
+                  e.key !== "Backspace" &&
+                  e.key !== "Tab" &&
+                  e.key !== "ArrowLeft" &&
+                  e.key !== "ArrowRight" &&
+                  e.key !== "Delete"
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, "");
+              }}
+              className={inputClass(errors.pincode)}
+              placeholder="411045"
+              maxLength={6}
+            />
+            <ErrorMsg message={errors.pincode?.message} />
+          </div>
         </div>
 
-        {/* Hospital Address */}
+        {/* Hospital Location with Map Search */}
+        <div ref={locationRef} className="relative">
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Hospital/Clinic Location <span className="text-red-500">*</span>
+          </label>
+
+          <input
+            type="text"
+            value={locationQuery}
+            {...register("hospitalClinicAddress", {
+              required: "Hospital location is required",
+              minLength: {
+                value: 10,
+                message: "Minimum 10 characters required"
+              },
+              maxLength: {
+                value: 300,
+                message: "Maximum 300 characters allowed"
+              }
+            })}
+            onChange={(e) => searchLocation(e.target.value)}
+            onFocus={() => setLocationSuggestions([{ place_id: 'current', display_name: 'Use Current Location', isCurrentLocation: true }])}
+            className={inputClass(errors.hospitalClinicAddress)}
+            placeholder="Type location or use current location"
+            disabled={isGettingLocation}
+          />
+          <ErrorMsg message={errors.hospitalClinicAddress?.message} />
+
+          {/* Suggestions Dropdown */}
+          {locationSuggestions.length > 0 && (
+            <ul className="absolute z-50 w-full bg-white border rounded-lg shadow-md max-h-48 overflow-y-auto mt-1">
+              {locationSuggestions.map((item) => (
+                <li
+                  key={item.place_id}
+                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm border-b last:border-b-0 ${
+                    item.isCurrentLocation ? 'bg-blue-50 font-medium text-blue-600 flex items-center gap-2' : ''
+                  }`}
+                  onClick={() => {
+                    if (item.isCurrentLocation) {
+                      getCurrentLocation();
+                    } else {
+                      selectLocation(item);
+                    }
+                  }}
+                >
+                  {item.isCurrentLocation && (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                  {item.display_name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Hidden fields for latitude and longitude */}
+        <input type="hidden" {...register("latitude")} />
+        <input type="hidden" {...register("longitude")} />
+
+        {/* Residential Address */}
         <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Hospital/Clinic Address
-  </label>
-  <input
-    type="text"
-    {...register("hospitalClinicAddress", {
-      required: "Address is required",
-      pattern: {
-        value: /^[A-Za-z0-9.,\s]+$/,
-        message: "Only letters, numbers, spaces, commas, and dots are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      // Allow: letters, numbers, space, comma, dot, and essential control keys
-      const allowedKeys = [
-        "Backspace",
-        "Tab",
-        "ArrowLeft",
-        "ArrowRight",
-        "Delete",
-      ];
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Residential Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            {...register("address", {
+              required: "Address is required",
+              minLength: {
+                value: 10,
+                message: "Minimum 10 characters required"
+              },
+              maxLength: {
+                value: 200,
+                message: "Maximum 200 characters allowed"
+              },
+              pattern: {
+                value: /^[A-Za-z0-9.,\s]+$/,
+                message: "Only letters, numbers, spaces, commas, and dots are allowed",
+              },
+            })}
+            onKeyDown={(e) => {
+              const allowedKeys = [
+                "Backspace",
+                "Tab",
+                "ArrowLeft",
+                "ArrowRight",
+                "Delete",
+              ];
 
-      if (
-        !/[a-zA-Z0-9.,\s]/.test(e.key) && // not a valid input char
-        !allowedKeys.includes(e.key) // not a control key
-      ) {
-        e.preventDefault(); // block typing
-      }
-    }}
-    onInput={(e) => {
-      // Clean pasted content: remove any disallowed characters
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
-    }}
-    className={inputClass(errors.hospitalClinicAddress)}
-    placeholder="Full Address"
-  />
-  <ErrorMsg message={errors.hospitalClinicAddress?.message} />
-</div>
-
-
-
-        {/* Home Address */}
-       <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Residential Address
-  </label>
-  <input
-    type="text"
-    {...register("address", {
-      required: "Address is required",
-      pattern: {
-        value: /^[A-Za-z0-9.,\s]+$/,
-        message: "Only letters, numbers, spaces, commas, and dots are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      // Allow only letters, numbers, spaces, comma, dot, and navigation keys
-      const allowedKeys = [
-        "Backspace",
-        "Tab",
-        "ArrowLeft",
-        "ArrowRight",
-        "Delete",
-      ];
-
-      if (
-        !/[a-zA-Z0-9.,\s]/.test(e.key) && // not valid character
-        !allowedKeys.includes(e.key) // not control key
-      ) {
-        e.preventDefault(); // block invalid typing
-      }
-    }}
-    onInput={(e) => {
-      // Clean pasted text or autofill input
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
-    }}
-    className={inputClass(errors.address)}
-    placeholder="Home Address"
-  />
-  <ErrorMsg message={errors.address?.message} />
-</div>
-
-
+              if (
+                !/[a-zA-Z0-9.,\s]/.test(e.key) &&
+                !allowedKeys.includes(e.key)
+              ) {
+                e.preventDefault();
+              }
+            }}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^A-Za-z0-9.,\s]/g, "");
+            }}
+            className={inputClass(errors.address)}
+            placeholder="Enter home address"
+          />
+          <ErrorMsg message={errors.address?.message} />
+        </div>
 
         {/* Country, State, City */}
-       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-  {/* Country */}
-  <input
-    type="text"
-    {...register("country", {
-      required: "Country is required",
-      pattern: {
-        value: /^[A-Za-z0-9\s]+$/,
-        message: "Only letters, numbers, and spaces are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
-    }}
-    className={inputClass(errors.country)}
-    placeholder="Country"
-  />
-  <ErrorMsg message={errors.country?.message} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Country */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Country <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("country", {
+                required: "Country is required",
+                maxLength: {
+                  value: 50,
+                  message: "Maximum 50 characters allowed"
+                },
+                pattern: {
+                  value: /^[A-Za-z\s]+$/,
+                  message: "Only letters and spaces are allowed",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, "");
+              }}
+              className={inputClass(errors.country)}
+              placeholder="India"
+            />
+            <ErrorMsg message={errors.country?.message} />
+          </div>
 
-  {/* State */}
-  <input
-    type="text"
-    {...register("state", {
-      required: "State is required",
-      pattern: {
-        value: /^[A-Za-z0-9\s]+$/,
-        message: "Only letters, numbers, and spaces are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
-    }}
-    className={inputClass(errors.state)}
-    placeholder="State"
-  />
-  <ErrorMsg message={errors.state?.message} />
+          {/* State */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              State <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("state", {
+                required: "State is required",
+                pattern: {
+                  value: /^[A-Za-z\s]{2,50}$/,
+                  message: "State must be 2-50 characters, letters only",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, "");
+              }}
+              className={inputClass(errors.state)}
+              placeholder="Maharashtra"
+            />
+            <ErrorMsg message={errors.state?.message} />
+          </div>
 
-  {/* City */}
-  <input
-    type="text"
-    {...register("city", {
-      required: "City is required",
-      pattern: {
-        value: /^[A-Za-z0-9\s]+$/,
-        message: "Only letters, numbers, and spaces are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-      if (!/[a-zA-Z0-9\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
-    }}
-    className={inputClass(errors.city)}
-    placeholder="City"
-  />
-  <ErrorMsg message={errors.city?.message} />
-</div>
-
+          {/* City */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              City <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("city", {
+                required: "City is required",
+                pattern: {
+                  value: /^[A-Za-z\s]{2,50}$/,
+                  message: "City must be 2-50 characters, letters only",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, "");
+              }}
+              className={inputClass(errors.city)}
+              placeholder="Nagpur"
+            />
+            <ErrorMsg message={errors.city?.message} />
+          </div>
+        </div>
 
         {/* Bio */}
         <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Short Bio
-  </label>
-  <textarea
-    {...register("bio", {
-      required: "Bio is required",
-      pattern: {
-        value: /^[A-Za-z0-9,\s]+$/,
-        message: "Only letters, numbers, spaces, and commas are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Professional Bio <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            {...register("bio", {
+              required: "Bio is required",
+              maxLength: {
+                value: 500,
+                message: "Bio cannot exceed 500 characters"
+              },
+              pattern: {
+                value: /^[A-Za-z0-9,.\s]+$/,
+                message: "Only letters, numbers, spaces, commas, and periods are allowed",
+              },
+            })}
+            onKeyDown={(e) => {
+              const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
 
-      // Block Enter key (no multiline)
-      if (e.key === "Enter") {
-        e.preventDefault();
-        return;
-      }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                return;
+              }
 
-      // Allow letters, numbers, spaces, commas, and essential keys only
-      if (!/[a-zA-Z0-9,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      // Clean any invalid pasted characters
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9,\s]/g, "");
-    }}
-    className={inputClass(errors.bio)}
-    placeholder="Write about yourself..."
-  />
-  <ErrorMsg message={errors.bio?.message} />
-</div>
-
+              if (!/[a-zA-Z0-9,.\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^A-Za-z0-9,.\s]/g, "");
+            }}
+            rows="4"
+            className={inputClass(errors.bio)}
+            placeholder="Write a brief professional bio about yourself..."
+          />
+          <ErrorMsg message={errors.bio?.message} />
+        </div>
 
         {/* Consultation Fee */}
         <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Consultation Fee ($)
-  </label>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Consultation Fee (₹) <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            {...register("consultationFee", {
+              required: "Consultation fee is required",
+              pattern: {
+                value: /^[0-9]+$/,
+                message: "Only numbers are allowed",
+              },
+              min: {
+                value: 0,
+                message: "Fee cannot be negative"
+              },
+              max: {
+                value: 50000,
+                message: "Fee cannot exceed 50000"
+              }
+            })}
+            onKeyDown={(e) => {
+              const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
 
-  <input
-    type="text"
-    {...register("consultationFee", {
-      required: "Fee is required",
-      pattern: {
-        value: /^[0-9]+$/,
-        message: "Only numbers are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-
-      // Allow only digits and essential control keys
-      if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      // Clean up any invalid characters from pasted input
-      e.target.value = e.target.value.replace(/[^0-9]/g, "");
-    }}
-    className={inputClass(errors.consultationFee)}
-    placeholder="2000"
-  />
-  <ErrorMsg message={errors.consultationFee?.message} />
-</div>
-
+              if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^0-9]/g, "");
+            }}
+            className={inputClass(errors.consultationFee)}
+            placeholder="2000"
+          />
+          <ErrorMsg message={errors.consultationFee?.message} />
+        </div>
 
         {/* Gender + DOB */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Gender
+              Gender <span className="text-red-500">*</span>
             </label>
             <select
               {...register("gender", { required: "Gender is required" })}
@@ -596,177 +714,187 @@ console.log('Login Payload' , loginPyaload)
               <option value="FEMALE">Female</option>
               <option value="OTHER">Other</option>
             </select>
+            <ErrorMsg message={errors.gender?.message} />
           </div>
+          
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Date of Birth
+              Date of Birth <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
-              {...register("dateOfBirth", { required: "DOB is required" })}
+              {...register("dateOfBirth", { required: "Date of birth is required" })}
               className={inputClass(errors.dateOfBirth)}
+              max={new Date().toISOString().split('T')[0]}
             />
+            <ErrorMsg message={errors.dateOfBirth?.message} />
           </div>
         </div>
 
-        {/* License */}
+        {/* License Details */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              License Number
+              License Number <span className="text-red-500">*</span>
             </label>
-            {/* <input
+            <input
               type="text"
               {...register("licenseNumber", {
                 required: "License number is required",
                 pattern: {
-                  value: /^[A-Z]{2}\d{2}\s\d{4}\s\d{7}$/,
-                  message:
-                    "Enter a valid license number (e.g., MH14 2025 1234567)",
+                  value: /^[A-Z0-9]{6,20}$/,
+                  message: "License must be 6-20 alphanumeric characters"
                 },
+                setValueAs: (v) => (v ? v.toUpperCase() : ""),
               })}
+              style={{ textTransform: "uppercase" }}
               className={inputClass(errors.licenseNumber)}
-              placeholder="License Number"
-
-            /> */}
-            <input
-              type="text"
-              {...register("licenseNumber", {
-                required: "License number is required",
-                // pattern: {
-                //   value: /^[A-Z]{2}\d{2}\s\d{4}\s\d{7}$/,
-                //   message: "Enter a valid license number (e.g., MH14 2025 1234567)",
-                // },
-                setValueAs: (v) => (v ? v.toUpperCase() : ""), // safely transform
-              })}
-              style={{ textTransform: "uppercase" }} // display uppercase
-              className={inputClass(errors.licenseNumber)}
-              placeholder="License Number"
+              placeholder="ABC123456"
+              maxLength={20}
             />
+            <ErrorMsg message={errors.licenseNumber?.message} />
           </div>
+          
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Issue Date
+              Issue Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               {...register("licenseIssueDate", {
-                required: "Issue date is required",
+                required: "License issue date is required",
               })}
               className={inputClass(errors.licenseIssueDate)}
+              max={new Date().toISOString().split('T')[0]}
             />
+            <ErrorMsg message={errors.licenseIssueDate?.message} />
           </div>
+          
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
               Expiry Date
             </label>
             <input
               type="date"
-              {...register("licenseExpiryDate", {
-                required: "Expiry date is required",
-              })}
+              {...register("licenseExpiryDate")}
               className={inputClass(errors.licenseExpiryDate)}
+              min={new Date().toISOString().split('T')[0]}
             />
+            <ErrorMsg message={errors.licenseExpiryDate?.message} />
           </div>
         </div>
 
         {/* Qualification + Specialization */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-  {/* Qualification */}
-  <div>
-    <label className="block text-sm font-semibold text-gray-800 mb-2">
-      Qualification
-    </label>
-    <input
-      type="text"
-      {...register("qualification", {
-        required: "Qualification is required",
-        pattern: {
-          value: /^[A-Za-z,\s]+$/,
-          message: "Only letters, spaces, and commas are allowed",
-        },
-      })}
-      onKeyDown={(e) => {
-        const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-        if (!/[a-zA-Z,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-          e.preventDefault();
-        }
-      }}
-      onInput={(e) => {
-        e.target.value = e.target.value.replace(/[^A-Za-z,\s]/g, "");
-      }}
-      className={inputClass(errors.qualification)}
-      placeholder="MBBS, MD"
-    />
-    <ErrorMsg message={errors.qualification?.message} />
-  </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Qualification <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("qualification", {
+                required: "Qualification is required",
+                minLength: {
+                  value: 2,
+                  message: "Minimum 2 characters required"
+                },
+                maxLength: {
+                  value: 200,
+                  message: "Maximum 200 characters allowed"
+                },
+                pattern: {
+                  value: /^[A-Za-z,.\s]+$/,
+                  message: "Only letters, spaces, commas, and periods are allowed",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z,.\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z,.\s]/g, "");
+              }}
+              className={inputClass(errors.qualification)}
+              placeholder="MBBS, MD"
+            />
+            <ErrorMsg message={errors.qualification?.message} />
+          </div>
 
-  {/* Specialization */}
-  <div>
-    <label className="block text-sm font-semibold text-gray-800 mb-2">
-      Specialization
-    </label>
-    <input
-      type="text"
-      {...register("specialization", {
-        required: "Specialization is required",
-        pattern: {
-          value: /^[A-Za-z,\s]+$/,
-          message: "Only letters, spaces, and commas are allowed",
-        },
-      })}
-      onKeyDown={(e) => {
-        const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-        if (!/[a-zA-Z,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-          e.preventDefault();
-        }
-      }}
-      onInput={(e) => {
-        e.target.value = e.target.value.replace(/[^A-Za-z,\s]/g, "");
-      }}
-      className={inputClass(errors.specialization)}
-      placeholder="Cardiology"
-    />
-    <ErrorMsg message={errors.specialization?.message} />
-  </div>
-</div>
-
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Specialization <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              {...register("specialization", {
+                required: "Specialization is required",
+                minLength: {
+                  value: 3,
+                  message: "Minimum 3 characters required"
+                },
+                maxLength: {
+                  value: 100,
+                  message: "Maximum 100 characters allowed"
+                },
+                pattern: {
+                  value: /^[A-Za-z,.\s]+$/,
+                  message: "Only letters, spaces, commas, and periods are allowed",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z,.\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z,.\s]/g, "");
+              }}
+              className={inputClass(errors.specialization)}
+              placeholder="Cardiology"
+            />
+            <ErrorMsg message={errors.specialization?.message} />
+          </div>
+        </div>
 
         {/* Previous Workplace + Joining Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Previous Workplace
-  </label>
-  <input
-    type="text"
-    {...register("previousWorkplace", {
-      required: "Previous workplace is required",
-      pattern: {
-        value: /^[A-Za-z0-9,\s]+$/,
-        message: "Only letters, numbers, spaces, and commas are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-      // Allow only letters, numbers, spaces, commas, and essential control keys
-      if (!/[a-zA-Z0-9,\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      // Remove any invalid characters from pasted text
-      e.target.value = e.target.value.replace(/[^A-Za-z0-9,\s]/g, "");
-    }}
-    className={inputClass(errors.previousWorkplace)}
-    placeholder="Fortis Hospital"
-  />
-  <ErrorMsg message={errors.previousWorkplace?.message} />
-</div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Previous Workplace
+            </label>
+            <input
+              type="text"
+              {...register("previousWorkplace", {
+                maxLength: {
+                  value: 100,
+                  message: "Maximum 100 characters allowed"
+                },
+                pattern: {
+                  value: /^[A-Za-z0-9,.\s]*$/,
+                  message: "Only letters, numbers, spaces, commas, and periods are allowed",
+                },
+              })}
+              onKeyDown={(e) => {
+                const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+                if (!/[a-zA-Z0-9,.\s]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onInput={(e) => {
+                e.target.value = e.target.value.replace(/[^A-Za-z0-9,.\s]/g, "");
+              }}
+              className={inputClass(errors.previousWorkplace)}
+              placeholder="Fortis Hospital (Optional)"
+            />
+            <ErrorMsg message={errors.previousWorkplace?.message} />
+          </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Joining Date
+              Joining Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -774,14 +902,16 @@ console.log('Login Payload' , loginPyaload)
                 required: "Joining date is required",
               })}
               className={inputClass(errors.joiningDate)}
+              max={new Date().toISOString().split('T')[0]}
             />
+            <ErrorMsg message={errors.joiningDate?.message} />
           </div>
         </div>
 
         {/* Employment Type */}
         <div>
           <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Employment Type
+            Employment Type <span className="text-red-500">*</span>
           </label>
           <select
             {...register("employmentType", {
@@ -794,61 +924,109 @@ console.log('Login Payload' , loginPyaload)
             <option value="PART_TIME">Part Time</option>
             <option value="CONSULTANT">Consultant</option>
           </select>
+          <ErrorMsg message={errors.employmentType?.message} />
         </div>
 
-        {/* isActive */}
+        {/* Emergency Contact */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Emergency Contact Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            {...register("emergencyContactNumber", {
+              required: "Emergency contact is required",
+              pattern: {
+                value: /^[0-9]{10}$/,
+                message: "Emergency contact must be exactly 10 digits",
+              },
+            })}
+            onKeyDown={(e) => {
+              const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
+              if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
+                e.preventDefault();
+              }
+            }}
+            onInput={(e) => {
+              e.target.value = e.target.value.replace(/[^0-9]/g, "");
+            }}
+            className={inputClass(errors.emergencyContactNumber)}
+            placeholder="9988776655"
+            maxLength={10}
+          />
+          <ErrorMsg message={errors.emergencyContactNumber?.message} />
+        </div>
+
+        {/* isActive Checkbox */}
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
             {...register("isActive")}
             className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+            defaultChecked={true}
           />
-          <label className="text-sm font-semibold text-gray-800 mb-2">
-            Active
+          <label className="text-sm font-semibold text-gray-800">
+            Currently Active (Available for appointments)
           </label>
         </div>
 
-        {/* Emergency Contact */}
-        <div>
-  <label className="block text-sm font-semibold text-gray-800 mb-2">
-    Emergency Contact Number
-  </label>
-  <input
-    type="tel"
-    {...register("emergencyContactNumber", {
-      required: "Emergency contact is required",
-      pattern: {
-        value: /^[0-9]+$/,
-        message: "Only numbers are allowed",
-      },
-    })}
-    onKeyDown={(e) => {
-      const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-      // Allow only digits and essential control keys
-      if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
-        e.preventDefault();
-      }
-    }}
-    onInput={(e) => {
-      // Remove invalid characters if pasted
-      e.target.value = e.target.value.replace(/[^0-9]/g, "");
-    }}
-    className={inputClass(errors.emergencyContactNumber)}
-    placeholder="9988776655"
-  />
-  <ErrorMsg message={errors.emergencyContactNumber?.message} />
-</div>
+        {/* Server Error Message */}
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600 text-sm flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {errorMsg}
+            </p>
+          </div>
+        )}
 
-
-        {/* Server Error */}
-        <p className="text-red-500 text-sm text-center">{errorMsg}</p>
-
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
-          className="w-full py-2.5 sm:py-3 px-4 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90 transition-all duration-200 text-sm sm:text-base"
+          disabled={isSubmitting}
+          className={`w-full py-2.5 sm:py-3 px-4 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base flex items-center justify-center ${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-primary text-white hover:bg-primary/90"
+          }`}
         >
-          Save Profile
+          {isSubmitting ? (
+            <>
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Creating Profile...
+            </>
+          ) : (
+            "Create Doctor Profile"
+          )}
         </button>
       </form>
     </div>

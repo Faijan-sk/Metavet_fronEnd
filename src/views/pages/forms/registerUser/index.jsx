@@ -126,6 +126,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
       const response = await useJwt.register(data)
 
       const receivedOtp = response.data.data.otp;
+      
       const receivedMobile = response.data.data.phoneNumber;
 
       setOtp(receivedOtp)
@@ -162,12 +163,16 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     console.log(receivedToken)
 
       if (response.data?.data?.userType === 2) {
+        console.log('numvber goining to doctor',receivedMobile)
         navigate(`/updateProfile/${receivedToken}`, {
           state: {
             otp: receivedOtp,
             phone: receivedMobile
+            
           }
         })
+
+        
       } else { 
         if (receivedToken) {
           navigate(`/otp-verification/${receivedToken}`, {
