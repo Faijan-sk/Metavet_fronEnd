@@ -209,7 +209,9 @@ const Appointment = () => {
         Schedule your first appointment to keep your pet healthy and happy.
       </p>
 
-      <button
+
+
+{(userInfo?.userType == 2)&& <button
         onClick={() => {
           setModalType('create');
           setModalOpen(true);
@@ -217,8 +219,19 @@ const Appointment = () => {
         className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
       >
         <Plus size={20} />
-        Create Your Appointments
-      </button>
+        Create Your Appointmentsdaas
+      </button> }
+      
+
+
+
+
+
+
+
+
+
+
       <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
         <div className="text-center p-4">
           <div className="text-4xl mb-2">💉</div>
