@@ -1,13 +1,12 @@
-import { Image, Plus, Search, User, Users, X, Stethoscope, Award } from "lucide-react";
+import { Image, Plus, Search, User, Users, X, Stethoscope, Award, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import BookAppointmentForm from "../appointment/BokAppointmentForm";
 
-// ---------- Modal Component (responsive + XL + scrollable) ----------
+// Modal Component
 const Modal = ({ open, onClose, title, children, size = "xl" }) => {
   if (!open) return null;
 
-  // Close on ESC
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -20,31 +19,17 @@ const Modal = ({ open, onClose, title, children, size = "xl" }) => {
     sm: "sm:max-w-md",
     md: "sm:max-w-lg md:max-w-xl",
     lg: "sm:max-w-xl md:max-w-2xl lg:max-w-4xl",
-    xl: "md:max-w-3xl lg:max-w-5xl", // ~ 80rem wide on lg+
+    xl: "md:max-w-3xl lg:max-w-5xl",
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      {/* Dialog */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={`relative z-[101] w-full ${sizeMap[size]} mx-auto rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto`}
-      >
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" className={`relative z-[101] w-full ${sizeMap[size]} mx-auto rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto`}>
         {(title || title === "") && (
           <div className="sticky top-0 bg-white/80 backdrop-blur border-b px-5 py-4 rounded-t-2xl z-10 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <button
-              aria-label="Close modal"
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100"
-            >
+            <button aria-label="Close modal" onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
@@ -55,7 +40,7 @@ const Modal = ({ open, onClose, title, children, size = "xl" }) => {
   );
 };
 
-// LoadingCard - skeleton
+// LoadingCard
 const LoadingCard = () => (
   <div className="w-full max-w-sm mx-auto bg-white rounded-3xl shadow-lg overflow-hidden animate-pulse">
     <div className="w-full h-64 bg-gray-200" />
@@ -86,18 +71,9 @@ const LoadingCard = () => (
 const DoctorCard = ({ doctor, onFollow }) => (
   <div className="w-full max-w-sm mx-auto bg-white rounded-3xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
     <div className="relative">
-      <div
-        className={`w-full h-64 flex items-center justify-center overflow-hidden ${
-          doctor.profileImage ? "" : "bg-gradient-to-br from-[#52B2AD] to-[#42948f]"
-        }`}
-      >
+      <div className={`w-full h-64 flex items-center justify-center overflow-hidden ${doctor.profileImage ? "" : "bg-gradient-to-br from-[#52B2AD] to-[#42948f]"}`}>
         {doctor.profileImage ? (
-          <img
-            src={doctor.profileImage}
-            alt={`Dr. ${doctor.firstName} ${doctor.lastName}`}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          <img src={doctor.profileImage} alt={`Dr. ${doctor.firstName} ${doctor.lastName}`} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <User className="w-24 h-24 text-white opacity-80" strokeWidth={1.5} />
         )}
@@ -105,6 +81,12 @@ const DoctorCard = ({ doctor, onFollow }) => (
       <div className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-lg">
         <Stethoscope className="w-5 h-5 text-[#52B2AD]" />
       </div>
+      {doctor.distance && (
+        <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur rounded-full px-3 py-1.5 shadow-lg flex items-center gap-1.5">
+          <MapPin className="w-4 h-4 text-[#52B2AD]" />
+          <span className="text-sm font-semibold text-gray-900">{doctor.distance} km</span>
+        </div>
+      )}
     </div>
 
     <div className="p-6">
@@ -159,54 +141,97 @@ const DoctorCard = ({ doctor, onFollow }) => (
   </div>
 );
 
-// Search Bar
-const SearchBar = ({ searchQuery, setSearchQuery }) => {
+// Search Bar with Distance Filter
+const SearchBar = ({ searchQuery, setSearchQuery, maxDistance, setMaxDistance }) => {
   const clearSearch = () => setSearchQuery("");
+  const clearDistance = () => setMaxDistance("");
 
   return (
-    <div className="relative max-w-2xl mx-auto mb-8">
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+    <div className="max-w-4xl mx-auto mb-8">
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search doctors by name or specialization..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-12 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] transition-all duration-200 hover:shadow-md"
+          />
+          {searchQuery && (
+            <button onClick={clearSearch} className="absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-2xl transition-colors duration-200">
+              <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
         </div>
-        <input
-          type="text"
-          placeholder="Search doctors by name or specialization..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="block w-full pl-12 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] transition-all duration-200 hover:shadow-md"
-        />
-        {searchQuery && (
-          <button
-            onClick={clearSearch}
-            className="absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-2xl transition-colors duration-200"
-          >
-            <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-          </button>
-        )}
+
+        {/* Distance Filter */}
+        <div className="relative md:w-64">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <MapPin className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="number"
+            placeholder="Max distance (km)"
+            value={maxDistance}
+            onChange={(e) => setMaxDistance(e.target.value)}
+            min="0"
+            step="0.5"
+            className="block w-full pl-12 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl bg-white shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] transition-all duration-200 hover:shadow-md"
+          />
+          {maxDistance && (
+            <button onClick={clearDistance} className="absolute inset-y-0 right-0 pr-4 flex items-center hover:bg-gray-50 rounded-r-2xl transition-colors duration-200">
+              <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
       </div>
-      {searchQuery && (
-        <div className="absolute top-full left-0 right-0 mt-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg shadow-md border animate-fadeIn">
-          <span className="font-medium">Searching for:</span> "{searchQuery}"
+
+      {/* Active Filters Display */}
+      {(searchQuery || maxDistance) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {searchQuery && (
+            <div className="inline-flex items-center gap-2 bg-[#52B2AD] bg-opacity-10 text-[#52B2AD] px-4 py-2 rounded-full text-sm font-medium">
+              <Search className="w-4 h-4" />
+              <span>"{searchQuery}"</span>
+              <button onClick={clearSearch} className="hover:bg-[#52B2AD] hover:bg-opacity-20 rounded-full p-0.5">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          {maxDistance && (
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-sm font-medium">
+              <MapPin className="w-4 h-4" />
+              <span>Within {maxDistance} km</span>
+              <button onClick={clearDistance} className="hover:bg-blue-100 rounded-full p-0.5">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-// Error states (kept same as before but trimmed for brevity)
+// Error states
 const ErrorState400 = () => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
     <div className="w-32 h-32 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center shadow-xl" />
     <h2 className="text-2xl font-bold text-gray-800 mt-6 text-center">No Doctors Available</h2>
   </div>
 );
+
 const ErrorState404 = () => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
     <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl" />
     <h2 className="text-2xl font-bold text-gray-800 mt-6 text-center">No Doctors Found</h2>
   </div>
 );
+
 const ErrorState500 = ({ onRetry }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
     <div className="w-32 h-32 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-xl" />
@@ -215,11 +240,20 @@ const ErrorState500 = ({ onRetry }) => (
   </div>
 );
 
-const EmptySearchResults = ({ searchQuery, onClear }) => (
+const EmptySearchResults = ({ searchQuery, maxDistance, onClear }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
-    <div className="w-32 h-32 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-xl" />
-    <h2 className="text-2xl font-bold text-gray-800 mt-6 text-center">No Results for “{searchQuery}”</h2>
-    <button onClick={onClear} className="mt-4 bg-gray-700 text-white px-6 py-2 rounded-full">Clear Search</button>
+    <div className="w-32 h-32 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-xl">
+      <Search className="w-16 h-16 text-white" />
+    </div>
+    <h2 className="text-2xl font-bold text-gray-800 mt-6 text-center">No Results Found</h2>
+    <p className="text-gray-600 mt-2 text-center">
+      {searchQuery && maxDistance && `No doctors found matching "${searchQuery}" within ${maxDistance} km`}
+      {searchQuery && !maxDistance && `No doctors found matching "${searchQuery}"`}
+      {!searchQuery && maxDistance && `No doctors found within ${maxDistance} km`}
+    </p>
+    <button onClick={onClear} className="mt-4 bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-800 transition-colors">
+      Clear Filters
+    </button>
   </div>
 );
 
@@ -230,24 +264,70 @@ const FindDoctor = () => {
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Modal state
+  const [maxDistance, setMaxDistance] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [locationError, setLocationError] = useState(null);
 
+  // Get user location on component mount
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredDoctors(doctors);
-    } else {
-      const filtered = doctors.filter((doctor) => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        console.log("User Latitude:", lat);
+        console.log("User Longitude:", lng);
+
+        setLatitude(lat);
+        setLongitude(lng);
+      },
+      (error) => {
+        console.error("Location Error:", error);
+        setLocationError("Location permission denied or unavailable");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }, []);
+
+
+  
+
+  // Filter doctors based on search and distance
+  useEffect(() => {
+    let filtered = doctors;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((doctor) => {
         const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
         const specialization = doctor.specialization?.toLowerCase() || "";
         const query = searchQuery.toLowerCase();
         return fullName.includes(query) || specialization.includes(query);
       });
-      setFilteredDoctors(filtered);
     }
-  }, [searchQuery, doctors]);
+
+    // Filter by distance
+    if (maxDistance && !isNaN(parseFloat(maxDistance))) {
+      const distanceValue = parseFloat(maxDistance);
+      filtered = filtered.filter((doctor) => {
+        return doctor.distance && doctor.distance <= distanceValue;
+      });
+    }
+
+    setFilteredDoctors(filtered);
+  }, [searchQuery, maxDistance, doctors]);
 
   const fetchDoctors = async () => {
     try {
@@ -275,6 +355,11 @@ const FindDoctor = () => {
     setSelectedDoctor(null);
   };
 
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setMaxDistance("");
+  };
+
   useEffect(() => {
     fetchDoctors();
   }, []);
@@ -293,10 +378,27 @@ const FindDoctor = () => {
             Find Doctors
           </h1>
           <p className="text-gray-600">Discover qualified healthcare professionals for your pets</p>
+          
+          {/* Display location info */}
+          {/* {latitude && longitude && (
+            <div className="mt-2 text-sm text-gray-500">
+              Location: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+            </div>
+          )} */}
+          {locationError && (
+            <div className="mt-2 text-sm text-red-500">
+              {locationError}
+            </div>
+          )}
         </div>
 
         {!loading && !error && (
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <SearchBar 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery}
+            maxDistance={maxDistance}
+            setMaxDistance={setMaxDistance}
+          />
         )}
 
         {loading ? (
@@ -309,19 +411,23 @@ const FindDoctor = () => {
           <ErrorState500 onRetry={fetchDoctors} />
         ) : doctors.length === 0 ? (
           <ErrorState400 />
-        ) : filteredDoctors.length === 0 && searchQuery ? (
-          <EmptySearchResults searchQuery={searchQuery} onClear={() => setSearchQuery("")} />
+        ) : filteredDoctors.length === 0 && (searchQuery || maxDistance) ? (
+          <EmptySearchResults 
+            searchQuery={searchQuery} 
+            maxDistance={maxDistance}
+            onClear={clearAllFilters} 
+          />
         ) : (
           <>
             <div className="mb-6">
               <p className="text-gray-600 text-lg">
-                {searchQuery ? (
+                {(searchQuery || maxDistance) ? (
                   <>
                     Found{" "}
                     <span className="font-bold text-[#52B2AD]">
                       {filteredDoctors.filter((x) => x?.doctorProfileStatus === "APPROVED").length}
                     </span>{" "}
-                    doctor{filteredDoctors.length !== 1 ? "s" : ""} matching "{searchQuery}"
+                    doctor{filteredDoctors.filter((x) => x?.doctorProfileStatus === "APPROVED").length !== 1 ? "s" : ""}
                   </>
                 ) : (
                   <>
@@ -329,7 +435,7 @@ const FindDoctor = () => {
                     <span className="font-bold text-[#52B2AD]">
                       {doctors.filter((x) => x?.doctorProfileStatus === "APPROVED").length}
                     </span>{" "}
-                    doctor{doctors.length !== 1 ? "s" : ""}
+                    doctor{doctors.filter((x) => x?.doctorProfileStatus === "APPROVED").length !== 1 ? "s" : ""}
                   </>
                 )}
               </p>
@@ -346,7 +452,6 @@ const FindDoctor = () => {
         )}
       </div>
 
-      {/* Booking Modal */}
       <Modal
         open={isModalOpen}
         onClose={closeModal}
