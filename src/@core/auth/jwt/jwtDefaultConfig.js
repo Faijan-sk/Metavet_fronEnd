@@ -21,8 +21,8 @@ export default {
   getActiveSpecializationEndPoint : 'api/doctors/specializations/active',
   getOwnDays : "/api/doctor-days/getSelfDays",
   getDoctorSlotByDate: '/api/doctor-days/getSelfAvailableSlots?date={date}',
-
-  
+  getDoctorAllDoctorEndpoint: '/api/auth/doctors/byDistance?lat={lattitude}&lng={longittude}',
+  getDoctorWithDistanceEndpoint: '/api/auth/doctors/byDistance?lat={lattitude}&lng={longittude}&distance={distance}',
   /*
   * Pet Endpoint
   */

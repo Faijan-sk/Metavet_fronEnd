@@ -1,4 +1,4 @@
-import { Image, Plus, Search, User, Users, X, Stethoscope, Award, MapPin } from "lucide-react";
+import { Image, Plus, Search, User, Users, X, Stethoscope, Award, MapPin, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import BookAppointmentForm from "../appointment/BokAppointmentForm";
@@ -64,6 +64,14 @@ const LoadingCard = () => (
         <div className="h-8 w-20 bg-gray-200 rounded-lg" />
       </div>
     </div>
+  </div>
+);
+
+// Smooth Loading Spinner for refetching
+const RefetchingLoader = () => (
+  <div className="flex flex-col items-center justify-center py-24 animate-fadeIn">
+    <Loader2 className="w-16 h-16 text-[#52B2AD] animate-spin" />
+    <p className="text-gray-600 font-medium mt-4 text-lg">Loading doctors...</p>
   </div>
 );
 
@@ -261,6 +269,7 @@ const FindDoctor = () => {
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -301,34 +310,6 @@ const FindDoctor = () => {
     );
   }, []);
 
-
-  
-
-  // Filter doctors based on search and distance
-  useEffect(() => {
-    let filtered = doctors;
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter((doctor) => {
-        const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
-        const specialization = doctor.specialization?.toLowerCase() || "";
-        const query = searchQuery.toLowerCase();
-        return fullName.includes(query) || specialization.includes(query);
-      });
-    }
-
-    // Filter by distance
-    if (maxDistance && !isNaN(parseFloat(maxDistance))) {
-      const distanceValue = parseFloat(maxDistance);
-      filtered = filtered.filter((doctor) => {
-        return doctor.distance && doctor.distance <= distanceValue;
-      });
-    }
-
-    setFilteredDoctors(filtered);
-  }, [searchQuery, maxDistance, doctors]);
-
   const fetchDoctors = async () => {
     try {
       setLoading(true);
@@ -344,6 +325,85 @@ const FindDoctor = () => {
       setLoading(false);
     }
   };
+
+  // Fetch doctors with distance when maxDistance changes
+  useEffect(() => {
+    const fetchDoctorsWithDistance = async () => {
+      // If no distance filter, fetch all doctors
+      if (!maxDistance) {
+        // If doctors already loaded, use refetching state
+        if (doctors.length > 0) {
+          setIsRefetching(true);
+        } else {
+          setLoading(true);
+        }
+        
+        try {
+          setError(null);
+          setErrorStatus(null);
+          const { data } = await useJwt.getAllDoctors();
+          setDoctors(data.data || []);
+        } catch (err) {
+          const status = err?.response?.status || err?.status;
+          setErrorStatus(status);
+          setError(err?.message || "Failed to fetch doctors");
+        } finally {
+          setLoading(false);
+          setIsRefetching(false);
+        }
+        return;
+      }
+
+      if (!latitude || !longitude) {
+        return;
+      }
+
+      const distanceValue = parseFloat(maxDistance);
+      if (isNaN(distanceValue) || distanceValue <= 0) {
+        return;
+      }
+
+      try {
+        // If doctors already loaded, use refetching state
+        if (doctors.length > 0) {
+          setIsRefetching(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+        setErrorStatus(null);
+        
+        const { data } = await useJwt.getAllDoctorwithDistance(longitude, latitude, maxDistance);
+        setDoctors(data.data || []);
+      } catch (err) {
+        const status = err?.response?.status || err?.status;
+        setErrorStatus(status);
+        setError(err?.message || "Failed to fetch doctors");
+      } finally {
+        setLoading(false);
+        setIsRefetching(false);
+      }
+    };
+
+    fetchDoctorsWithDistance();
+  }, [maxDistance, latitude, longitude]);
+
+  // Filter doctors based on search query only (distance is handled by API)
+  useEffect(() => {
+    let filtered = doctors;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((doctor) => {
+        const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
+        const specialization = doctor.specialization?.toLowerCase() || "";
+        const query = searchQuery.toLowerCase();
+        return fullName.includes(query) || specialization.includes(query);
+      });
+    }
+
+    setFilteredDoctors(filtered);
+  }, [searchQuery, doctors]);
 
   const handleFollow = (doctor) => {
     setSelectedDoctor(doctor);
@@ -405,6 +465,8 @@ const FindDoctor = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, index) => <LoadingCard key={index} />)}
           </div>
+        ) : isRefetching ? (
+          <RefetchingLoader />
         ) : error ? (
           errorStatus === 400 ? <ErrorState400 /> :
           errorStatus === 404 ? <ErrorState404 /> :

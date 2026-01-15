@@ -4,7 +4,7 @@
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.1.15:8080/'
   axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
+  // axios.defaults.baseURL = 'http://192.168.1.14:8080/'
 
 
  
@@ -352,6 +352,16 @@ createAppintment(payload){
     bookOfflineAppointment(args){
       return axios.post(this.jwtConfig.bookOfflineAppointment,args)
     }
+
+    getAllDoctorwithDistance(longittude, lattitude, distance) {
+  let url = this.jwtConfig.getDoctorWithDistanceEndpoint
+    .replace("{lattitude}", lattitude)
+    .replace("{longittude}", longittude)
+    .replace("{distance}", distance);
+
+  return axios.get(url);
+}
+
 
 
  }
