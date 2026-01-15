@@ -46,8 +46,10 @@ export default function BookAppointmentForm({
   const [availableDays, setAvailableDays] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [doctorId, setDoctorId] = useState(null);
-const [paymentMethod, setPaymentMethod] = useState("");
-const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  
   const userInfo = getUserInfo(); // (kept as-is, future use)
 
   /* ===================== FETCH AVAILABLE DAYS ===================== */
@@ -92,7 +94,12 @@ const [paymentOpen, setPaymentOpen] = useState(false);
         setAvailableSlots([]);
         setSelectedSlot(null);
 
-        const formattedDate = selectedDate.toISOString().split("T")[0];
+        // ✅ FIX: Format date in local timezone (YYYY-MM-DD)
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
         console.log("Fetching slots for date:", formattedDate);
 
         const response =
@@ -149,6 +156,16 @@ const [paymentOpen, setPaymentOpen] = useState(false);
       return false;
     }
 
+    if (!paymentMethod) {
+      setError("Please select a payment method.");
+      return false;
+    }
+
+    if (!customerName.trim()) {
+      setError("Please enter customer name.");
+      return false;
+    }
+
     return true;
   };
 
@@ -159,18 +176,24 @@ const [paymentOpen, setPaymentOpen] = useState(false);
     setLoading(true);
     setError(null);
 
-    // ⚠️ OBJECT PAYLOAD (NO ARRAY)
+    // ✅ FIX: Format date in local timezone (YYYY-MM-DD)
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
     const payload = {
       doctorId: doctorId,
       doctorDayId: selectedSlot.doctorDayId,
       slotId: selectedSlot.slotId || selectedSlot.id,
-      appointmentDate: selectedDate.toISOString().split("T")[0],
+      appointmentDate: formattedDate,
+      paymentMethod: paymentMethod,
+      customerName: customerName.trim(),
     };
 
     console.log("FINAL PAYLOAD (OBJECT):", payload);
 
     try {
-      // 🚨 make sure useJwt does NOT wrap payload in []
       const response = await useJwt.bookOfflineAppointment(payload);
       console.log("Appointment created successfully:", response.data);
 
@@ -369,58 +392,69 @@ const [paymentOpen, setPaymentOpen] = useState(false);
             </div>
           )}
 
+          {/* PAYMENT METHOD */}
+          <div className="relative">
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              Select Payment Method *
+            </label>
+
+            {/* SELECT BOX */}
+            <button
+              type="button"
+              onClick={() => setPaymentOpen(!paymentOpen)}
+              className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left flex justify-between items-center
+                transition-all duration-200 focus:outline-none
+                ${
+                  paymentMethod
+                    ? "border-[#52B2AD] bg-white text-gray-900"
+                    : "border-gray-200 bg-gray-50 text-gray-500"
+                }`}
+            >
+              {paymentMethod || "Choose payment method"}
+              <span className="text-gray-400">▾</span>
+            </button>
+
+            {/* DROPDOWN */}
+            {paymentOpen && (
+              <div className="absolute z-30 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                {["Card", "Cash"].map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => {
+                      setPaymentMethod(method.toUpperCase());
+                      setPaymentOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#52B2AD]/10 hover:text-[#52B2AD] transition"
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CUSTOMER NAME */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              Enter Customer Name *
+            </label>
+
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Enter full name"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm
+                        focus:outline-none focus:border-[#52B2AD]"
+            />
+          </div>
+
           {error && (
             <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
               {error}
             </div>
           )}
-
-{/* PAYMENT METHOD */}
-<div className="relative">
-  <label className="block text-sm font-semibold text-gray-800 mb-1">
-    Select Payment Method *
-  </label>
-
-  {/* SELECT BOX */}
-  <button
-    type="button"
-    onClick={() => setPaymentOpen(!paymentOpen)}
-    className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left flex justify-between items-center
-      transition-all duration-200 focus:outline-none
-      ${
-        paymentMethod
-          ? "border-[#52B2AD] bg-white text-gray-900"
-          : "border-gray-200 bg-gray-50 text-gray-500"
-      }`}
-  >
-    {paymentMethod || "Choose payment method"}
-    <span className="text-gray-400">▾</span>
-  </button>
-
-  {/* DROPDOWN */}
-  {paymentOpen && (
-    <div className="absolute z-30 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
-      {["Card", "Cash"].map((method) => (
-        <button
-          key={method}
-          type="button"
-          onClick={() => {
-            setPaymentMethod(method.toUpperCase());
-            setPaymentOpen(false);
-          }}
-          className="w-full text-left px-3 py-2 text-sm hover:bg-[#52B2AD]/10 hover:text-[#52B2AD] transition"
-        >
-          {method}
-        </button>
-      ))}
-    </div>
-  )}
-</div>
-
-
-
-
-
 
           <div className="flex justify-end gap-3 pt-2">
             <button
