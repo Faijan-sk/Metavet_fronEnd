@@ -13,6 +13,14 @@ const getUserInfo = () => {
   }
 };
 
+/* ===================== DATE FORMATTER - FIX TIMEZONE ISSUE ===================== */
+const formatDateToYYYYMMDD = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 /* ===================== COMPONENT ===================== */
 export default function BookAppointmentForm({
   onClose,
@@ -48,9 +56,7 @@ export default function BookAppointmentForm({
   const [doctorId, setDoctorId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [customerName, setCustomerName] = useState("");
-  
-  const userInfo = getUserInfo(); // (kept as-is, future use)
+  const userInfo = getUserInfo();
 
   /* ===================== FETCH AVAILABLE DAYS ===================== */
   useEffect(() => {
@@ -67,7 +73,6 @@ export default function BookAppointmentForm({
         console.log("ONLY DAYS", daysOnly);
         setAvailableDays(daysOnly);
 
-        // Store doctorId from backend response
         if (response.data.doctorId) {
           setDoctorId(response.data.doctorId);
           console.log("Doctor ID:", response.data.doctorId);
@@ -94,12 +99,7 @@ export default function BookAppointmentForm({
         setAvailableSlots([]);
         setSelectedSlot(null);
 
-        // ✅ FIX: Format date in local timezone (YYYY-MM-DD)
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        const formattedDate = `${year}-${month}-${day}`;
-        
+        const formattedDate = formatDateToYYYYMMDD(selectedDate);
         console.log("Fetching slots for date:", formattedDate);
 
         const response =
@@ -156,16 +156,6 @@ export default function BookAppointmentForm({
       return false;
     }
 
-    if (!paymentMethod) {
-      setError("Please select a payment method.");
-      return false;
-    }
-
-    if (!customerName.trim()) {
-      setError("Please enter customer name.");
-      return false;
-    }
-
     return true;
   };
 
@@ -176,22 +166,16 @@ export default function BookAppointmentForm({
     setLoading(true);
     setError(null);
 
-    // ✅ FIX: Format date in local timezone (YYYY-MM-DD)
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-
     const payload = {
       doctorId: doctorId,
       doctorDayId: selectedSlot.doctorDayId,
       slotId: selectedSlot.slotId || selectedSlot.id,
-      appointmentDate: formattedDate,
-      paymentMethod: paymentMethod,
-      customerName: customerName.trim(),
+      appointmentDate: formatDateToYYYYMMDD(selectedDate),
     };
 
     console.log("FINAL PAYLOAD (OBJECT):", payload);
+    console.log("Selected Date:", selectedDate);
+    console.log("Formatted Date:", formatDateToYYYYMMDD(selectedDate));
 
     try {
       const response = await useJwt.bookOfflineAppointment(payload);
@@ -392,69 +376,74 @@ export default function BookAppointmentForm({
             </div>
           )}
 
-          {/* PAYMENT METHOD */}
-          <div className="relative">
-            <label className="block text-sm font-semibold text-gray-800 mb-1">
-              Select Payment Method *
-            </label>
-
-            {/* SELECT BOX */}
-            <button
-              type="button"
-              onClick={() => setPaymentOpen(!paymentOpen)}
-              className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left flex justify-between items-center
-                transition-all duration-200 focus:outline-none
-                ${
-                  paymentMethod
-                    ? "border-[#52B2AD] bg-white text-gray-900"
-                    : "border-gray-200 bg-gray-50 text-gray-500"
-                }`}
-            >
-              {paymentMethod || "Choose payment method"}
-              <span className="text-gray-400">▾</span>
-            </button>
-
-            {/* DROPDOWN */}
-            {paymentOpen && (
-              <div className="absolute z-30 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                {["Card", "Cash"].map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod(method.toUpperCase());
-                      setPaymentOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#52B2AD]/10 hover:text-[#52B2AD] transition"
-                  >
-                    {method}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* CUSTOMER NAME */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">
-              Enter Customer Name *
-            </label>
-
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter full name"
-              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm
-                        focus:outline-none focus:border-[#52B2AD]"
-            />
-          </div>
-
           {error && (
             <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
               {error}
             </div>
           )}
+
+
+          {/* PAYMENT METHOD */}
+<div className="relative">
+  <label className="block text-sm font-semibold text-gray-800 mb-1">
+    Select Payment Method *
+  </label>
+
+  {/* SELECT BOX */}
+  <button
+    type="button"
+    onClick={() => setPaymentOpen(!paymentOpen)}
+    className={`w-full px-3 py-2.5 border-2 rounded-lg text-sm text-left flex justify-between items-center
+      transition-all duration-200 focus:outline-none
+      ${
+        paymentMethod
+          ? "border-[#52B2AD] bg-white text-gray-900"
+          : "border-gray-200 bg-gray-50 text-gray-500"
+      }`}
+  >
+    {paymentMethod || "Choose payment method"}
+    <span className="text-gray-400">▾</span>
+  </button>
+
+  {/* DROPDOWN */}
+  {paymentOpen && (
+    <div className="absolute z-30 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+      {["Card", "Cash"].map((method) => (
+        <button
+          key={method}
+          type="button"
+          onClick={() => {
+            setPaymentMethod(method.toUpperCase());
+            setPaymentOpen(false);
+          }}
+          className="w-full text-left px-3 py-2 text-sm hover:bg-[#52B2AD]/10 hover:text-[#52B2AD] transition"
+        >
+          {method}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+
+
+
+{/* CUSTOMER NAME */}
+<div>
+  <label className="block text-sm font-semibold text-gray-800 mb-1">
+    Enter Customer Name *
+  </label>
+
+  <input
+    type="text"
+    // value={customerName}
+    onChange={(e) => setCustomerName(e.target.value)}
+    placeholder="Enter full name"
+    className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm
+               focus:outline-none focus:border-[#52B2AD]"
+  />
+</div>
+
+
 
           <div className="flex justify-end gap-3 pt-2">
             <button
