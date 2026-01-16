@@ -37,6 +37,7 @@ export default {
   * Appointment Endponint
   */
   getDoctorByDayEndpoint: '/api/doctor-days/day',
+  getDoctorDaysFromDistance : '/api/doctor-days/doctor/{doctorId}',
   fetchAvailableSlotByDoctorEndpoint: '/api/appointments/available-slots',
   fetDoctorDayIdByDoctorAndDay : '/api/doctor-days/doctor',
   fetchAvailableSlotByDoctorEndpoint: '/api/appointments/available-slots',
@@ -46,6 +47,7 @@ export default {
   createAppointmentEndpoint: '/api/doctor-days/days',
   getBookedAppoinmentEndpoint : 'api/appointments/my-appointments-doctor?status=BOOKED',
   bookOfflineAppointment : '/api/appointments/book-offline-simple',
+  getSlotByDoctorEndpoint: '/api/appointments/getSlot?doctorId={doctorId}&doctorDayId={doctorDayId}&date={date}',
   // ** This will be prefixed in authorization header with token
   // ? e.g. Authorization: Bearer <token>
   tokenType: 'Bearer',

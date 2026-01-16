@@ -2,6 +2,7 @@ import { Image, Plus, Search, User, Users, X, Stethoscope, Award, MapPin, Loader
 import { useEffect, useState } from "react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import BookAppointmentForm from "../appointment/BokAppointmentForm";
+import BookAppointment from "./BookAppointmentModal"
 
 // Modal Component
 const Modal = ({ open, onClose, title, children, size = "xl" }) => {
@@ -25,8 +26,9 @@ const Modal = ({ open, onClose, title, children, size = "xl" }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" className={`relative z-[101] w-full ${sizeMap[size]} mx-auto rounded-2xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto`}>
-        {(title || title === "") && (
+<div
+  className={`relative z-[101] w-full ${sizeMap[size]} mx-auto rounded-2xl bg-white shadow-2xl`}
+>        {(title || title === "") && (
           <div className="sticky top-0 bg-white/80 backdrop-blur border-b px-5 py-4 rounded-t-2xl z-10 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             <button aria-label="Close modal" onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
@@ -137,13 +139,13 @@ const DoctorCard = ({ doctor, onFollow }) => (
           </div>
         </div>
 
-        {/* <button
+        <button
           onClick={() => onFollow(doctor)}
           className="flex items-center gap-2 bg-gradient-to-r from-[#52B2AD] to-[#42948f] text-white px-4 py-2 rounded-lg font-medium hover:from-[#42948f] hover:to-[#52B2AD] focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:ring-offset-2 transition-all duration-200 text-sm transform hover:scale-105"
         >
           Book
           <Plus className="w-4 h-4" />
-        </button> */}
+        </button>
       </div>
     </div>
   </div>
@@ -524,10 +526,11 @@ const FindDoctor = () => {
             : "Book Appointment"
         }
       >
-        <BookAppointmentForm
-          onClose={closeModal}
-          onCreated={() => window.location.reload()}
-        />
+      <p className="text-lg font-bold text-[#52B2AD]">
+         
+            <BookAppointment doctor={selectedDoctor} />
+          
+          </p>
       </Modal>
     </div>
   );

@@ -362,6 +362,15 @@ createAppintment(payload){
   return axios.get(url);
 }
 
+getDoctorDaysFromDistance(doctorId){
+  return axios.get(this.jwtConfig.getDoctorDaysFromDistance.replace("{doctorId}",doctorId))
+}
+getSlotByDoctor(doctorId, doctorDayId,date){
+ return axios.get(this.jwtConfig.getSlotByDoctorEndpoint.replace("{date}",date)
+                                                  .replace("{doctorId}",doctorId)
+                                                  .replace("{doctorDayId}",doctorDayId))
+}
+
 
 
  }
