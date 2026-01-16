@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import useJwt from "./../../../enpoints/jwt/useJwt"
-import { Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { Calendar, ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react"
 
 const monthNames = [
   "January","February","March","April","May","June",
@@ -9,13 +9,18 @@ const monthNames = [
 
 const weekDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 
-function BookAppointmentModal({ doctor }) {
+function BookAppointmentModal({ doctor, onClose, initialValues }) {
 
   // ================= STATES =================
   const [doctorDays, setDoctorDays] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [pets, setPets] = useState([]);
+  const [selectedPet, setSelectedPet] = useState("")
+  const petsLoading = false
+  const petsError = null
+  const isAddingPet = false
 
   const [doctorDayId, setDoctorDayId] = useState(null)
 
@@ -23,6 +28,14 @@ function BookAppointmentModal({ doctor }) {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [slotsError, setSlotsError] = useState("")
   const [selectedSlot, setSelectedSlot] = useState(null)
+
+  const [reason, setReason] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [bookingError, setBookingError] = useState("")
+  const [bookingSuccess, setBookingSuccess] = useState(false)
+
+  const doctorsLoading = false
+  const visibleDoctors = [doctor]
 
   // ================= FETCH DOCTOR DAYS =================
   useEffect(() => {
@@ -40,6 +53,27 @@ function BookAppointmentModal({ doctor }) {
     if (doctor?.doctorId) fetchDays()
   }, [doctor?.doctorId])
 
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const response = await useJwt.getAllPetsByOwner();
+
+        const petsList = response.data.data.map((pet) => ({
+          id: pet.id,
+          petName: pet.petName,
+          petSpecies: pet.petSpecies,
+          petBreed: pet.petBreed,
+        }));
+
+        setPets(petsList);
+      } catch (error) {
+        console.error("Error fetching pets:", error);
+      }
+    };
+
+    fetchPets()
+  }, [])
+
   // ================= FETCH SLOTS =================
   useEffect(() => {
     const fetchSlots = async () => {
@@ -50,9 +84,7 @@ function BookAppointmentModal({ doctor }) {
       setAvailableSlots([])
 
       try {
-        const formattedDate = selectedDate
-          .toISOString()
-          .split("T")[0]
+        const formattedDate = selectedDate.toISOString().split("T")[0]
 
         const response = await useJwt.getSlotByDoctor(
           doctor.doctorId,
@@ -62,7 +94,6 @@ function BookAppointmentModal({ doctor }) {
 
         setAvailableSlots(response.data || [])
       } catch (error) {
-        console.error("Error fetching slots:", error)
         setAvailableSlots([])
         setSlotsError("Failed to load slots. Please try again.")
       } finally {
@@ -89,10 +120,6 @@ function BookAppointmentModal({ doctor }) {
     )
   }
 
-  const handleSlotSelect = (slot) => {
-    setSelectedSlot(slot)
-  }
-
   const formatTime = (time) => {
     const [hours, minutes] = time.split(":")
     const hour = parseInt(hours)
@@ -101,7 +128,61 @@ function BookAppointmentModal({ doctor }) {
     return `${displayHour}:${minutes} ${ampm}`
   }
 
-  // ================= CALENDAR RENDER =================
+  const resetForm = () => {
+    setSelectedPet("")
+    setSelectedDate(null)
+    setSelectedSlot(null)
+    setReason("")
+    setDoctorDayId(null)
+    setAvailableSlots([])
+    setBookingError("")
+    setBookingSuccess(false)
+  }
+
+  // ================= BOOK APPOINTMENT =================
+  const handleBookAppointment = async (e) => {
+    e.preventDefault()
+
+    if (!selectedPet || !selectedDate || !selectedSlot || !doctorDayId) {
+      setBookingError("Please fill all required fields")
+      return
+    }
+
+    setLoading(true)
+    setBookingError("")
+
+    try {
+      const payload = {
+        petId: parseInt(selectedPet),
+        doctorId: doctor.doctorId,
+        doctorDayId: doctorDayId,
+        slotId: selectedSlot.slotId,
+        appointmentDate: selectedDate.toISOString().split("T")[0],
+        reason: reason || undefined
+      }
+
+      console.log('Booking appointment with payload:', payload)
+
+      const response = await useJwt.bookAppointment(payload)
+
+      console.log('Booking response:', response)
+
+      setBookingSuccess(true)
+      
+      setTimeout(() => {
+        resetForm()
+        if (onClose) onClose()
+      }, 1500)
+
+    } catch (error) {
+      console.error("Error booking appointment:", error)
+      setBookingError(error.response?.data?.message || "Failed to book appointment. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ================= CALENDAR =================
   const renderCalendar = () => {
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
@@ -113,7 +194,7 @@ function BookAppointmentModal({ doctor }) {
 
     weekDays.forEach(day => {
       cells.push(
-        <div key={day} className="text-xs font-semibold text-center text-gray-500">
+        <div key={day} className="text-xs text-center text-gray-500">
           {day}
         </div>
       )
@@ -158,7 +239,7 @@ function BookAppointmentModal({ doctor }) {
               isSelected
                 ? "bg-[#52B2AD] text-white"
                 : isDoctorAvailable
-                ? "bg-[#52B2AD]/15 text-[#2b8f8a] font-semibold hover:bg-[#52B2AD]/25"
+                ? "bg-[#52B2AD]/15 text-[#2b8f8a] hover:bg-[#52B2AD]/25"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }
             ${isPast ? "opacity-50" : ""}
@@ -174,7 +255,42 @@ function BookAppointmentModal({ doctor }) {
 
   // ================= JSX =================
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleBookAppointment} className="space-y-4">
+
+      {/* PET SELECT */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-800 mb-1">
+          Select Pet *
+        </label>
+
+        {petsLoading ? (
+          <div className="text-sm text-gray-600">Loading pets…</div>
+        ) : petsError ? (
+          <div className="text-sm text-red-600">{petsError}</div>
+        ) : (
+          <>
+            {!isAddingPet ? (
+              <select
+                value={selectedPet}
+                onChange={(e) => setSelectedPet(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-black font-normal text-sm"
+                required
+              >
+                <option value="">Select a pet</option>
+                {pets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.petName} • {p.petSpecies} ({p.petBreed})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="text-sm text-gray-600">
+                Please add a pet first.
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* DATE SELECTOR */}
       <div>
@@ -192,7 +308,7 @@ function BookAppointmentModal({ doctor }) {
                 : "border-gray-200 bg-gray-50 hover:border-gray-300"
             }`}
           >
-            <span className={selectedDate ? "text-gray-900 font-medium" : "text-gray-500"}>
+            <span>
               {selectedDate
                 ? selectedDate.toLocaleDateString("en-GB", {
                     weekday: "short",
@@ -202,86 +318,67 @@ function BookAppointmentModal({ doctor }) {
                   })
                 : "Choose a date"}
             </span>
-            <Calendar size={16} className={selectedDate ? "text-[#52B2AD]" : "text-gray-400"} />
+            <Calendar size={16} />
           </button>
 
           {calendarOpen && (
             <div className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg p-4">
               <div className="flex justify-between items-center mb-3">
-                <button 
-                  onClick={goToPreviousMonth}
-                  className="p-1 hover:bg-gray-100 rounded-md transition"
-                >
-                  <ChevronLeft className="text-gray-600" />
+                <button type="button" onClick={goToPreviousMonth}>
+                  <ChevronLeft />
                 </button>
 
-                <div className="font-semibold text-gray-800">
-                  {monthNames[currentMonth.getMonth()]}{" "}
-                  {currentMonth.getFullYear()}
+                <div className="font-semibold">
+                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </div>
 
-                <button 
-                  onClick={goToNextMonth}
-                  className="p-1 hover:bg-gray-100 rounded-md transition"
-                >
-                  <ChevronRight className="text-gray-600" />
+                <button type="button" onClick={goToNextMonth}>
+                  <ChevronRight />
                 </button>
               </div>
 
               <div className="grid grid-cols-7 gap-1">
                 {renderCalendar()}
               </div>
-
-              <p className="text-xs text-gray-500 mt-3">
-                * Green dates are doctor available • Grey dates are unavailable
-              </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* TIME SLOTS SECTION */}
+      {/* TIME SLOTS */}
       {selectedDate && (
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
+          <label className="block text-sm font-semibold mb-2">
             Select Time Slot *
           </label>
 
-          {slotsLoading && (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#52B2AD]"></div>
-            </div>
-          )}
+          {slotsLoading && <div className="text-sm text-gray-600">Loading slots…</div>}
 
           {slotsError && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {slotsError}
-            </div>
+            <div className="text-sm text-red-600">{slotsError}</div>
           )}
 
           {!slotsLoading && !slotsError && availableSlots.length === 0 && (
-            <div className="bg-gray-50 border border-gray-200 text-gray-600 px-4 py-3 rounded-lg text-sm text-center">
+            <div className="text-sm text-gray-600">
               No slots available for this date
             </div>
           )}
 
           {!slotsLoading && !slotsError && availableSlots.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto p-1">
+            <div className="grid grid-cols-3 gap-2">
               {availableSlots.map((slot) => (
                 <button
+                  type="button"
                   key={slot.slotId}
-                  onClick={() => handleSlotSelect(slot)}
-                  className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition flex items-center justify-center gap-1.5 ${
+                  onClick={() => setSelectedSlot(slot)}
+                  className={`px-3 py-2.5 rounded-lg border-2 text-sm font-medium flex items-center justify-center gap-1.5 ${
                     selectedSlot?.slotId === slot.slotId
                       ? "bg-[#52B2AD] border-[#52B2AD] text-white"
-                      : "bg-white border-gray-200 text-gray-700 hover:border-[#52B2AD] hover:bg-[#52B2AD]/5"
+                      : "bg-white border-gray-200 text-gray-700"
                   }`}
                 >
                   <Clock size={14} />
-                <span>
-  {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-</span>
-
+                  {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                 </button>
               ))}
             </div>
@@ -289,7 +386,102 @@ function BookAppointmentModal({ doctor }) {
         </div>
       )}
 
-    </div>
+      {/* Reason */}
+      <div className="md:col-span-2">
+        <label
+          htmlFor="reason"
+          className="block text-xs font-semibold text-gray-600 mb-1"
+        >
+          Reason (Optional)
+        </label>
+
+        <input
+          id="reason"
+          name="reason"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Vaccination, Checkup"
+          className="
+            w-full px-3 py-2 border border-gray-300 rounded-lg
+            focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]
+            placeholder:font-normal
+            placeholder:text-gray-400
+          "
+        />
+      </div>
+
+      {/* Error Message */}
+      {bookingError && (
+        <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+          {bookingError}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {bookingSuccess && (
+        <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg">
+          Appointment booked successfully!
+        </div>
+      )}
+
+    
+      {/* Action Buttons */}
+<div className="md:col-span-2 flex items-center justify-end gap-3 mt-2">
+  <button
+    type="button"
+    onClick={() => {
+      resetForm();
+      onClose && onClose();
+    }}
+    className="px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 transition font-normal"
+  >
+    Cancel
+  </button>
+
+  <button
+    type="submit"
+    disabled={loading || doctorsLoading || visibleDoctors.length === 0 || !selectedSlot}
+    className={`px-5 py-2 rounded-md text-white transition flex items-center font-normal ${
+      loading || doctorsLoading || visibleDoctors.length === 0 || !selectedSlot
+        ? "opacity-70 cursor-not-allowed bg-gray-400"
+        : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.01] shadow-lg"
+    }`}
+  >
+    {loading ? (
+      <>
+        <svg
+          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Booking...
+      </>
+    ) : (
+      <>
+        <Plus size={16} className="inline-block mr-2 -mt-1" />
+        {initialValues ? "Update Appointment" : "Book Appointment"}
+      </>
+    )}
+  </button>
+</div>
+
+
+    </form>
   )
 }
 
