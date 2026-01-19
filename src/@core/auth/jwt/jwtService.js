@@ -4,7 +4,7 @@
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.1.15:8080/'
   axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  // axios.defaults.baseURL = 'http://192.168.1.14:8080/'
+  // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
 
  
@@ -371,6 +371,17 @@ getSlotByDoctor(doctorId, doctorDayId,date){
                                                   .replace("{doctorDayId}",doctorDayId))
 }
 
+
+getKycStatusGroomerToClinet(){
+  return axios.get(this.jwtConfig.getStatusGroomerToClient)
+}
+getKycStatusBehaviouristToClinet(){
+  return axios.get(this.jwtConfig.getStatusBehaviouristToClient)
+}
+
+getStatusWalkerToClientKyc(){
+  return axios.get(this.jwtConfig.getStatusWalkerToClientKyc)
+}
 
 
  }

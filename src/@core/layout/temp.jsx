@@ -55,29 +55,37 @@ const Header = () => {
       ...(!serviceProvider ? [{ name: 'Appointment', path: '/appointment', active: true }] : []),
       // Appointments button - show only when user IS service provider (userType === 3)
       ...(serviceProvider ? [{ name: 'Appointments', path: '/service-appointment', active: true }] : []),
-      {
-        name: 'KYC',
-        hasDropdown: true, 
-        dropdownItems: [
-          { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
-          { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
-          { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
-          { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
-          { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
-          { label: 'KYC Behaviourist to Client', path: '/behaviouristTo-client-kyc' },
-        ],
-      },
-      ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
-      // { name: 'Health Record', path: '/healthrecord', active: true },
       // {
-      //   name: 'Pet Services',
+      //   name: 'KYC',
       //   hasDropdown: true, 
       //   dropdownItems: [
-      //     { label: 'Pet Grooming', path: '/' },
-      //     { label: 'Pet Behaviourist', path: '/' },
-      //     { label: 'Pet Walker', path: '/' }, 
+      //     { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
+      //     { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
+      //     { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
+      //     { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
+      //     { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
+      //     { label: 'KYC Behaviourist to Client', path: '/behaviouristTo-client-kyc' },
       //   ],
       // },
+      ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
+    
+
+  
+    
+      
+     shouldShowPets && {
+  name: 'Pet Services',
+  hasDropdown: true,
+ dropdownItems: [
+    { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
+    { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
+    { label: 'Pet Walker', path: '/service-provider/petWalker' },
+  ],
+}
+
+
+
+
     ]
     
   }, [userInfo])
