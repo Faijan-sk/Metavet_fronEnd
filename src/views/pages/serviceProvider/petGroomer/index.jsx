@@ -1,30 +1,405 @@
-import React, { useEffect } from 'react'
-import KycWarning from '../KycWarning'
-import DefaultPage from "./../DefaultPage"
+import React, { useEffect, useState } from 'react'
+import { Search, X, MapPin, Scissors, Star, Award, Clock, Heart, MessageCircle, Phone } from "lucide-react";
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
-function index() {
-  const kycUrl = "/groomerTo-client-kyc"
+const KYC_STATUS = {
+  APPROVED: "approved",
+  PENDING: "pending",
+  CANCELLED: "cancelled",
+  NOT_FOUND: "not_found",
+};
 
-useEffect(()=>{
 
-  const fetchKycStatus = async () =>{
-    const response = useJwt.getKycStatusGroomerToClinet()
-  }
 
-  fetchKycStatus()
-},[])
+// Static dummy groomers data
+const STATIC_GROOMERS = [
+  {
+    id: 1,
+    name: "Faizan Shaikh",
+    specialization: "Dog Grooming Expert",
+    experience: "5 years",
+    rating: 4.5,
+    reviews: 127,
+    distance: 2.3,
+    price: "$50-80",
+    available: true,
+
+    profileStatus: "APPROVED",
+    badge: "Top Rated",
+    services: ["Bath & Brush", "Haircut", "Nail Trim"]
+  },
+  {
+    id: 2,
+    name: "Gulam Ansari",
+    specialization: "Cat Grooming Specialist",
+    experience: "3 years",
+    rating: 4.8,
+    reviews: 89,
+    distance: 1.5,
+    price: "$40-60",
+    available: true,
+
+    profileStatus: "APPROVED",
+    badge: "Certified",
+    services: ["De-shedding", "Bath", "Ear Cleaning"]
+  },
+  {
+    id: 3,
+    name: "Niraj Vishwakarma",
+    specialization: "All Pets Groomer",
+    experience: "7 years",
+    rating: 4.6,
+    reviews: 203,
+    distance: 3.2,
+    price: "$60-100",
+    available: false,
+
+    profileStatus: "APPROVED",
+    badge: "Expert",
+    services: ["Full Grooming", "Spa Treatment", "Styling"]
+  },
+  // {
+  //   id: 4,
+  //   name: "Sneha Mandewal",
+  //   specialization: "Dog & Cat Care Pro",
+  //   experience: "4 years",
+  //   rating: 4.7,
+  //   reviews: 156,
+  //   distance: 2.8,
+  //   price: "$450-700",
+  //   available: true,
+
+  //   profileStatus: "APPROVED",
+  //   badge: "Popular",
+  //   services: ["Bathing", "Haircut", "Massage"]
+  // },
+  // {
+  //   id: 5,
+  //   name: "Rohit Sonawane",
+  //   specialization: "Premium Pet Stylist",
+  //   experience: "6 years",
+  //   rating: 4.9,
+  //   reviews: 178,
+  //   distance: 4.1,
+  //   price: "$800-1200",
+  //   available: true,
+
+  //   profileStatus: "APPROVED",
+  //   badge: "Premium",
+  //   services: ["Designer Cuts", "Color", "Spa"]
+  // },
+  // {
+  //   id: 6,
+  //   name: "Kavita Mehta",
+  //   specialization: "Small Breed Specialist",
+  //   experience: "4 years",
+  //   rating: 4.4,
+  //   reviews: 94,
+  //   distance: 1.8,
+  //   price: "$350-550",
+  //   available: true,
+
+  //   profileStatus: "APPROVED",
+  //   badge: "Certified",
+  //   services: ["Small Dogs", "Puppies", "Gentle Care"]
+  // }
+];
+
+function GroomerCard({ groomer, onFavorite, isFavorite }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+
+  
+
+
 
 
   return (
-   <>
-   <div>
-   <KycWarning kycUrl={kycUrl}/>
-  <DefaultPage /> 
-  </div>
-   
-   </>
-  )
+
+
+
+    <div 
+      className="group relative bg-white border-2 border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Badge */}
+      <div className="absolute top-4 left-4 z-10">
+        <span className="px-3 py-1 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white text-xs font-bold rounded-full shadow-lg">
+          {groomer.badge}
+        </span>
+      </div>
+
+      {/* Favorite Button */}
+      <button
+        onClick={() => onFavorite(groomer.id)}
+        className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
+      >
+        <Heart 
+          className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+        />
+      </button>
+
+      {/* Avatar Section */}
+      <div className="relative h-48 bg-gradient-to-br from-[#52B2AD]/10 to-[#459d99]/10 flex items-center justify-center overflow-hidden">
+        <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? 'scale-110' : ''}`}>
+          <span className="text-4xl font-bold text-white">
+            {groomer.name.split(' ').map(n => n[0]).join('')}
+          </span>
+        </div>
+        
+        {/* Availability Badge */}
+        <div className="absolute bottom-4 right-4">
+          {groomer.available ? (
+            <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              Available
+            </span>
+          ) : (
+            <span className="px-3 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">
+              Busy
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="p-5">
+        {/* Name & Title */}
+        <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#52B2AD] transition-colors">
+          {groomer.name}
+        </h3>
+        <p className="text-sm text-gray-600 mb-3">{groomer.specialization}</p>
+
+        {/* Stats Row */}
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-bold text-gray-900">{groomer.rating}</span>
+            <span className="text-xs text-gray-500">({groomer.reviews})</span>
+          </div>
+          
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <MapPin className="w-4 h-4 text-[#52B2AD]" />
+            <span className="font-semibold">{groomer.distance} km</span>
+          </div>
+        </div>
+
+        {/* Experience & Price */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
+            <Clock className="w-4 h-4 text-[#52B2AD]" />
+            <div>
+              <p className="text-xs text-gray-500">Experience</p>
+              <p className="text-sm font-bold text-gray-900">{groomer.experience}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
+            <Award className="w-4 h-4 text-[#52B2AD]" />
+            <div>
+              <p className="text-xs text-gray-500">Price Range</p>
+              <p className="text-sm font-bold text-gray-900">{groomer.price}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Services Tags */}
+        <div className="mb-4">
+          <p className="text-xs text-gray-500 mb-2">Services:</p>
+          <div className="flex flex-wrap gap-1">
+            {groomer.services.map((service, idx) => (
+              <span 
+                key={idx}
+                className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-xs rounded-lg font-medium"
+              >
+                {service}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <button className="flex-1 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200">
+            Book Now
+          </button>
+          <button className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
+            <MessageCircle className="w-5 h-5 text-gray-600 group-hover:text-[#52B2AD]" />
+          </button>
+          <button className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
+            <Phone className="w-5 h-5 text-gray-600 group-hover:text-[#52B2AD]" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default index
+function Index({ location }) {
+  const [kycStatus] = useState(KYC_STATUS.APPROVED);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [maxDistance, setMaxDistance] = useState("");
+  const [favorites, setFavorites] = useState([]);
+
+  const clearSearch = () => setSearchQuery("");
+  const clearDistance = () => setMaxDistance("");
+
+  const toggleFavorite = (groomerId) => {
+    setFavorites(prev => 
+      prev.includes(groomerId) 
+        ? prev.filter(id => id !== groomerId)
+        : [...prev, groomerId]
+    );
+  };
+
+  // Filter groomers based on search and distance
+  const filteredGroomers = STATIC_GROOMERS.filter(groomer => {
+    const matchesSearch = !searchQuery || 
+      groomer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      groomer.specialization.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesDistance = !maxDistance || 
+      groomer.distance <= parseFloat(maxDistance);
+    
+    return matchesSearch && matchesDistance && groomer.profileStatus === "APPROVED";
+  });
+
+  useEffect(()=>{
+
+      const fetchStatus = async () => {
+
+        const response = useJwt.getKycStatusGroomerToClinet()
+      }
+
+    fetchStatus()
+  },[])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {kycStatus === KYC_STATUS.APPROVED && (
+        <div className="w-full">
+          <div className="container mx-auto px-4 py-8">
+            
+            {/* Header with Gradient */}
+            <div className="mb-10 text-center">
+              <div className="inline-flex items-center justify-center gap-3 mb-4">
+                <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
+                  <Scissors className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-[#52B2AD] to-[#459d99] bg-clip-text text-transparent mb-3">
+                Find Your Perfect Groomer
+              </h1>
+              <p className="text-gray-600 text-lg">Discover qualified grooming professionals for your beloved pets</p>
+            </div>
+
+            {/* Search Bar with Glass Effect */}
+            <div className="max-w-4xl mx-auto mb-8">
+              <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-gray-100">
+                <div className="flex flex-col md:flex-row gap-4">
+                  
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                      <Search className="h-6 w-6 text-[#52B2AD]" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by name or specialization..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={clearSearch}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
+                      >
+                        <X className="h-6 w-6 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Distance Filter */}
+                  <div className="relative md:w-72">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                      <MapPin className="h-6 w-6 text-[#52B2AD]" />
+                    </div>
+                    <input
+                      type="number"
+                      placeholder="Max distance (km)"
+                      value={maxDistance}
+                      onChange={(e) => setMaxDistance(e.target.value)}
+                      min="0"
+                      step="0.5"
+                      className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
+                    />
+                    {maxDistance && (
+                      <button
+                        onClick={clearDistance}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
+                      >
+                        <X className="h-6 w-6 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* Results Count */}
+            <div className="mb-8 text-center">
+              <p className="text-gray-600 text-xl">
+                Found{" "}
+                <span className="font-bold text-[#52B2AD] text-2xl">
+                  {filteredGroomers.length}
+                </span>{" "}
+                amazing groomer{filteredGroomers.length !== 1 ? "s" : ""} near you
+              </p>
+            </div>
+
+            {/* Groomers Grid */}
+            {filteredGroomers.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="inline-block p-6 bg-gray-100 rounded-full mb-6">
+                  <Search className="w-16 h-16 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-xl mb-4">No groomers found matching your criteria</p>
+                {(searchQuery || maxDistance) && (
+                  <button
+                    onClick={() => { clearSearch(); clearDistance(); }}
+                    className="px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredGroomers.map((groomer) => (
+                  <GroomerCard 
+                    key={groomer.id} 
+                    groomer={groomer}
+                    onFavorite={toggleFavorite}
+                    isFavorite={favorites.includes(groomer.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {(kycStatus === KYC_STATUS.CANCELLED || kycStatus.PENDING || kycStatus.NOT_FOUND )&& 
+      <div>
+hey
+        </div>
+        }
+    </div>
+  );
+}
+
+export default Index;

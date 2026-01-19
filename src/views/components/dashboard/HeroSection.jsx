@@ -27,7 +27,7 @@ const HeroSection = () => {
                 Metavet is dedicated to taking the worry out of waiting by
                 bringing veterinary care into the comfort of your own home
               </p>
-              <Link to={"/appointmentform"}>
+              <Link to={"/appointment"}>
                 <button
                   title=""
                   className="inline-flex items-center px-6 py-4 mt-8 font-semibold text-white transition-all duration-200 bg-primary rounded-full lg:mt-16"

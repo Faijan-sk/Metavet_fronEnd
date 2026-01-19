@@ -77,9 +77,9 @@ const Header = () => {
   name: 'Pet Services',
   hasDropdown: true,
  dropdownItems: [
-    { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
+
     { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
-    { label: 'Pet Walker', path: '/service-provider/petWalker' },
+    { label: 'Pet Walker', path: '/service-provider/petWalker' },    { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
   ],
 }
 

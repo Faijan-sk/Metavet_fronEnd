@@ -3,7 +3,7 @@ import KycWarning from '../KycWarning'
 import DefaultPage from "./../DefaultPage"
 import useJwt from '../../../../enpoints/jwt/useJwt'
 
-function index() {
+function index({location}) {
   const kycUrl = '/walkerTo-client-Kyc'
 
 

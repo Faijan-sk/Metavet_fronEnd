@@ -4,7 +4,7 @@ import KycWarning from '../KycWarning'
 import DefaultPage from "./../DefaultPage"
 import useJwt from '../../../../enpoints/jwt/useJwt'
 
-function Index() {
+function Index({location}) {
     const kycUrl = "/behaviouristTo-client-kyc"
 
     useEffect(()=>{

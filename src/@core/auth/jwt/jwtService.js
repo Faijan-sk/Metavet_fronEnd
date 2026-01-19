@@ -372,9 +372,13 @@ getSlotByDoctor(doctorId, doctorDayId,date){
 }
 
 
-getKycStatusGroomerToClinet(){
-  return axios.get(this.jwtConfig.getStatusGroomerToClient)
-}
+// getKycStatusGroomerToClinet(){
+//   return axios.get(this.jwtConfig.getStatusGroomerToClient)
+// }
+
+
+
+
 getKycStatusBehaviouristToClinet(){
   return axios.get(this.jwtConfig.getStatusBehaviouristToClient)
 }
@@ -382,6 +386,16 @@ getKycStatusBehaviouristToClinet(){
 getStatusWalkerToClientKyc(){
   return axios.get(this.jwtConfig.getStatusWalkerToClientKyc)
 }
+
+
+
+getStatusGroomerToClient(){
+  return axios.get(this.jwtConfig.getStatusGroomerToClient)
+}
+
+
+
+
 
 
  }
