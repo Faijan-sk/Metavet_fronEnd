@@ -7,7 +7,10 @@ const getInitialFormData = () => ({
   businessName: '',
   email: '',
   phone: '',
-  address: '',
+
+    address: '',
+  latitude: '',
+  longitude: '',
   serviceArea: '',
   yearsExperience: '',
 
@@ -49,6 +52,9 @@ const getInitialFormData = () => ({
 const BehaviourSpecialistKYC = () => {
   // 🔹 Ab state helper se aa rahi hai
   const [formData, setFormData] = useState(getInitialFormData)
+  const [locationQuery, setLocationQuery] = useState('')
+const [locationSuggestions, setLocationSuggestions] = useState([])
+const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   // --- helper maps to match backend enum names ---
   const servicesMap = {
@@ -140,7 +146,17 @@ const BehaviourSpecialistKYC = () => {
       if (formData.insuranceProvider) fd.append('insuranceProvider', formData.insuranceProvider)
       if (formData.insurancePolicyNumber) fd.append('insurancePolicyNumber', formData.insurancePolicyNumber)
       if (formData.insuranceExpiry) fd.append('insuranceExpiry', formData.insuranceExpiry)
-      if (formData.insuranceFile) fd.append('insuranceDoc', formData.insuranceFile, formData.insuranceFile.name)
+   if (formData.insuranceFile) {
+  fd.append('insuranceDoc', formData.insuranceFile, formData.insuranceFile.name)
+}
+
+if (formData.latitude) {
+  fd.append('latitude', formData.latitude)
+}
+
+if (formData.longitude) {
+  fd.append('longitude', formData.longitude)
+}
 
       // --- Criminal check ---
       if (formData.criminalCheck !== null) fd.append('hasCriminalCheck', String(!!formData.criminalCheck))
@@ -189,6 +205,8 @@ const BehaviourSpecialistKYC = () => {
 
         // 🔹 SUCCESS: form reset with helper
         setFormData(getInitialFormData())
+setLocationQuery('')
+setLocationSuggestions([])
       } else {
         const msg = resp && resp.data ? resp.data : 'Unexpected server response.'
         // alert('Submission failed: ' + msg)
@@ -199,6 +217,81 @@ const BehaviourSpecialistKYC = () => {
       // alert('Failed to submit: ' + serverMsg)
     }
   }
+
+  const searchLocation = async (value) => {
+  setLocationQuery(value)
+  setFormData(prev => ({ ...prev, address: value }))
+
+  if (value.length < 3) {
+    setLocationSuggestions([])
+    return
+  }
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${value}&format=json&addressdetails=1&limit=5`
+    )
+    const data = await res.json()
+    setLocationSuggestions(data)
+  } catch (err) {
+    console.error('Location search error', err)
+  }
+}
+
+const selectLocation = (item) => {
+  setLocationQuery(item.display_name)
+
+  setFormData(prev => ({
+    ...prev,
+    address: item.display_name,
+    latitude: item.lat,
+    longitude: item.lon
+  }))
+
+  setLocationSuggestions([])
+}
+
+
+const getCurrentLocation = () => {
+  setIsGettingLocation(true)
+
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported')
+    setIsGettingLocation(false)
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+        )
+        const data = await res.json()
+
+        setLocationQuery(data.display_name)
+        setFormData(prev => ({
+          ...prev,
+          address: data.display_name,
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
+        }))
+      } catch (err) {
+        alert('Failed to fetch address')
+      } finally {
+        setIsGettingLocation(false)
+      }
+    },
+    () => {
+      alert('Location access denied')
+      setIsGettingLocation(false)
+    }
+  )
+}
+
+
 
   return (
     <div className="min-h-screen px-4 py-8">
@@ -265,7 +358,7 @@ const BehaviourSpecialistKYC = () => {
 </div>
 
 
-                <div>
+                {/* <div>
                   <label className="block font-medium text-gray-700 mb-2">Address</label>
                   <input
                     type="text"
@@ -274,8 +367,50 @@ const BehaviourSpecialistKYC = () => {
                     placeholder="Street, City, State, PIN"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   />
-                </div>
+                </div> */}
               </div>
+
+              <div className="relative">
+  <label className="block font-medium text-gray-700 mb-2">Address</label>
+
+  <input
+    type="text"
+    value={locationQuery}
+    onChange={(e) => searchLocation(e.target.value)}
+    onFocus={() =>
+      setLocationSuggestions([
+        {
+          place_id: 'current',
+          display_name: '📍 Use Current Location',
+          isCurrentLocation: true
+        }
+      ])
+    }
+    placeholder="Type address or use current location"
+    disabled={isGettingLocation}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+  />
+
+  {/* Dropdown */}
+  {locationSuggestions.length > 0 && (
+    <ul className="absolute z-50 w-full bg-white border rounded-lg shadow-md mt-1 max-h-48 overflow-y-auto">
+      {locationSuggestions.map(item => (
+        <li
+          key={item.place_id}
+          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+          onClick={() =>
+            item.isCurrentLocation
+              ? getCurrentLocation()
+              : selectLocation(item)
+          }
+        >
+          {item.display_name}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>

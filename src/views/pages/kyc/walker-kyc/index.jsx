@@ -7,7 +7,9 @@ const getInitialFormData = () => ({
   businessName: '',
   email: '',
   phone: '',
-  address: '',
+   address: '',
+  latitude: '',
+  longitude: '',
   serviceArea: '',
   yearsExperience: '',
 
@@ -51,6 +53,9 @@ const PetWalkerProviderKYC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [locationQuery, setLocationQuery] = useState('')
+const [locationSuggestions, setLocationSuggestions] = useState([])
+const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   // Generic setter that validates input against a provided regex.
   const setIfValid = (field, value, regex) => {
@@ -73,11 +78,15 @@ const PetWalkerProviderKYC = () => {
       throw new Error('Please fill phone, address and service area')
     }
 
+   
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
       throw new Error('Please enter a valid email address')
     }
+
+
 
     // Conditional validations based on selections
     if (formData.hasPetCareCertifications === true && !formData.petCareCertificationDoc) {
@@ -152,6 +161,15 @@ const PetWalkerProviderKYC = () => {
       formDataToSend.append('email', formData.email)
       if (formData.phone) formDataToSend.append('phone', formData.phone)
       if (formData.address) formDataToSend.append('address', formData.address)
+      if (formData.latitude) {
+  formDataToSend.append('latitude', formData.latitude)
+}
+
+if (formData.longitude) {
+  formDataToSend.append('longitude', formData.longitude)
+}
+
+
       if (formData.serviceArea) formDataToSend.append('serviceArea', formData.serviceArea)
       if (formData.yearsExperience) formDataToSend.append('yearsExperience', formData.yearsExperience)
 
@@ -238,7 +256,9 @@ const PetWalkerProviderKYC = () => {
       setError(null)
 
       // 🔹 Reset form after successful submit
-      setFormData(getInitialFormData())
+    setFormData(getInitialFormData())
+setLocationQuery('')
+setLocationSuggestions([])
 
       // (optional) agar native form bhi reset karna ho:
       // e.target.reset()
@@ -270,6 +290,79 @@ const PetWalkerProviderKYC = () => {
     }
     // otherwise allow form submit to proceed (form's onSubmit will run)
   }
+
+  const searchLocation = async (value) => {
+  setLocationQuery(value)
+  setFormData(prev => ({ ...prev, address: value }))
+
+  if (value.length < 3) {
+    setLocationSuggestions([])
+    return
+  }
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${value}&format=json&addressdetails=1&limit=5`
+    )
+    const data = await res.json()
+    setLocationSuggestions(data)
+  } catch (err) {
+    console.error('Location search error', err)
+  }
+}
+const selectLocation = (item) => {
+  setLocationQuery(item.display_name)
+
+  setFormData(prev => ({
+    ...prev,
+    address: item.display_name,
+    latitude: item.lat,
+    longitude: item.lon
+  }))
+
+  setLocationSuggestions([])
+}
+const getCurrentLocation = () => {
+  setIsGettingLocation(true)
+
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported')
+    setIsGettingLocation(false)
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+        )
+        const data = await res.json()
+
+        setLocationQuery(data.display_name)
+        setFormData(prev => ({
+          ...prev,
+          address: data.display_name,
+          latitude: latitude.toString(),
+          longitude: longitude.toString()
+        }))
+      } catch (err) {
+        alert('Failed to fetch address')
+      } finally {
+        setIsGettingLocation(false)
+      }
+    },
+    () => {
+      alert('Location access denied')
+      setIsGettingLocation(false)
+    }
+  )
+}
+
+
+
   return (
     <div className="min-h-screen px-4 py-8 bg-gray-50">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
@@ -352,16 +445,47 @@ const PetWalkerProviderKYC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setIfValid('address', e.target.value, /^[A-Za-z0-9\s,.'#\/-]*$/u)}
-                    placeholder="Street, City, State, PIN"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
-                </div>
+                <div className="relative">
+  <label className="block font-medium text-gray-700 mb-2">Address</label>
+
+  <input
+    type="text"
+    value={locationQuery}
+    onChange={(e) => searchLocation(e.target.value)}
+    onFocus={() =>
+      setLocationSuggestions([
+        {
+          place_id: 'current',
+          display_name: '📍 Use Current Location',
+          isCurrentLocation: true
+        }
+      ])
+    }
+    placeholder="Type address or use current location"
+    disabled={isGettingLocation}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+  />
+
+  {/* Dropdown */}
+  {locationSuggestions.length > 0 && (
+    <ul className="absolute z-50 w-full bg-white border rounded-lg shadow-md mt-1 max-h-48 overflow-y-auto">
+      {locationSuggestions.map(item => (
+        <li
+          key={item.place_id}
+          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+          onClick={() =>
+            item.isCurrentLocation
+              ? getCurrentLocation()
+              : selectLocation(item)
+          }
+        >
+          {item.display_name}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

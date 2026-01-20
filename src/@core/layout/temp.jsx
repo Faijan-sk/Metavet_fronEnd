@@ -67,21 +67,22 @@ const Header = () => {
       //     { label: 'KYC Behaviourist to Client', path: '/behaviouristTo-client-kyc' },
       //   ],
       // },
+
       ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
     
 
   
     
       
-     shouldShowPets && {
-  name: 'Pet Services',
-  hasDropdown: true,
- dropdownItems: [
-
-    { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
-    { label: 'Pet Walker', path: '/service-provider/petWalker' },    { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
-  ],
-}
+      ...(shouldShowPets ? [{
+      name: 'Pet Services',
+      hasDropdown: true,
+      dropdownItems: [
+        { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
+        { label: 'Pet Walker', path: '/service-provider/petWalker' },
+        { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
+      ],
+    }] : [])
 
 
 

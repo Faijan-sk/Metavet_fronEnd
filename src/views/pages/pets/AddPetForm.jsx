@@ -79,7 +79,7 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
         onSubmit(formattedPet);
         reset();
         onClose();
-        window.location.reload();
+        // window.location.reload();
         return;
       }
 

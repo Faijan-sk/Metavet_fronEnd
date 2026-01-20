@@ -385,7 +385,7 @@ const Appointment = () => {
                   className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-6 py-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2 font-semibold"
                 >
                   <Plus size={20} />
-                  {userInfo.userType === 2 ? "Create Appointment" : "Book Appointment"}
+                  {userInfo.userType === 2 ? "Create Slot" : "Book Appointment"}
                 </button>
               </div>
             ) : (
