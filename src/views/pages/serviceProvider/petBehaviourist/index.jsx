@@ -225,7 +225,7 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState(KYC_STATUS.NOT_FOUND); // Change this to test different states
+  const [kycStatus, setKycStatus] = useState(KYC_STATUS.CANCELLED); // Change this to test different states
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
@@ -265,7 +265,8 @@ function Index({ location }) {
 
   // Show KYC Warning or Default Page for non-approved statuses
   if (kycStatus === KYC_STATUS.CANCELLED) {
-    return <KycWarning kycUrl={kycUrl} />;
+    return <><KycWarning kycUrl={kycUrl} />
+    <MainPage /></> ;
   }
 
   if (kycStatus === KYC_STATUS.NOT_FOUND) {

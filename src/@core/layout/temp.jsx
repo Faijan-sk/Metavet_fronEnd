@@ -215,7 +215,7 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 shadow-md py-2 sm:py-4 px-4 sm:px-6 lg:px-10 font-sans min-h-[60px] sm:min-h-[70px] tracking-wide relative z-50 bg-primary">
+    <header className="sticky top-0 shadow-md py-2 sm:py-4 px-4 sm:px-6 lg:px-10 font-sans min-h-[60px] sm:min-h-[70px] tracking-wide z-50 bg-primary">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center">
           <Link to="/" className="flex items-center">

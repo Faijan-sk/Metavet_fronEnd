@@ -13,6 +13,7 @@ import WalkerToClientKyc from "./views/pages/kyc/walker-kyc/WalkerToClientKyc"
 import PetRecord from "./views/pages/pets/index";
 import PetServiceAppointment from "./views/pages/petServicesAppointment/index"
 import ServiceProviders from "./views/pages/serviceProvider/index"
+import ProfilePage from "./../src/views/pages/profilepage/index"
 
 // ** Pages
 
@@ -114,7 +115,9 @@ const App = () => {
             <Routes>
               <Route path="*" element={<h1>404 page not found</h1>} />
               <Route path="/" element={<Layout />}>
+
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/appointment" element={<Appointment />} />
                 <Route path="/healthrecord" element={<HealthRecord />} />
                 <Route path="/mypet" element={<MyPet />} />
