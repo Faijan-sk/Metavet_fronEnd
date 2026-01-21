@@ -1,91 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Search, X, MapPin, Brain, Star, Award, Clock, Heart, MessageCircle, Phone, Sparkles } from "lucide-react";
+import React, { useEffect, useState, useCallback } from 'react';
+import { Search, MapPin, Brain, Star, Award, Clock, Heart, Phone, Sparkles, Loader2 } from "lucide-react";
 import KycWarning from '../KycWarning'
 import MainPage from "./../DefaultPage"
-const KYC_STATUS = {
-  APPROVED: "approved",
-  PENDING: "pending",
-  CANCELLED: "cancelled",
-  NOT_FOUND: "not_found",
-};
+import useJwt from "./../../../../enpoints/jwt/useJwt"
 
-// Static dummy behaviourists data
-const STATIC_BEHAVIOURISTS = [
-  {
-    id: 1,
-    name: "Dr. Anjali Mehta",
-    specialization: "Canine Behaviorist",
-    experience: "8 years",
-    rating: 4.9,
-    reviews: 234,
-    distance: 2.3,
-    price: "$40-60",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Expert",
-    expertise: ["Aggression", "Anxiety", "Training"]
-  },
-  {
-    id: 2,
-    name: "Dr. Rajesh Kumar",
-    specialization: "Animal Psychology Expert",
-    experience: "12 years",
-    rating: 4.8,
-    reviews: 312,
-    distance: 3.1,
-    price: "$50-80",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Premium",
-    expertise: ["Trauma Recovery", "Fear Issues", "Socialization"]
-  },
-  {
-    id: 3,
-    name: "Meera Joshi",
-    specialization: "Pet Behavior Specialist",
-    experience: "6 years",
-    rating: 4.7,
-    reviews: 178,
-    distance: 1.5,
-    price: "$35-55",
-    available: false,
-    profileStatus: "APPROVED",
-    badge: "Certified",
-    expertise: ["Puppy Behavior", "Obedience", "Barking Issues"]
-  },
-  {
-    id: 4,
-    name: "Dr. Sanjay Rao",
-    specialization: "Veterinary Behaviorist",
-    experience: "15 years",
-    rating: 5.0,
-    reviews: 445,
-    distance: 4.8,
-    price: "$70-100",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Top Rated",
-    expertise: ["Medical Behavior", "Compulsive Disorders", "Senior Pets"]
-  },
-  {
-    id: 5,
-    name: "Kavita Desai",
-    specialization: "Positive Reinforcement Trainer",
-    experience: "5 years",
-    rating: 4.6,
-    reviews: 156,
-    distance: 2.7,
-    price: "$30-50",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Popular",
-    expertise: ["Separation Anxiety", "Leash Reactivity", "Multi-Pet Homes"]
-  }
-];
-
-
-
-// DefaultPage Component
+// --- DefaultPage Component (Verification Progress) ---
 function DefaultPage() {
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
@@ -100,9 +19,11 @@ function DefaultPage() {
   );
 }
 
-// BehaviouristCard Component
+// --- BehaviouristCard Component ---
 function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const formatTag = (text) => text.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
 
   return (
     <div 
@@ -110,16 +31,14 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Badge */}
       <div className="absolute top-4 left-4 z-10">
         <span className="px-3 py-1 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white text-xs font-bold rounded-full shadow-lg">
-          {behaviourist.badge}
+          {behaviourist.yearsExperience > 5 ? 'Expert' : 'Certified'}
         </span>
       </div>
 
-      {/* Favorite Button */}
       <button
-        onClick={() => onFavorite(behaviourist.id)}
+        onClick={() => onFavorite(behaviourist.uid)}
         className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
       >
         <Heart 
@@ -127,167 +46,186 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
         />
       </button>
 
-      {/* Avatar Section */}
       <div className="relative h-48 bg-gradient-to-br from-[#52B2AD]/10 to-[#459d99]/10 flex items-center justify-center overflow-hidden">
         <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? 'scale-110' : ''}`}>
           <span className="text-4xl font-bold text-white">
-            {behaviourist.name.split(' ').map(n => n[0]).join('')}
+            {behaviourist.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
           </span>
         </div>
-        
-        {/* Availability Badge */}
         <div className="absolute bottom-4 right-4">
-          {behaviourist.available ? (
             <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              Available
+              Active
             </span>
-          ) : (
-            <span className="px-3 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">
-              Busy
-            </span>
-          )}
         </div>
       </div>
 
-      {/* Content Section */}
       <div className="p-5">
-        {/* Name & Title */}
-        <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#52B2AD] transition-colors">
-          {behaviourist.name}
+        <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#52B2AD] transition-colors truncate">
+          {behaviourist.fullName}
         </h3>
-        <p className="text-sm text-gray-600 mb-3">{behaviourist.specialization}</p>
+        <p className="text-sm text-gray-600 mb-3">{formatTag(behaviourist.serviceType)}</p>
 
-        {/* Stats Row */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-bold text-gray-900">{behaviourist.rating}</span>
-            <span className="text-xs text-gray-500">({behaviourist.reviews})</span>
+            <span className="font-bold text-gray-900">4.5</span>
+            <span className="text-xs text-gray-500">(New)</span>
           </div>
           
           <div className="flex items-center gap-1 text-sm text-gray-600">
             <MapPin className="w-4 h-4 text-[#52B2AD]" />
-            <span className="font-semibold">{behaviourist.distance} km</span>
+            <span className="font-semibold">{behaviourist.distanceKm.toFixed(1)} km</span>
           </div>
         </div>
 
-        {/* Experience & Price */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
             <Clock className="w-4 h-4 text-[#52B2AD]" />
             <div>
-              <p className="text-xs text-gray-500">Experience</p>
-              <p className="text-sm font-bold text-gray-900">{behaviourist.experience}</p>
+              <p className="text-xs text-gray-500">Exp.</p>
+              <p className="text-sm font-bold text-gray-900">{behaviourist.yearsExperience} Years</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
             <Award className="w-4 h-4 text-[#52B2AD]" />
             <div>
-              <p className="text-xs text-gray-500">Per Session</p>
-              <p className="text-sm font-bold text-gray-900">{behaviourist.price}</p>
+              <p className="text-xs text-gray-500">Radius</p>
+              <p className="text-sm font-bold text-gray-900">{behaviourist.serviceArea} km</p>
             </div>
           </div>
         </div>
 
-        {/* Expertise Tags */}
         <div className="mb-4">
-          <p className="text-xs text-gray-500 mb-2">Expertise:</p>
-          <div className="flex flex-wrap gap-1">
-            {behaviourist.expertise.map((area, idx) => (
+          <p className="text-xs text-gray-500 mb-2">Specializations:</p>
+          <div className="flex flex-wrap gap-1 h-14 overflow-hidden">
+            {behaviourist.specializations.map((area, idx) => (
               <span 
                 key={idx}
-                className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-xs rounded-lg font-medium"
+                className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-[10px] rounded-lg font-medium"
               >
-                {area}
+                {formatTag(area)}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-2">
           <button className="flex-1 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200">
             Book Session
           </button>
-          <button className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
-            <MessageCircle className="w-5 h-5 text-gray-600 group-hover:text-[#52B2AD]" />
-          </button>
-          <button className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
+          <a href={`tel:${behaviourist.phoneNumber}`} className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
             <Phone className="w-5 h-5 text-gray-600 group-hover:text-[#52B2AD]" />
-          </button>
+          </a>
         </div>
       </div>
     </div>
   );
 }
 
-// Main Index Component
-function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState(KYC_STATUS.CANCELLED); // Change this to test different states
+// --- Main Index Component ---
+function Index() {
+  const [kycStatus, setKycStatus] = useState('NOT_FOUND');
+  const [behaviourists, setBehaviourists] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [maxDistance, setMaxDistance] = useState("");
+  const [maxDistance, setMaxDistance] = useState(""); // Default distance 250
   const [favorites, setFavorites] = useState([]);
+  const [coords, setCoords] = useState({ lat: '20.00734825160445', lng: '73.7637480064178' }); // Default Coords
+  
   const kycUrl = '/behaviouristTo-client-kyc';
 
-  const clearSearch = () => setSearchQuery("");
-  const clearDistance = () => setMaxDistance("");
-
-  const toggleFavorite = (behaviouristId) => {
-    setFavorites(prev => 
-      prev.includes(behaviouristId) 
-        ? prev.filter(id => id !== behaviouristId)
-        : [...prev, behaviouristId]
-    );
+  const toggleFavorite = (id) => {
+    setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  // Filter behaviourists based on search and distance
-  const filteredBehaviourists = STATIC_BEHAVIOURISTS.filter(behaviourist => {
-    const matchesSearch = !searchQuery || 
-      behaviourist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      behaviourist.specialization.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesDistance = !maxDistance || 
-      behaviourist.distance <= parseFloat(maxDistance);
-    
-    return matchesSearch && matchesDistance && behaviourist.profileStatus === "APPROVED";
-  });
+  // API Call function encapsulated in useCallback
+  const loadData = useCallback(async (lat, lng, distance) => {
+    try {
+      setLoading(true);
+      // 1. Fetch KYC Status
+      const kycRes = await useJwt.getKycStatusBehaviouristToClinet();
+      setKycStatus(kycRes.data.data.status);
 
-  useEffect(() => {
-    const fetchKycStatus = async () => {
-      // const response = await useJwt.getKycStatusBehaviouristToClient();
-      // setKycStatus(response.data.status);
-    };
-
-    fetchKycStatus();
+      // 2. Fetch Behaviourists with Dynamic Params
+      const response = await useJwt.getAllBehaviouristByDistance(
+        lat.toString(),
+        lng.toString(),
+        '0', // Page
+        distance || '1000'
+      );
+      
+      if (response.data.success) {
+        setBehaviourists(response.data.data.content);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Show KYC Warning or Default Page for non-approved statuses
-  if (kycStatus === KYC_STATUS.CANCELLED) {
-    return <><KycWarning kycUrl={kycUrl} />
-    <MainPage /></> ;
-  }
+  // Initial Geolocation and First Load
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLat = position.coords.latitude.toString();
+          const newLng = position.coords.longitude.toString();
+          setCoords({ lat: newLat, lng: newLng });
+          loadData(newLat, newLng, maxDistance);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          loadData(coords.lat, coords.lng, maxDistance); // Load with defaults if blocked
+        }
+      );
+    } else {
+      loadData(coords.lat, coords.lng, maxDistance);
+    }
+  }, []); // Run once on mount
 
-  if (kycStatus === KYC_STATUS.NOT_FOUND) {
+  // Watch for maxDistance changes with Debounce
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      // Sirf tab hit karega jab initial loading khatam ho jaye aur distance valid ho
+      if(maxDistance) {
+        loadData(coords.lat, coords.lng, maxDistance);
+      }
+    }, 800); // 800ms wait after typing
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [maxDistance, coords.lat, coords.lng, loadData]);
+
+  // Filtering for Search (Clientside)
+  const filteredBehaviourists = behaviourists.filter(b => {
+    const matchesSearch = !searchQuery || 
+      b.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    return matchesSearch;
+  });
+
+  if (loading && behaviourists.length === 0) {
     return (
-      <>
-        <KycWarning kycUrl={kycUrl} />
-        <MainPage />
-      </>
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#52B2AD] animate-spin" />
+      </div>
     );
   }
 
-  if (kycStatus === KYC_STATUS.PENDING) {
-    return <DefaultPage />;
+  if (kycStatus === 'REJECTED' || kycStatus === 'NOT_FOUND') {
+    return <><KycWarning kycUrl={kycUrl} /><MainPage /></>;
   }
 
-  // Show main content for approved status
+  if (kycStatus === 'PENDING') return <DefaultPage />;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
         
-        {/* Header with Gradient */}
+        {/* Header */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
@@ -297,104 +235,61 @@ function Index({ location }) {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-[#52B2AD] to-[#459d99] bg-clip-text text-transparent mb-3">
             Find Expert Behaviourists
           </h1>
-          <p className="text-gray-600 text-lg">Connect with certified professionals to transform your pet's behavior</p>
+          <p className="text-gray-600 text-lg">Connected to your live location</p>
         </div>
 
-        {/* Search Bar with Glass Effect */}
+        {/* Search & Filter */}
         <div className="max-w-4xl mx-auto mb-8">
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-gray-100">
             <div className="flex flex-col md:flex-row gap-4">
-              
-              {/* Search Input */}
               <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <Search className="h-6 w-6 text-[#52B2AD]" />
-                </div>
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-[#52B2AD]" />
                 <input
                   type="text"
                   placeholder="Search by name or specialization..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
+                  className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] transition-all"
                 />
-                {searchQuery && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
-                  >
-                    <X className="h-6 w-6 text-gray-400" />
-                  </button>
-                )}
               </div>
-
-              {/* Distance Filter */}
               <div className="relative md:w-72">
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <MapPin className="h-6 w-6 text-[#52B2AD]" />
-                </div>
+                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-[#52B2AD]" />
                 <input
                   type="number"
                   placeholder="Max distance (km)"
                   value={maxDistance}
                   onChange={(e) => setMaxDistance(e.target.value)}
-                  min="0"
-                  step="0.5"
-                  className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
+                  className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] transition-all"
                 />
-                {maxDistance && (
-                  <button
-                    onClick={clearDistance}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
-                  >
-                    <X className="h-6 w-6 text-gray-400" />
-                  </button>
-                )}
               </div>
-
             </div>
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-8 text-center">
-          <p className="text-gray-600 text-xl">
-            Found{" "}
-            <span className="font-bold text-[#52B2AD] text-2xl">
-              {filteredBehaviourists.length}
-            </span>{" "}
-            expert behaviourist{filteredBehaviourists.length !== 1 ? "s" : ""} near you
-          </p>
-        </div>
-
-        {/* Behaviourists Grid */}
+        {/* Grid */}
         {filteredBehaviourists.length === 0 ? (
           <div className="text-center py-20">
-            <div className="inline-block p-6 bg-gray-100 rounded-full mb-6">
-              <Search className="w-16 h-16 text-gray-400" />
-            </div>
-            <p className="text-gray-500 text-xl mb-4">No behaviourists found matching your criteria</p>
-            {(searchQuery || maxDistance) && (
-              <button
-                onClick={() => { clearSearch(); clearDistance(); }}
-                className="px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
-              >
-                Clear All Filters
-              </button>
+            {loading ? (
+                <Loader2 className="w-12 h-12 text-[#52B2AD] animate-spin mx-auto" />
+            ) : (
+                <>
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-xl">No behaviourists found within {maxDistance}km</p>
+                </>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredBehaviourists.map((behaviourist) => (
+            {filteredBehaviourists.map((b) => (
               <BehaviouristCard 
-                key={behaviourist.id} 
-                behaviourist={behaviourist}
+                key={b.uid} 
+                behaviourist={b}
                 onFavorite={toggleFavorite}
-                isFavorite={favorites.includes(behaviourist.id)}
+                isFavorite={favorites.includes(b.uid)}
               />
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

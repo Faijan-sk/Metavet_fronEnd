@@ -134,7 +134,7 @@ function WalkerCard({ walker, onFavorite, isFavorite }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState('');
+  const [kycStatus, setKycStatus] = useState('NOT_FOUND');
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("10"); // Default distance
   const [favorites, setFavorites] = useState([]);
@@ -170,7 +170,7 @@ function Index({ location }) {
         (error) => {
           console.error("Error getting location:", error);
           // Fallback static location if user denies permission
-          setCoords({ lat: '20.007351', lng: '73.763711' });
+        
         }
       );
     }

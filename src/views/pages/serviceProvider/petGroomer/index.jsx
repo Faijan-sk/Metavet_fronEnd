@@ -4,12 +4,12 @@ import KycWarning from "./../KycWarning"
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 
-const KYC_STATUS = {
-  APPROVED: "approved",
-  PENDING: "pending",
-  CANCELLED: "cancelled",
-  NOT_FOUND: "not_found",
-};
+// const KYC_STATUS = {
+//   APPROVED: "approved",
+//   PENDING: "pending",
+//   CANCELLED: "cancelled",
+//   NOT_FOUND: "not_found",
+// };
 
 // Default Page Component
 function DefaultPage() {
@@ -141,7 +141,7 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState(''); 
+  const [kycStatus, setKycStatus] = useState('NOT_FOUND'); 
   const [groomers, setGroomers] = useState([]); 
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
@@ -152,7 +152,7 @@ function Index({ location }) {
   const [locationError, setLocationError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const kycUrl = '/groomer-to-client-kyc';
+  const kycUrl = '/groomerTo-client-kyc';
 
   const clearSearch = () => setSearchQuery("");
   const clearDistance = () => setMaxDistance("");
@@ -170,7 +170,7 @@ function Index({ location }) {
     const fetchStatus = async () => {
       try {
         const response  = await useJwt.getStatusGroomerToClient();
-        setKycStatus(KYC_STATUS.APPROVED) // Set APPROVED manually for now as per your code
+        setKycStatus(response.data.data.status) // Set APPROVED manually for now as per your code
       } catch (error) {
         console.error("Error fetching KYC status:", error);
       }
@@ -271,7 +271,7 @@ function Index({ location }) {
   });
 
   // Render Logic
-  if (kycStatus === KYC_STATUS.CANCELLED || kycStatus === KYC_STATUS.NOT_FOUND) {
+  if (kycStatus === 'CANCELLED' || kycStatus === 'NOT_FOUND') {
     return (
       <>
         <KycWarning kycUrl={kycUrl} />
@@ -280,7 +280,7 @@ function Index({ location }) {
     );
   }
 
-  if (kycStatus === KYC_STATUS.PENDING) {
+  if (kycStatus === 'PENDING') {
     return <DefaultPage />;
   }
 

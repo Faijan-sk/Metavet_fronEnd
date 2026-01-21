@@ -772,7 +772,7 @@ const PetWalkerKYC = () => {
 
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  Emergency Vet Info:
+                  Emergency Pet Info:
                 </label>
                 <input
                   type="text"
