@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, X, MapPin, Dog, Star, Award, Clock, Heart, MessageCircle, Phone, Footprints } from "lucide-react";
 import KycWarning from "./../KycWarning"
 import MainPage from "./../DefaultPage"
-
+import useJwt from "./../../../../enpoints/jwt/useJwt"
 const KYC_STATUS = {
   APPROVED: "approved",
   PENDING: "pending",
@@ -84,26 +84,7 @@ const STATIC_WALKERS = [
   }
 ];
 
-// KycWarning Component
-// function KycWarning({ kycUrl }) {
-//   return (
-//     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
-//       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-//         <div className="w-20 h-20 bg-[#52B2AD]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-//           <Dog className="w-10 h-10 text-[#52B2AD]" />
-//         </div>
-//         <h2 className="text-2xl font-bold text-gray-900 mb-4">KYC Verification Required</h2>
-//         <p className="text-gray-600 mb-8">Please complete your KYC verification to access pet walker services.</p>
-//         <a 
-//           href={kycUrl}
-//           className="inline-block px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
-//         >
-//           Complete KYC
-//         </a>
-//       </div>
-//     </div>
-//   );
-// }
+
 
 // DefaultPage Component
 function DefaultPage() {
@@ -245,7 +226,7 @@ function WalkerCard({ walker, onFavorite, isFavorite }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState(KYC_STATUS.APPROVED); // Change this to test different states
+  const [kycStatus, setKycStatus] = useState(''); // Change this to test different states
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
@@ -276,24 +257,23 @@ function Index({ location }) {
 
   useEffect(() => {
     const fetchKycStatus = async () => {
-      // const response = await useJwt.getStatusWalkerToClientKyc();
-      // setKycStatus(response.data.status);
+      const response = await useJwt.getStatusWalkerToClientKyc();
+      console.log("STATUS ::::::::::::::",response.data.data.status)
+      setKycStatus(response.data.data.status);
     };
 
     fetchKycStatus();
   }, []);
 
   // Show KYC Warning or Default Page for non-approved statuses
-  if (kycStatus === KYC_STATUS.CANCELLED ||kycStatus === KYC_STATUS.NOT_FOUND  ) {
+  if (kycStatus === 'CANCELLED' ||kycStatus === 'NOT_FOUND'  ) {
     return<> <KycWarning kycUrl={kycUrl} /><MainPage /></> ;
   }
 
-  if (kycStatus === KYC_STATUS.PENDING) {
+  if (kycStatus === 'PENDING') {
     return <DefaultPage />;
   }
-  // if (kycStatus === KYC_STATUS.NOT_FOUND) {
-  //   return<> <KycWarning kycUrl={kycUrl} /><MainPage /></> ;
-  // }
+ 
 
 
   // Show main content for approved status

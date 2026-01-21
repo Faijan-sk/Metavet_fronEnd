@@ -393,8 +393,25 @@ getStatusGroomerToClient(){
   return axios.get(this.jwtConfig.getStatusGroomerToClient)
 }
 
+getAllGroomerByDistance(latitude, longitude, page, distance) {
+  return axios.get(
+    this.jwtConfig.getAllGroomerByDistanceEndpoint
+      .replace("{Distance}", distance)
+      .replace("{page}", page)
+      .replace("{latitude}", latitude)
+      .replace("{longitude}", longitude)
+  );
+}
 
-
+getAllWalkerByDistance(latitude, longitude, page, distance) {
+  return axios.get(
+    this.jwtConfig.getAllWalkerByDistance
+      .replace("{Distance}", distance)
+      .replace("{page}", page)
+      .replace("{latitude}", latitude)
+      .replace("{longitude}", longitude)
+  );
+}
 
 
 

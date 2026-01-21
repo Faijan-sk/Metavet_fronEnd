@@ -3,6 +3,7 @@ import { Search, X, MapPin, Scissors, Star, Award, Clock, Heart, MessageCircle, 
 import KycWarning from "./../KycWarning"
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
+
 const KYC_STATUS = {
   APPROVED: "approved",
   PENDING: "pending",
@@ -10,55 +11,7 @@ const KYC_STATUS = {
   NOT_FOUND: "not_found",
 };
 
-// Static dummy groomers data
-const STATIC_GROOMERS = [
-  {
-    id: 1,
-    name: "Faizan Shaikh",
-    specialization: "Dog Grooming Expert",
-    experience: "5 years",
-    rating: 4.5,
-    reviews: 127,
-    distance: 2.3,
-    price: "$50-80",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Top Rated",
-    services: ["Bath & Brush", "Haircut", "Nail Trim"]
-  },
-  {
-    id: 2,
-    name: "Gulam Ansari",
-    specialization: "Cat Grooming Specialist",
-    experience: "3 years",
-    rating: 4.8,
-    reviews: 89,
-    distance: 1.5,
-    price: "$40-60",
-    available: true,
-    profileStatus: "APPROVED",
-    badge: "Certified",
-    services: ["De-shedding", "Bath", "Ear Cleaning"]
-  },
-  {
-    id: 3,
-    name: "Niraj Vishwakarma",
-    specialization: "All Pets Groomer",
-    experience: "7 years",
-    rating: 4.6,
-    reviews: 203,
-    distance: 3.2,
-    price: "$60-100",
-    available: false,
-    profileStatus: "APPROVED",
-    badge: "Expert",
-    services: ["Full Grooming", "Spa Treatment", "Styling"]
-  }
-];
-
-
-
-// Default Page Component (for PENDING status)
+// Default Page Component
 function DefaultPage() {
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
@@ -73,8 +26,7 @@ function DefaultPage() {
   );
 }
 
-
-// Groomer Card Component
+// Groomer Card Component (Same as before)
 function GroomerCard({ groomer, onFavorite, isFavorite }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -84,14 +36,12 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Badge */}
       <div className="absolute top-4 left-4 z-10">
         <span className="px-3 py-1 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white text-xs font-bold rounded-full shadow-lg">
           {groomer.badge}
         </span>
       </div>
 
-      {/* Favorite Button */}
       <button
         onClick={() => onFavorite(groomer.id)}
         className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
@@ -101,15 +51,13 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
         />
       </button>
 
-      {/* Avatar Section */}
       <div className="relative h-48 bg-gradient-to-br from-[#52B2AD]/10 to-[#459d99]/10 flex items-center justify-center overflow-hidden">
         <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? 'scale-110' : ''}`}>
           <span className="text-4xl font-bold text-white">
-            {groomer.name.split(' ').map(n => n[0]).join('')}
+            {groomer.name ? groomer.name.split(' ').map(n => n[0]).join('') : 'G'}
           </span>
         </div>
         
-        {/* Availability Badge */}
         <div className="absolute bottom-4 right-4">
           {groomer.available ? (
             <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
@@ -124,15 +72,12 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
         </div>
       </div>
 
-      {/* Content Section */}
       <div className="p-5">
-        {/* Name & Title */}
         <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#52B2AD] transition-colors">
           {groomer.name}
         </h3>
         <p className="text-sm text-gray-600 mb-3">{groomer.specialization}</p>
 
-        {/* Stats Row */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -146,7 +91,6 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
           </div>
         </div>
 
-        {/* Experience & Price */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
             <Clock className="w-4 h-4 text-[#52B2AD]" />
@@ -165,11 +109,10 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
           </div>
         </div>
 
-        {/* Services Tags */}
         <div className="mb-4">
           <p className="text-xs text-gray-500 mb-2">Services:</p>
           <div className="flex flex-wrap gap-1">
-            {groomer.services.map((service, idx) => (
+            {groomer.services && groomer.services.map((service, idx) => (
               <span 
                 key={idx}
                 className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-xs rounded-lg font-medium"
@@ -180,7 +123,6 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-2">
           <button className="flex-1 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200">
             Book Now
@@ -199,10 +141,17 @@ function GroomerCard({ groomer, onFavorite, isFavorite }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState(''); // Change this to test different states
+  const [kycStatus, setKycStatus] = useState(''); 
+  const [groomers, setGroomers] = useState([]); 
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
+  
+  // NEW: State for user location
+  const [userCoords, setUserCoords] = useState({ lat: null, lng: null });
+  const [locationError, setLocationError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const kycUrl = '/groomer-to-client-kyc';
 
   const clearSearch = () => setSearchQuery("");
@@ -215,42 +164,114 @@ function Index({ location }) {
         : [...prev, groomerId]
     );
   };
-  useEffect(()=>{
-    debugger
-    const fetchStatus = async () => {
-      const response  = useJwt.getStatusGroomerToClient();
-      setKycStatus(response?.data?.status)
 
+  // 1. Fetch User KYC Status
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response  = await useJwt.getStatusGroomerToClient();
+        setKycStatus(KYC_STATUS.APPROVED) // Set APPROVED manually for now as per your code
+      } catch (error) {
+        console.error("Error fetching KYC status:", error);
+      }
+    }
+    fetchStatus();
+  }, []);
+
+  // 2. Fetch User Geolocation (Browser)
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserCoords({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocationError("Please enable location services to find groomers near you.");
+          // Fallback: Aap chahein to yaha ek default location set kar sakte hain (e.g., Nashik center)
+          // setUserCoords({ lat: 20.0073, lng: 73.7637 });
+        }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+    }
+  }, []);
+
+  // 3. Fetch Groomers from API (Depends on userCoords & maxDistance)
+  useEffect(() => {
+    const fetchGroomers = async () => {
+      // Jab tak user ka location nahi milta, API call mat karo
+      if (!userCoords.lat || !userCoords.lng) return;
+
+      setIsLoading(true);
+      try {
+        // Agar user ne maxDistance nahi dala, to default '50' km bhej rahe hain
+        const distanceToSend = maxDistance ? maxDistance : '50';
+        
+        // Dynamic Lat, Lng aur Distance pass kiya hai
+        const response = await useJwt.getAllGroomerByDistance(
+            userCoords.lat, 
+            userCoords.lng, 
+            '0', 
+            distanceToSend
+        );
+        
+        if (response?.data?.success) {
+          const backendData = response.data.data.content;
+          
+          const mappedGroomers = backendData.map(item => ({
+            id: item.uid,
+            name: item.fullName || item.businessName,
+            specialization: item.serviceType ? item.serviceType.replace(/_/g, ' ') : "Specialist", 
+            experience: `${item.yearsExperience} years`,
+            rating: 4.8, 
+            reviews: Math.floor(Math.random() * 100),
+            distance: parseFloat(item.distanceKm).toFixed(1),
+            price: "Contact for Price",
+            available: true,
+            profileStatus: "APPROVED",
+            badge: item.yearsExperience > 4 ? "Expert" : "Certified",
+            services: item.servicesOffered.map(s => 
+              s.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+            )
+          }));
+
+          setGroomers(mappedGroomers);
+        }
+      } catch (error) {
+        console.error("Error fetching groomers:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    fetchStatus()
-  },[])
+    // Debounce: User jab type kar raha ho to turant API call na ho, 500ms ruk ke ho
+    const timeoutId = setTimeout(() => {
+        fetchGroomers();
+    }, 500);
 
-  // Filter groomers based on search and distance
-  const filteredGroomers = STATIC_GROOMERS.filter(groomer => {
+    return () => clearTimeout(timeoutId);
+
+  }, [userCoords, maxDistance]); // Dependancy array me coordinates aur maxDistance hai
+  
+  // Client-side filtering (Sirf Name search ke liye, Distance ab API handle kar raha hai)
+  const filteredGroomers = groomers.filter(groomer => {
     const matchesSearch = !searchQuery || 
       groomer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       groomer.specialization.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesDistance = !maxDistance || 
-      groomer.distance <= parseFloat(maxDistance);
+    // Note: Distance filter yaha se hata diya kyunki API already filter karke de rahi hai
+    // Agar aap chahte hain ki API data aane ke baad bhi strictly filter karein:
+    // const matchesDistance = !maxDistance || parseFloat(groomer.distance) <= parseFloat(maxDistance);
     
-    return matchesSearch && matchesDistance && groomer.profileStatus === "APPROVED";
+    return matchesSearch;
   });
 
-  
-
-  // Show KYC Warning or Default Page for non-approved statuses
-  if (kycStatus === KYC_STATUS.CANCELLED) {
-    return (
-      <>
-        <KycWarning kycUrl={kycUrl} />
-        <MainPage />
-      </>
-    );
-  }
-
-  if (kycStatus === KYC_STATUS.NOT_FOUND) {
+  // Render Logic
+  if (kycStatus === KYC_STATUS.CANCELLED || kycStatus === KYC_STATUS.NOT_FOUND) {
     return (
       <>
         <KycWarning kycUrl={kycUrl} />
@@ -263,12 +284,11 @@ function Index({ location }) {
     return <DefaultPage />;
   }
 
-  // Show main content for approved status
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
         
-        {/* Header with Gradient */}
+        {/* Header */}
         <div className="mb-10 text-center">
           <div className="inline-flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
@@ -279,9 +299,18 @@ function Index({ location }) {
             Find Your Perfect Groomer
           </h1>
           <p className="text-gray-600 text-lg">Discover qualified grooming professionals for your beloved pets</p>
+          
+          {/* Location Error Message */}
+          {locationError && (
+             <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg inline-block">
+                <p className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" /> {locationError}
+                </p>
+             </div>
+          )}
         </div>
 
-        {/* Search Bar with Glass Effect */}
+        {/* Search Bar */}
         <div className="max-w-4xl mx-auto mb-8">
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-gray-100">
             <div className="flex flex-col md:flex-row gap-4">
@@ -299,16 +328,13 @@ function Index({ location }) {
                   className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
                 />
                 {searchQuery && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
-                  >
+                  <button onClick={clearSearch} className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70">
                     <X className="h-6 w-6 text-gray-400" />
                   </button>
                 )}
               </div>
 
-              {/* Distance Filter */}
+              {/* Distance Filter (Ye ab API trigger karega) */}
               <div className="relative md:w-72">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <MapPin className="h-6 w-6 text-[#52B2AD]" />
@@ -319,14 +345,11 @@ function Index({ location }) {
                   value={maxDistance}
                   onChange={(e) => setMaxDistance(e.target.value)}
                   min="0"
-                  step="0.5"
+                  step="1"
                   className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
                 />
                 {maxDistance && (
-                  <button
-                    onClick={clearDistance}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
-                  >
+                  <button onClick={clearDistance} className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70">
                     <X className="h-6 w-6 text-gray-400" />
                   </button>
                 )}
@@ -336,49 +359,62 @@ function Index({ location }) {
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-8 text-center">
-          <p className="text-gray-600 text-xl">
-            Found{" "}
-            <span className="font-bold text-[#52B2AD] text-2xl">
-              {filteredGroomers.length}
-            </span>{" "}
-            amazing groomer{filteredGroomers.length !== 1 ? "s" : ""} near you
-          </p>
-        </div>
-
-        {/* Groomers Grid */}
-        {filteredGroomers.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="inline-block p-6 bg-gray-100 rounded-full mb-6">
-              <Search className="w-16 h-16 text-gray-400" />
+        {/* Results Count & Grid */}
+        
+        {/* Loading State */}
+        {isLoading && (
+            <div className="text-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#52B2AD] mx-auto"></div>
+                <p className="mt-4 text-gray-500">Searching groomers near you...</p>
             </div>
-            <p className="text-gray-500 text-xl mb-4">No groomers found matching your criteria</p>
-            {(searchQuery || maxDistance) && (
-              <button
-                onClick={() => { clearSearch(); clearDistance(); }}
-                className="px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
-              >
-                Clear All Filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredGroomers.map((groomer) => (
-              <GroomerCard 
-                key={groomer.id} 
-                groomer={groomer}
-                onFavorite={toggleFavorite}
-                isFavorite={favorites.includes(groomer.id)}
-              />
-            ))}
-          </div>
+        )}
+
+        {!isLoading && (
+            <>
+                <div className="mb-8 text-center">
+                <p className="text-gray-600 text-xl">
+                    Found{" "}
+                    <span className="font-bold text-[#52B2AD] text-2xl">
+                    {filteredGroomers.length}
+                    </span>{" "}
+                    amazing groomer{filteredGroomers.length !== 1 ? "s" : ""} 
+                    {maxDistance ? ` within ${maxDistance} km` : " near you"}
+                </p>
+                </div>
+
+                {filteredGroomers.length === 0 ? (
+                <div className="text-center py-20">
+                    <div className="inline-block p-6 bg-gray-100 rounded-full mb-6">
+                    <Search className="w-16 h-16 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-xl mb-4">No groomers found matching your criteria</p>
+                    {(searchQuery || maxDistance) && (
+                    <button
+                        onClick={() => { clearSearch(); clearDistance(); }}
+                        className="px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                    >
+                        Clear All Filters
+                    </button>
+                    )}
+                </div>
+                ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredGroomers.map((groomer) => (
+                    <GroomerCard 
+                        key={groomer.id} 
+                        groomer={groomer}
+                        onFavorite={toggleFavorite}
+                        isFavorite={favorites.includes(groomer.id)}
+                    />
+                    ))}
+                </div>
+                )}
+            </>
         )}
 
       </div>
     </div>
-  );
+  );s
 }
 
 export default Index;

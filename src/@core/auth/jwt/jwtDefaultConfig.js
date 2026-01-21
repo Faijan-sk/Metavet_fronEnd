@@ -62,11 +62,12 @@ export default {
   metavetToBehaviouristKycEndPoint: '/behaviouristkyc/create',
   walkerToClientKyc : '/api/walker-kyc',
   getStatusWalkerToClientKyc : '/api/walker-kyc/get-status',
+  getAllWalkerByDistance : '/walkerkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page=0&size=10',
 
 
   groomerToClientKyc : '/api/groomer-kyc',
   getStatusGroomerToClient : '/api/groomer-kyc/get-status',
-
+  getAllGroomerByDistanceEndpoint : '/groomerkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page={page}&size=10',
 
   behaviouristToClientKyc : '/api/behaviorist-kyc',
   getStatusBehaviouristToClient : '/api/behaviorist-kyc/get-status'
