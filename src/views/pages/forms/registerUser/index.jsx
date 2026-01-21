@@ -162,18 +162,8 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
     console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh',response)
     console.log(receivedToken)
 
-      if (response.data?.data?.userType === 2) {
-        console.log('numvber goining to doctor',receivedMobile)
-        navigate(`/updateProfile/${receivedToken}`, {
-          state: {
-            otp: receivedOtp,
-            phone: receivedMobile
-            
-          }
-        })
-
-        
-      } else { 
+    
+     
         if (receivedToken) {
           navigate(`/otp-verification/${receivedToken}`, {
             state: {
@@ -185,7 +175,7 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
           console.error("❌ Token not found in API response.");
           setErrorMsg('An error occurred. Please try again.');
         }
-      }
+      
 
     } catch (error) {
       console.error('❌ Signup failed:', error.response?.data || error.message)
