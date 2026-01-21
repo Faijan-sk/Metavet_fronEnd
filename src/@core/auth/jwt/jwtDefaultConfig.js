@@ -13,7 +13,8 @@ export default {
   /*
   * Doctor EndPoints
   */
-  updateDpctorEndPoint: '/api/auth/create',
+ doctorStatusCheckEndpoint : '/api/doctors/get-status',
+  updateDpctorEndPoint: '/api/doctors/create',
   getDoctorByIdEndPoint : 'api/doctors',
   getAllDoctorEndPoint : '/api/auth/doctors/available',
   getDoctorBySpecialityEndPoint:'api/doctors/specialization',

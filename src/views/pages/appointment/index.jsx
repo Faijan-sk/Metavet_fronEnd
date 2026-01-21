@@ -219,7 +219,7 @@ const Appointment = () => {
         className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
       >
         <Plus size={20} />
-        Create Your Appointmentsdaas
+        Create Your Slot
       </button> }
       
 

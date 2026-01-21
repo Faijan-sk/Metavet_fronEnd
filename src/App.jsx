@@ -14,7 +14,7 @@ import PetRecord from "./views/pages/pets/index";
 import PetServiceAppointment from "./views/pages/petServicesAppointment/index"
 import ServiceProviders from "./views/pages/serviceProvider/index"
 import ProfilePage from "./../src/views/pages/profilepage/index"
-
+import DoctorAppointentindex from "./../src/views/pages/appointment/doctorAppointment/index"
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -195,8 +195,15 @@ const App = () => {
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/viewprofile4" element={<ViewProfile4 />} />
                 <Route path="/viewprofile" element={<Viewprofile />} />
-                <Route
+                {/* <Route
                   path="/updateProfile/:token"
+                  element={<DoctorProfileUpdate />}
+                /> */}
+
+                  <Route path="/doctor-profile" element={<DoctorAppointentindex />} />
+
+                <Route
+                  path="/updateProfile"
                   element={<DoctorProfileUpdate />}
                 />
                 {/* Public Routes */}

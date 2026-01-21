@@ -160,6 +160,10 @@
       });
     }
 
+    getDoctorSatus(){
+      return axios.get(this.jwtConfig.doctorStatusCheckEndpoint)
+    }
+
     getAllDoctors() {
       return axios.get(this.jwtConfig.getAllDoctorEndPoint);
     }

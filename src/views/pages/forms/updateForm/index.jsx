@@ -6,7 +6,7 @@ import JwtService from "./../../../../@core/auth/jwt/jwtService";
 import { useParams } from 'react-router-dom';
 import useJwt from '../../../../enpoints/jwt/useJwt'
 
-const DoctorProfileForm = ({ onSubmit }) => {
+const DoctorProfileForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState("");
@@ -132,18 +132,14 @@ const DoctorProfileForm = ({ onSubmit }) => {
   const handleFormSubmit = async (data) => {
     console.log("Form data:", data);
     
-    if (!uid) {
-      setErrorMsg("User ID not found. Please try again.");
-      return;
-    }
-
+   
     setIsSubmitting(true);
     setErrorMsg("");
 
     try {
       // Transform form data into API payload matching backend DTO
       const payload = {
-        userId: uid,
+    
         experienceYears: parseInt(data.experienceYears, 10),
         hospitalClinicName: data.hospitalClinicName.trim(),
         hospitalClinicAddress: data.hospitalClinicAddress.trim(),
@@ -177,27 +173,18 @@ const DoctorProfileForm = ({ onSubmit }) => {
       
       console.log("✅ Doctor created successfully:", res.data);
 
-      // Prepare login payload with phone number
-      const loginPayload = {
-        phone_number: phoneNumber || state?.phone,
-      };
+// ✅ strict success check
+    if (res?.data) {
 
-      console.log("Login Payload:", loginPayload);
-
-      // Call login API to get OTP
-      let loginRes = await useJwt.login(loginPayload);
-      const { data: loginData } = loginRes;
-
-      // console.log("✅ Login response:", loginData.data.otp);
-debugger
-      // Navigate to OTP verification page
-      navigate(`/otp-verification/${loginData?.data?.token}`, {
-        state: {
-          otp: loginData?.data?.otp,
-          phone: `${loginData?.data?.phone_number}`,
-        },
-        replace: true
+        window.scrollTo({
+        top: 0,
+        behavior: "smooth",
       });
+
+
+
+      navigate("/doctor-profile", { replace: true });
+    }
 
     } catch (error) {
       console.error("❌ Doctor profile creation failed:", error);
@@ -255,29 +242,7 @@ debugger
       </p>
     ) : null;
 
-  // ✅ Fetch User by Mobile Number
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        if (state?.phone) {
-          console.log("Fetching user by mobile:", state.phone);
-          
-          const res = await useJwt.getUserByMobile(state.phone);
-          console.log("✅ User fetched by mobile:", res.data);
-
-          setUid(res.data?.uid);
-          setPhoneNumber(res.data?.phoneNumber || state.phone);
-        } else {
-          setErrorMsg("Phone number not provided");
-        }
-      } catch (err) {
-        console.error("❌ Failed to fetch user:", err.response?.data || err.message);
-        setErrorMsg(err.response?.data?.message || "User not found");
-      }
-    };
-
-    fetchUser();
-  }, [state?.phone]);
+  
 
   return (
     <div className="my-20 bg-white shadow-lg border border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-12 xl:px-16 2xl:px-40 max-w-full mx-auto">
@@ -1025,7 +990,7 @@ debugger
               Creating Profile...
             </>
           ) : (
-            "Create Doctor Profile"
+            "Submit"
           )}
         </button>
       </form>

@@ -46,13 +46,15 @@ const Header = () => {
   // Memoized navigation items
   const baseNavItems = useMemo(() => {
     const shouldShowPets = !userInfo || userInfo?.userType === 1;
+    const itsDoctor = !userInfo || userInfo?.userType === 2 ;
     const serviceProvider = userInfo?.userType === 3;
     console.log(serviceProvider, 'serviceProvider check')
     
     return [
       ...(shouldShowPets  ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
       // Appointment button - show only when user is NOT service provider (userType !== 3)
-      ...(!serviceProvider ? [{ name: 'Appointment', path: '/appointment', active: true }] : []),
+      ...(shouldShowPets ? [{ name: 'Appointment', path: '/appointment', active: true }] : []),
+      ...(itsDoctor ? [{ name: 'Appointment', path: '/doctor-profile', active: true }] : []),
       // Appointments button - show only when user IS service provider (userType === 3)
       ...(serviceProvider ? [{ name: 'Appointments', path: '/service-appointment', active: true }] : []),
       // {
