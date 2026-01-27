@@ -2,12 +2,9 @@
   import jwtDefaultConfig from './jwtDefaultConfig'
 
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-  // axios.defaults.baseURL = 'http://192.168.1.26:8080/'
+  // axios.defaults.baseURL = 'http://192.168.1.13:8080/'
   axios.defaults.baseURL = 'http://34.170.68.167:8080/'
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
-
-
- 
 
   export default class JwtService {
     
@@ -80,10 +77,19 @@
           const originalRequest = config
 
           // Handle 401 Unauthorized responses (example)
-          if (response && response.status === 401) {
-            console.log('Unauthorized access - consider redirecting to login or refreshing token');
-            // optional: handle refresh token flow here
-          }
+         if (response && response.status === 401) {
+  console.log('Unauthorized access - redirecting to login');
+
+  // clear auth data
+  localStorage.removeItem(this.jwtConfig.storageTokenKeyName);
+  localStorage.removeItem(this.jwtConfig.storageRefreshTokenKeyName);
+
+  // prevent infinite loop (important)
+  if (!originalRequest._retry) {
+    originalRequest._retry = true;
+    window.location.href = '/Signin';
+  }
+}
 
           if (!response) {
             console.error('Network error - check if backend is running');

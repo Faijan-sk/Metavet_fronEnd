@@ -44,59 +44,52 @@ const Header = () => {
 
 
   // Memoized navigation items
-  const baseNavItems = useMemo(() => {
-    const shouldShowPets = !userInfo || userInfo?.userType === 1;
-    const itsDoctor = !userInfo || userInfo?.userType === 2 ;
-    const serviceProvider = userInfo?.userType === 3;
-    console.log(serviceProvider, 'serviceProvider check')
-    
-    return [
-      ...(shouldShowPets  ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }] : []),
-      // Appointment button - show only when user is NOT service provider (userType !== 3)
-      ...(shouldShowPets ? [{ name: 'Appointment', path: '/appointment', active: true }] : []),
-      ...(itsDoctor ? [{ name: 'Appointment', path: '/doctor-profile', active: true }] : []),
-      // Appointments button - show only when user IS service provider (userType === 3)
-      ...(serviceProvider ? [{ name: 'Appointments', path: '/service-appointment', active: true }] : []),
-      // {
-      //   name: 'KYC',
-      //   hasDropdown: true, 
-      //   dropdownItems: [
-      //     { label: 'KYC Metavet to Pet Groomer', path: '/groomer-kyc' },
-      //     { label: 'KYC Metavet to Pet Walker', path: '/walker-kyc' },
-      //     { label: 'KYC Metavet to Behaviourist', path: '/behaviourist-kyc' },
-      //     { label: 'KYC Walker to Client', path: '/walkerTo-client-Kyc' },
-      //     { label: 'KYC Groomer to Client', path: '/groomerTo-client-kyc' },
-      //     { label: 'KYC Behaviourist to Client', path: '/behaviouristTo-client-kyc' },
-      //   ],
-      // },
+const baseNavItems = useMemo(() => {
+  const shouldShowPets = !userInfo || userInfo.userType === 1; // Pet Owner / Guest
+  const itsDoctor = userInfo && userInfo.userType === 2;      // Doctor
+  const serviceProvider = userInfo && userInfo.userType === 3; // Service Provider
 
-      ...(shouldShowPets ? [{ name: 'Pets', path: '/about-pet', active: true }] : []),
-    
+  return [
+    ...(shouldShowPets
+      ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }]
+      : []),
 
-  
-    
-      
-      ...(shouldShowPets ? [{
-      name: 'Pet Services',
-      hasDropdown: true,
-      dropdownItems: [
-        { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
-        { label: 'Pet Walker', path: '/service-provider/petWalker' },
-        { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
-      ],
-    }] : [])
+    ...(shouldShowPets
+      ? [{ name: 'Appointment', path: '/appointment', active: true }]
+      : []),
+
+    ...(itsDoctor
+      ? [{ name: 'Appointment', path: '/doctor-profile', active: true }]
+      : []),
+
+    ...(serviceProvider
+      ? [{ name: 'Appointments', path: '/service-appointment', active: true }]
+      : []),
+
+    ...(shouldShowPets
+      ? [{ name: 'Pets', path: '/about-pet', active: true }]
+      : []),
+
+    ...(shouldShowPets
+      ? [{
+          name: 'Pet Services',
+          hasDropdown: true,
+          dropdownItems: [
+            { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
+            { label: 'Pet Walker', path: '/service-provider/petWalker' },
+            { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
+          ],
+        }]
+      : []),
+  ];
+}, [userInfo]);
 
 
-
-
-    ]
-    
-  }, [userInfo])
 
   const navItems2 = useMemo(() => [
     ...(isMobile ? baseNavItems : []),
     {
-      name: 'Patient Center',
+      name: 'Patient Center', 
       hasDropdown: true,
       dropdownItems: [
         { label: 'What to Expect', path: '/what-to-expect' },

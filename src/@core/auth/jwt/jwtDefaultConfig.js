@@ -73,4 +73,8 @@ export default {
   behaviouristToClientKyc : '/api/behaviorist-kyc',
   getStatusBehaviouristToClient : '/api/behaviorist-kyc/get-status',
   getAllBehaviouristByDistance : '/behaviouristkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page={page}&size=10'
+
+
+
+
 }
