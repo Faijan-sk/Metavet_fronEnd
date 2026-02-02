@@ -15,6 +15,7 @@ const DoctorProfileForm = () => {
   const [phoneNumber, setPhoneNumber] = useState();
   const { state } = useLocation();
   const [token, setToken] = useState();
+  const [metavetFess , setMetavetFees] = useState(false)
   
   console.log('the state in the update doctor: ', state?.phone);
   
@@ -628,7 +629,7 @@ const DoctorProfileForm = () => {
 
         {/* Consultation Fee */}
         <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
+          <label className="block text-sm font-semibold text-gray-800">
             Consultation Fee ($) <span className="text-red-500">*</span>
           </label>
           <input
@@ -663,6 +664,30 @@ const DoctorProfileForm = () => {
           />
           <ErrorMsg message={errors.consultationFee?.message} />
         </div>
+
+{metavetFess === false ? (
+  <p className="text-sm">
+    View Metavet fee structure{" "}
+    <span
+      className="text-yellow-600 font-medium cursor-pointer"
+      onClick={() => setMetavetFees(true)}
+    >
+      view
+    </span>
+  </p>
+) : (
+  <p className="text-sm">
+    Please note: Metavet will charge the client an additional 20% on the fee you
+    enter.
+    <span
+      className="text-yellow-600 font-medium cursor-pointer ml-1"
+      onClick={() => setMetavetFees(false)}
+    >
+      hide
+    </span>
+  </p>
+)}
+
 
         {/* Gender + DOB */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
