@@ -457,7 +457,7 @@ const Appointment = () => {
                   if (newAppointment && newAppointment.id) {
                     setAppointments(prev => [newAppointment, ...prev]);
                   } else {
-                    window.location.reload();
+                    // window.location.reload();
                   }
                   setModalOpen(false);
                   setModalType(null);
@@ -474,7 +474,7 @@ const Appointment = () => {
                   if (newAppointment && newAppointment.id) {
                     setAppointments(prev => [newAppointment, ...prev]);
                   } else {
-                    window.location.reload();
+                    // window.location.reload();
                   }
                   setModalOpen(false);
                   setModalType(null);
@@ -491,7 +491,7 @@ const Appointment = () => {
                   if (newAppointment && newAppointment.id) {
                     setAppointments(prev => [newAppointment, ...prev]);
                   } else {
-                    window.location.reload();
+                    // window.location.reload();
                   }
                   setModalOpen(false);
                   setModalType(null);

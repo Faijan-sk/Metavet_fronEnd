@@ -86,7 +86,7 @@ function BookAppointmentModal({ doctor, onClose, initialValues }) {
       try {
         const formattedDate = selectedDate.toISOString().split("T")[0]
 
-        const response = await useJwt.getSlotByDoctor(
+        const response = await useJwt.getAvailableSlots(
           doctor.doctorId,
           doctorDayId,
           formattedDate
