@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "./context/ThemeProvider";
-
+import { Elements } from "@stripe/react-stripe-js";
+import { stripePromise } from "./stripe/stripe";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -15,6 +16,9 @@ import PetServiceAppointment from "./views/pages/petServicesAppointment/index"
 import ServiceProviders from "./views/pages/serviceProvider/index"
 import ProfilePage from "./../src/views/pages/profilepage/index"
 import DoctorAppointentindex from "./../src/views/pages/appointment/doctorAppointment/index"
+import PaymentCheckOutForm from "./../src/views/pages/payment/CheckOut"
+import PaymentSuccess from "./../src/views/pages/payment/PaymentSuccess"
+import PaymentFailed from "./../src/views/pages/payment/PaymentFailed"
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -210,6 +214,13 @@ const App = () => {
                 <Route path="/signin" element={<LoginForm />}></Route>
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/otp-verification/:token" element={<OtpVerification />} />
+
+                
+
+
+<Route path="/payment-sucess" element={<PaymentSuccess />} />
+<Route path="/payment-failed" element={<PaymentFailed />} />
+
               </Route>
             </Routes>
           </Suspense>

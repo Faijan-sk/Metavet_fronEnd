@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Plus, Clock } from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Props:
@@ -26,7 +27,7 @@ export default function BookAppointmentForm({
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+const navigate = useNavigate();
   const [appointmentDate, setAppointmentDate] = useState("");
   const [appointmentDay, setAppointmentDay] = useState("");
   const [doctors, setDoctors] = useState([]);
@@ -35,12 +36,11 @@ export default function BookAppointmentForm({
   const [doctorsError, setDoctorsError] = useState(null);
   const [specializations, setSpecializations] = useState([]);
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
-
   // Available time slots
   const [availableSlots, setAvailableSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState(null);
-
+const [bookingResponse, setBookingResponse] = useState(null);
   // pets
   const [pets, setPets] = useState([]);
   const [petsLoading, setPetsLoading] = useState(false);
@@ -331,46 +331,61 @@ export default function BookAppointmentForm({
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
+  setError(null);
 
-    // Validate required fields
-    if (!form.petId || !form.doctorId || !form.doctorDayId || !form.slotId || !form.appointmentDate) {
-      setError("Please select Pet, Doctor, Date and Time slot.");
-      return;
-    }
+  // Validate required fields
+  if (!form.petId || !form.doctorId || !form.doctorDayId || !form.slotId || !form.appointmentDate) {
+    setError("Please select Pet, Doctor, Date and Time slot.");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      // Prepare payload for backend
-      const payload = {
-        petId: Number(form.petId),
-        doctorId: Number(form.doctorId),
-        doctorDayId: Number(form.doctorDayId),
-        slotId: Number(form.slotId),
+  setLoading(true);
+  try {
+    // Prepare payload for backend
+    const payload = {
+      petId: Number(form.petId),
+      doctorId: Number(form.doctorId),
+      doctorDayId: Number(form.doctorDayId),
+      slotId: Number(form.slotId),
+      appointmentDate: form.appointmentDate,
+    };
+
+    console.log("Booking Appointment with payload:", payload);
+
+    // Call backend API to create Stripe checkout session
+    const response = await useJwt.bookAppointment(payload);
+    
+    console.log("Payment Session Created:", response.data);
+
+    // Check if checkout URL exists in response
+    if (response.data.checkoutUrl) {
+      // Optional: Save booking details for reference
+      localStorage.setItem('pendingBooking', JSON.stringify({
+        sessionId: response.data.sessionId,
         appointmentDate: form.appointmentDate,
-      };
+        doctorName: response.data.doctorName,
+        amount: response.data.amount
+      }));
 
-      console.log("Booking Appointment with payload:", payload);
-
-      const response = await useJwt.bookAppointment(payload);
+      // Redirect user to Stripe payment page
+      window.location.href = response.data.checkoutUrl;
       
-      console.log("Appointment Booked Successfully:", response.data);
-
-      // Call parent callback with created appointment
-      onCreated && onCreated(response.data);
-      
-      // Reset form and close
-      resetForm();
-      onClose && onClose();
-    } catch (err) {
-      console.error("Error booking appointment:", err);
-      const message = err?.response?.data?.message || err?.message || "Failed to book appointment.";
-      setError(message);
-    } finally {
-      setLoading(false);
+    } else {
+      setError("Failed to create payment session. Please try again.");
     }
-  };
+
+  } catch (err) {
+    console.error("Error booking appointment:", err);
+    const message = err?.response?.data?.error || 
+                   err?.response?.data?.message || 
+                   err?.message || 
+                   "Failed to book appointment.";
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 transform transition-all animate-fadeIn">
