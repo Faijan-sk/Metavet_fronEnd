@@ -53,3 +53,7 @@ td {
 :root {
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}

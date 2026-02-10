@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Calendar, DollarSign, User, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle, Calendar, DollarSign, User, Clock, ArrowRight, Download, Share2, Mail, Phone, MapPin, Sparkles, Star, Gift, Bell } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import useJwt from '../../../enpoints/jwt/useJwt';
 
-const PaymentSuccess = () => {
+
+// ==================== VARIANT 2: Timeline Card ====================
+export const PaymentSuccessV2 = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [paymentData, setPaymentData] = useState(null);
@@ -19,25 +22,17 @@ const PaymentSuccess = () => {
 
   const verifyPayment = async (sessionId) => {
     try {
-      const response = await fetch(
-        `http://192.168.29.199:8080/api/appointments/verify-payment/${sessionId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        }
-      );
-
+      const response = await useJwt.veriFyAppointmentPayment(sessionId);
       const result = await response.json();
       
       if (result.status === 'SUCCESS') {
         setPaymentData(result);
       } else {
-        navigate('/appointment/failed');
+        navigate('/payment-failed');
       }
     } catch (error) {
       console.error('Verification error:', error);
-      navigate('/appointment/failed');
+      navigate('/payment-failed');
     } finally {
       setLoading(false);
     }
@@ -55,142 +50,133 @@ const PaymentSuccess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        {/* Success Animation Container */}
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-primary-900 flex items-center justify-center p-4">
+      <div className="max-w-5xl w-full">
+        <div className="grid md:grid-cols-2 gap-6 ">
           
-          {/* Header Section with Animated Checkmark */}
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-8 text-center relative overflow-hidden">
-            {/* Decorative circles */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-primary-500 rounded-full opacity-20 -mr-20 -mt-20"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary-800 rounded-full opacity-20 -ml-16 -mb-16"></div>
+          {/* Left Panel - Success Message */}
+          <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-3xl p-8 md:p-12 flex flex-col justify-center relative overflow-hidden  bg-primary">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500 rounded-full opacity-10 -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-700 rounded-full opacity-10 -ml-24 -mb-24"></div>
             
-            {/* Animated Success Icon */}
             <div className="relative z-10">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full mb-4 animate-bounce">
-                <CheckCircle className="w-16 h-16 text-primary-600" strokeWidth={2.5} />
+              <div className="inline-flex items-center bg-white/20 rounded-full px-4 py-2 mb-6">
+                <CheckCircle className="w-5 h-5 text-white mr-2" />
+                <span className="text-white font-semibold">Payment Confirmed</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                Payment Successful!
+              
+              <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
+                All Set!
               </h1>
-              <p className="text-primary-100 text-lg">
-                Your appointment has been confirmed
+              <p className="text-primary-100 text-xl mb-8">
+                Your appointment booking is complete. We've sent a confirmation to your email.
               </p>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6">
+                <p className="text-primary-100 text-sm mb-2">Total Paid</p>
+                <p className="text-5xl font-bold text-white">
+                  ${paymentData?.amount || '0.00'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white hover:bg-primary-50 text-primary-700 font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center"
+              >
+                Back to Dashboard
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </button>
             </div>
           </div>
 
-          {/* Details Section */}
-          <div className="p-8">
+          {/* Right Panel - Timeline & Details */}
+          <div className="bg-white rounded-3xl p-8 md:p-12">
+            <h2 className="text-2xl font-bold text-primary-900 mb-8">Booking Timeline</h2>
             
-            {/* Appointment Details Card */}
-            <div className="bg-primary-50 rounded-2xl p-6 mb-6 border border-primary-100">
-              <h2 className="text-xl font-semibold text-primary-900 mb-4 flex items-center">
-                <Calendar className="w-5 h-5 mr-2 text-primary-600" />
-                Appointment Details
-              </h2>
-              
-              <div className="space-y-4">
-                {/* Appointment ID */}
-                <div className="flex justify-between items-center pb-3 border-b border-primary-200">
-                  <span className="text-primary-600 font-medium">Appointment ID</span>
-                  <span className="text-primary-900 font-semibold">
-                    #{paymentData?.appointmentId || 'N/A'}
-                  </span>
+            {/* Timeline */}
+            <div className="space-y-6 mb-8">
+              {/* Step 1 */}
+              <div className="flex items-start group">
+                <div className="flex-shrink-0 relative">
+                  <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="absolute top-12 left-6 w-0.5 h-12 bg-primary-200"></div>
                 </div>
+                <div className="ml-6 flex-1">
+                  <h3 className="text-lg font-bold text-primary-900">Payment Received</h3>
+                  <p className="text-primary-600 text-sm">Payment processed successfully</p>
+                </div>
+              </div>
 
-                {/* Date */}
-                <div className="flex justify-between items-center pb-3 border-b border-primary-200">
-                  <span className="text-primary-600 font-medium flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Date
-                  </span>
-                  <span className="text-primary-900 font-semibold">
+              {/* Step 2 */}
+              <div className="flex items-start group">
+                <div className="flex-shrink-0 relative">
+                  <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="absolute top-12 left-6 w-0.5 h-12 bg-primary-200"></div>
+                </div>
+                <div className="ml-6 flex-1">
+                  <h3 className="text-lg font-bold text-primary-900">Appointment Confirmed</h3>
+                  <p className="text-primary-600 text-sm">
                     {paymentData?.appointmentDate 
                       ? new Date(paymentData.appointmentDate).toLocaleDateString('en-US', {
                           weekday: 'long',
-                          year: 'numeric',
                           month: 'long',
-                          day: 'numeric'
+                          day: 'numeric',
+                          year: 'numeric'
                         })
                       : 'N/A'
                     }
-                  </span>
-                </div>
-
-                {/* Amount Paid */}
-                <div className="flex justify-between items-center pb-3 border-b border-primary-200">
-                  <span className="text-primary-600 font-medium flex items-center">
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Amount Paid
-                  </span>
-                  <span className="text-2xl text-primary-900 font-bold">
-                    ${paymentData?.amount || '0.00'}
-                  </span>
-                </div>
-
-                {/* Payment Status */}
-                <div className="flex justify-between items-center">
-                  <span className="text-primary-600 font-medium">Payment Status</span>
-                  <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-primary-600 text-white">
-                    <CheckCircle className="w-4 h-4 mr-1.5" />
-                    {paymentData?.paymentStatus || 'PAID'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Success Message Box */}
-            <div className="bg-primary-600 bg-opacity-10 border border-primary-200 rounded-xl p-5 mb-6">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <Clock className="w-6 h-6 text-primary-600 mt-0.5" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-semibold text-primary-900 mb-1">
-                    What's Next?
-                  </h3>
-                  <p className="text-sm text-primary-700">
-                    A confirmation email has been sent to your registered email address. 
-                    Please arrive 10 minutes before your scheduled appointment time.
                   </p>
                 </div>
               </div>
+
+              {/* Step 3 */}
+              <div className="flex items-start group">
+                <div className="flex-shrink-0 relative">
+                  <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-6 flex-1">
+                  <h3 className="text-lg font-bold text-primary-900">Confirmation Sent</h3>
+                  <p className="text-primary-600 text-sm">Check your email for details</p>
+                </div>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => navigate('/my-appointments')}
-                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center group"
-              >
-                View My Appointments
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </button>
-              
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex-1 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105"
-              >
-                Back to Dashboard
-              </button>
+            {/* Details Card */}
+            <div className="bg-primary-50 rounded-2xl p-6 mb-6 border-2 border-primary-100">
+              <h3 className="text-sm font-semibold text-primary-600 mb-4">BOOKING DETAILS</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-primary-700">Appointment ID</span>
+                  <span className="font-bold text-primary-900">#{paymentData?.appointmentId || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-primary-700">Status</span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-600 text-white text-sm font-semibold">
+                    Confirmed
+                  </span>
+                </div>
+              </div>
             </div>
+
+            <button
+              onClick={() => navigate('/my-appointments')}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center group"
+            >
+              View Appointment Details
+              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" />
+            </button>
           </div>
-
-        </div>
-
-        {/* Footer Note */}
-        <div className="text-center mt-6">
-          <p className="text-primary-600 text-sm">
-            Need help? Contact our support team at{' '}
-            <a href="mailto:support@petcare.com" className="font-semibold hover:text-primary-800 underline">
-              support@petcare.com
-            </a>
-          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default PaymentSuccess;
+
+export default PaymentSuccessV2;
