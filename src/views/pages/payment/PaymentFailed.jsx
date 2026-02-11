@@ -1,14 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { XCircle, AlertTriangle, RotateCcw, Home, Mail } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import useJwt from '../../../enpoints/jwt/useJwt';
 
 const PaymentFailed = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+    const [paymentData, setPaymentData] = useState(null);
+    const [loading, setLoading] = useState(true);
   const sessionId = searchParams.get('session_id');
 
   const handleRetry = () => {
     navigate('/book-appointment');
+  };
+
+
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId) {
+      verifyPayment(sessionId);
+    } else {
+      setLoading(false);
+    }
+  }, [searchParams]);
+
+  const verifyPayment = async (sessionId) => {
+    try {
+      
+      const response = await useJwt.veriFyAppointmentPayment(sessionId);
+      
+      
+      
+       setPaymentData(response.data);
+    
+    } catch (error) {
+      console.error('Verification error:', error);
+     
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,10 +79,10 @@ const PaymentFailed = () => {
                     What Happened?
                   </h3>
                   <ul className="text-sm text-red-700 space-y-1 ml-4 list-disc">
-                    <li>Insufficient funds</li>
-                    <li>Incorrect card details</li>
+                    <li>Payment was not completed</li>
+                    {/* <li>Incorrect card details</li>
                     <li>Card expired or blocked</li>
-                    <li>Network issue</li>
+                    <li>Network issue</li> */}
                   </ul>
                 </div>
               </div>
@@ -97,7 +127,7 @@ const PaymentFailed = () => {
               </button>
 
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/appointment')}
                 className="flex-1 bg-primary-100 hover:bg-primary-200 text-primary-700 font-semibold py-3 px-5 rounded-xl transition-all duration-200 flex items-center justify-center"
               >
                 <Home className="w-4 h-4 mr-2" />

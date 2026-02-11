@@ -384,12 +384,11 @@ export default function BookAppointmentForm({
 
 
           {/* PAYMENT METHOD */}
-<div className="relative">
+{/* <div className="relative">
   <label className="block text-sm font-semibold text-gray-800 mb-1">
     Select Payment Method *
   </label>
 
-  {/* SELECT BOX */}
   <button
     type="button"
     onClick={() => setPaymentOpen(!paymentOpen)}
@@ -405,7 +404,6 @@ export default function BookAppointmentForm({
     <span className="text-gray-400">▾</span>
   </button>
 
-  {/* DROPDOWN */}
   {paymentOpen && (
     <div className="absolute z-30 mt-1 w-full bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
       {["Card", "Cash"].map((method) => (
@@ -423,8 +421,14 @@ export default function BookAppointmentForm({
       ))}
     </div>
   )}
-</div>
+</div> */}
 
+<div className="p-3 bg-yellow-50 border border-yellow-300 rounded-md">
+  <p className="text-sm text-gray-700">
+    If you are booking an offline appointment, you will need to complete the payment directly at the clinic or with the doctor. 
+    Metavet is not responsible for this payment.
+  </p>
+</div>
 
 
 {/* CUSTOMER NAME */}

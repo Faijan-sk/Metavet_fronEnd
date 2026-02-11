@@ -3,12 +3,6 @@ import { X, Plus, Clock } from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import { useNavigate } from "react-router-dom";
 
-/**
- * Props:
- * - onClose()
- * - onCreated(newAppointment)
- * - initialValues (optional)
- */
 export default function BookAppointmentForm({
   onClose,
   onCreated,
@@ -359,6 +353,8 @@ const [bookingResponse, setBookingResponse] = useState(null);
     console.log("Payment Session Created:", response.data);
 
     // Check if checkout URL exists in response
+    
+    debugger
     if (response.data.checkoutUrl) {
       // Optional: Save booking details for reference
       localStorage.setItem('pendingBooking', JSON.stringify({
@@ -382,12 +378,16 @@ const [bookingResponse, setBookingResponse] = useState(null);
                    err?.message || 
                    "Failed to book appointment.";
     setError(message);
+
   } finally {
+    
     setLoading(false);
+
   }
 };
 
-  return (
+
+return (
     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 transform transition-all animate-fadeIn">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">

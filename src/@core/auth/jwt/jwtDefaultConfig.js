@@ -74,7 +74,10 @@ export default {
   getStatusBehaviouristToClient : '/api/behaviorist-kyc/get-status',
   getAllBehaviouristByDistance : '/behaviouristkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page={page}&size=10',
 
-  verifyAppointmentPaymentEndpoint: '/api/appointments/verify-payment/{SessionId}'
+  verifyAppointmentPaymentEndpoint: '/api/appointments/verify-payment/{SessionId}',
+  dummyBook : '/api/appointments/dummy-book',
 
+  // redirectToStripe : '/api/stripe/endpoint'
+    
 
 }

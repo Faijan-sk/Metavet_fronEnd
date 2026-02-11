@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import useJwt from '../../../enpoints/jwt/useJwt';
 
 
-// ==================== VARIANT 2: Timeline Card ====================
 export const PaymentSuccessV2 = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -22,17 +21,16 @@ export const PaymentSuccessV2 = () => {
 
   const verifyPayment = async (sessionId) => {
     try {
-      const response = await useJwt.veriFyAppointmentPayment(sessionId);
-      const result = await response.json();
       
-      if (result.status === 'SUCCESS') {
-        setPaymentData(result);
-      } else {
-        navigate('/payment-failed');
-      }
+      const response = await useJwt.veriFyAppointmentPayment(sessionId);
+      
+      
+      
+       setPaymentData(response.data);
+    
     } catch (error) {
       console.error('Verification error:', error);
-      navigate('/payment-failed');
+     
     } finally {
       setLoading(false);
     }
@@ -75,12 +73,12 @@ export const PaymentSuccessV2 = () => {
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6">
                 <p className="text-primary-100 text-sm mb-2">Total Paid</p>
                 <p className="text-5xl font-bold text-white">
-                  ${paymentData?.amount || '0.00'}
+                  ${paymentData?.amount || ''}
                 </p>
               </div>
 
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/appointment')}
                 className="bg-white hover:bg-primary-50 text-primary-700 font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center"
               >
                 Back to Dashboard
@@ -127,7 +125,7 @@ export const PaymentSuccessV2 = () => {
                           day: 'numeric',
                           year: 'numeric'
                         })
-                      : 'N/A'
+                      : ''
                     }
                   </p>
                 </div>
@@ -153,11 +151,11 @@ export const PaymentSuccessV2 = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-primary-700">Appointment ID</span>
-                  <span className="font-bold text-primary-900">#{paymentData?.appointmentId || 'N/A'}</span>
+                  <span className="font-bold text-primary-900">#{paymentData?.appointmentId || '1025220'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-primary-700">Status</span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-600 text-white text-sm font-semibold">
+                  <span className="font-bold text-primary-900 text-primary">
                     Confirmed
                   </span>
                 </div>

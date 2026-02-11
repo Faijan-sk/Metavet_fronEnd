@@ -19,6 +19,7 @@ import DoctorAppointentindex from "./../src/views/pages/appointment/doctorAppoin
 import PaymentCheckOutForm from "./../src/views/pages/payment/CheckOut"
 import PaymentSuccess from "./../src/views/pages/payment/PaymentSuccess"
 import PaymentFailed from "./../src/views/pages/payment/PaymentFailed"
+import PayNOw from "./../src/views/pages/appointment/PayNow"
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -220,6 +221,7 @@ const App = () => {
 
 <Route path="/payment-sucess" element={<PaymentSuccess />} />
 <Route path="/payment-failed" element={<PaymentFailed />} />
+<Route path="/pay-now" element={<PayNOw />} />
 
               </Route>
             </Routes>

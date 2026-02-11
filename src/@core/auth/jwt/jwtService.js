@@ -3,8 +3,8 @@
 
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
-  // axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  axios.defaults.baseURL = 'http://192.168.1.25:8080/'
+  axios.defaults.baseURL = 'http://34.170.68.167:8080/'
+  // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
   export default class JwtService {
     
@@ -276,15 +276,7 @@
       });
     }
 
-    // createAppintment(id, payload) {
-    //   console.log('Calling create appointment API with payload:', payload);
-    //   return axios.post(`${this.jwtConfig.createAppointmentEndpoint}/days`, payload, {
-    //     headers: {
-    //       Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
-    //       "Content-Type": "application/json",
-    //     },
-    //   });
-    // }
+
 createAppintment(payload){
   return axios.post(this.jwtConfig.createAppointmentEndpoint , payload)
 }
@@ -295,14 +287,6 @@ createAppintment(payload){
       return axios.get(this.jwtConfig.getBookedAppoinmentEndpoint);
     }
 
-    /**
-     * METAVET Walker KYC - expects a FormData instance
-     * Example usage from component:
-     *   const fd = new FormData();
-     *   fd.append('fullLegalName', 'Test');
-     *   fd.append('petCareCertificationDoc', file);
-     *   await useJwt.metavetToWalkerKyc(fd);
-     */
     metavetToWalkerKyc(formData) {
       if (!(formData instanceof FormData)) {
         console.warn('metavetToWalkerKyc expects a FormData instance - sending as-is')
@@ -439,7 +423,9 @@ veriFyAppointmentPayment(SessionId){
 }
  
 
+dummyAppointmentBook(...args){
+  return axios.post(this.jwtConfig.dummyBook, ...args)
+}
 
 
-
- }
+}

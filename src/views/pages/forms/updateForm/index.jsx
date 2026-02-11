@@ -931,6 +931,7 @@ const DoctorProfileForm = () => {
                 message: "Emergency contact must be exactly 10 digits",
               },
             })}
+            
             onKeyDown={(e) => {
               const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
               if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
