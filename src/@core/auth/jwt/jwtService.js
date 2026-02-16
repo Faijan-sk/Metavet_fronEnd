@@ -7,6 +7,7 @@
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
   export default class JwtService {
+    //service file
     
     // ** jwtConfig <= Will be used by this service
     jwtConfig = { ...jwtDefaultConfig }
