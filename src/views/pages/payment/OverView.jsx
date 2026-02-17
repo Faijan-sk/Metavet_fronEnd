@@ -11,7 +11,6 @@ const _successUrl = process.env.REACT_APP_STRIPE_SUCCESS_URL_SUBSCRIPTION;
 const _failUrl = process.env.REACT_APP_STRIPE_FAIL_URL_SUBSCRIPTION;
 
 export const handleCheckout = async (details, setLoader) => {
-  debugger;
   if (setLoader) setLoader(true);
 
   const stripe = await stripePromise;

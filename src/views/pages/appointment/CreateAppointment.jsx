@@ -121,7 +121,6 @@ export default function BookAppointmentForm({
     }));
 
     try {
-      debugger
       // const response = await useJwt.createAppintment(userInfo.userId, payload);
             const response = await useJwt.createAppintment( payload);
 

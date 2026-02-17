@@ -354,7 +354,6 @@ const [bookingResponse, setBookingResponse] = useState(null);
 
     // Check if checkout URL exists in response
     
-    debugger
     if (response.data.checkoutUrl) {
       // Optional: Save booking details for reference
       localStorage.setItem('pendingBooking', JSON.stringify({
