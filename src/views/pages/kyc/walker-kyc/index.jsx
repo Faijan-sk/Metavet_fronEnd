@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
+import { useNavigate } from "react-router-dom";
 
 // 🔹 Initial state helper
 const getInitialFormData = () => ({
@@ -56,6 +57,7 @@ const PetWalkerProviderKYC = () => {
   const [locationQuery, setLocationQuery] = useState('')
 const [locationSuggestions, setLocationSuggestions] = useState([])
 const [isGettingLocation, setIsGettingLocation] = useState(false)
+const navigate = useNavigate();
 
   // Generic setter that validates input against a provided regex.
   const setIfValid = (field, value, regex) => {
@@ -260,8 +262,9 @@ if (formData.longitude) {
 setLocationQuery('')
 setLocationSuggestions([])
 
-      // (optional) agar native form bhi reset karna ho:
-      // e.target.reset()
+     setTimeout(() => {
+  navigate("/pet-walker", { replace: true });
+}, 1000);
 
     } catch (err) {
       console.error('Error submitting form:', err)

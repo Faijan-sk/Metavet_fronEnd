@@ -1,10 +1,11 @@
   import axios from 'axios'
   import jwtDefaultConfig from './jwtDefaultConfig'
+// import jwt from '../../../enpoints/jwt/useJwt'
 
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
-  // axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  axios.defaults.baseURL = 'http://192.168.1.20:8080/'
+  axios.defaults.baseURL = 'http://34.170.68.167:8080/'
+  // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
   export default class JwtService {
     //service file
@@ -427,6 +428,85 @@ veriFyAppointmentPayment(SessionId){
 dummyAppointmentBook(...args){
   return axios.post(this.jwtConfig.dummyBook, ...args)
 }
+
+
+//service Provider 
+
+getServiceProviderStatus(){
+  return axios.get(this.jwtConfig.getStatusProvider)
+}
+
+
+//groomer 
+createServices(...args){
+  return axios.post(this.jwtConfig.createServicesEndpoint, ...args)
+}
+
+createDaysForGroomer(...args){
+  return axios.post(this.jwtConfig.createDaysForGroomerEndpoint, ...args)
+}
+
+getGroomerAppointment(){
+  return axios.get(this.jwtConfig.getGroomerAppointment)
+}
+
+
+
+// walker 
+createDayAndSlot(...args){
+  return axios.post(this.jwtConfig.createDayAndSlotEndpoint,...args)
+}
+
+getWalkerBookedAppointment(){
+  return axios.get(this.jwtConfig.getWalkerBookedAppointment)
+}
+
+
+//Behaviourst 
+createBehaviouristSlotAndDay(...args){
+  return axios.post(this.jwtConfig.createBehaviouristDayAndSlot, ...args)
+}
+
+getWalkerAvailableDays(walkerUid){
+  return axios.get(this.jwtConfig.getWalkerDaysEndPoint.replace('{Uid}',walkerUid))
+}
+
+
+getWalkerAvailableSlot(date, dayUid, walkerUid) {
+    return axios.get(
+        this.jwtConfig.getAvailableWalkerslotEndPoint
+            .replace('{walkerUid}', walkerUid)
+            .replace('{dayUid}', dayUid)
+            .replace('{date}', date)
+    )
+}
+
+getBehaviouristAvailableDay(uid){
+  return axios.get(this.jwtConfig.getAvailableBehaviouristDay.replace('{Uid}', uid))
+}
+
+
+getBehaviouristAvailableSlot(providerUid, dayUid, date) {
+  return axios.get(
+    this.jwtConfig.getAvailableSlotBehaviourist
+      .replace('{providerUid}', providerUid)
+      .replace('{dayUid}', dayUid)   // ✅ Yeh sahi hai
+      .replace('{date}', date)
+  )
+}
+
+
+
+
+getAvailableGroomerDays(groomerUid) {
+  return axios.get(this.jwtConfig.getGroomerAvailableDays.replace('{groomerUid}', groomerUid))
+}
+getGroomerAvailableSlotServices(date , groomerUid){
+
+  return axios.get(this.jwtConfig.GetAvailableSlotAndService.replace('{date}', date)
+                                                            .replace('{GroomerUid}', groomerUid))
+}
+
 
 
 }

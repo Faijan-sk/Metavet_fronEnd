@@ -80,4 +80,30 @@ export default {
   // redirectToStripe : '/api/stripe/endpoint'
     
 
+  // service Provider Endpoint
+  getStatusProvider : "/service-provider/status",
+
+  // groomer 
+  createServicesEndpoint : '/groomer/appointment/services',
+  createDaysForGroomerEndpoint : '/groomer/appointment/days',
+  getGroomerAppointment : '/groomer/appointment/my-appointments',
+  //groomer-client side
+  GetAvailableSlotAndService : '/groomer/appointment/{GroomerUid}/availability?date={date}',
+  getGroomerAvailableDays: '/groomer/appointment/{groomerUid}/available-days',
+                         // /groomer/appointment/{groomerUid}/available-days
+  //walker 
+  createDayAndSlotEndpoint : '/api/pet-walker-days/days',
+  getWalkerBookedAppointment : '/api/walker-appointments/my-appointments',
+  //walker-client side
+  getWalkerDaysEndPoint : '/api/pet-walker-days/pet-walker/{Uid}',
+
+  //behaviourist
+  createBehaviouristDayAndSlot : '/api/behaviourist-days/days',
+getAvailableWalkerslotEndPoint: '/api/walker-appointments/available-slots?petWalkerUid={walkerUid}&petWalkerDayUid={dayUid}&date={date}',  
+//behaviourist-client side 
+getAvailableBehaviouristDay : '/api/behaviourist-days/service-provider/{Uid}',
+getAvailableSlotBehaviourist : '/api/behaviourist-appointments/available-slots?serviceProviderUid={providerUid}&behaviouristDayUid={dayUid}&date={date}'
+
+
+
 }

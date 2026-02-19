@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
 import KycNotFound from "./../KycNotFound";
-import WalkerDashBoard from "./WalkerDashboard"
+import KycPending from "./../KycPending";
+import DashBoard from "./GroomerDashBoard"
 import { ClipLoader } from "react-spinners";
-import KycPending from "./../KycPending"
 
 function Index() {
   const [loading, setLoading] = useState(true);
-  const [kycStatus, setKycStatus] = useState(null); // NOT_SUBMITTED | PENDING | APPROVED
+  const [kycStatus, setKycStatus] = useState(null); 
+  // NOT_SUBMITTED | PENDING | APPROVED
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -40,22 +41,22 @@ function Index() {
     );
   }
 
-  // ❌ Not submitted
+  // ❌ KYC not submitted
   if (kycStatus === "NOT_SUBMITTED") {
-    return <KycNotFound redirectTo="/walker-kyc" />;
+    return <KycNotFound redirectTo="/groomer-kyc" />;
   }
 
-  // ⏳ Pending
+  // ⏳ KYC pending
   if (kycStatus === "PENDING") {
     return <KycPending />;
   }
 
-  // ✅ Approved
+  // ✅ KYC approved
   if (kycStatus === "APPROVED") {
-    return <WalkerDashBoard />;
+    return <DashBoard />;
   }
 
-  // 🛑 Fallback (unexpected status)
+  // 🛑 fallback
   return <div>Something went wrong</div>;
 }
 

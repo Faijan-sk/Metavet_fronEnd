@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import userJwt from "./../../../../enpoints/jwt/useJwt"
+import { useNavigate } from "react-router-dom";
+
 
 // 🔹 Helper: initial form state yahan rakha
 const getInitialFormData = () => ({
@@ -51,6 +53,7 @@ const getInitialFormData = () => ({
 
 const BehaviourSpecialistKYC = () => {
   // 🔹 Ab state helper se aa rahi hai
+  const navigate = useNavigate();
   const [formData, setFormData] = useState(getInitialFormData)
   const [locationQuery, setLocationQuery] = useState('')
 const [locationSuggestions, setLocationSuggestions] = useState([])
@@ -207,6 +210,14 @@ if (formData.longitude) {
         setFormData(getInitialFormData())
 setLocationQuery('')
 setLocationSuggestions([])
+
+  const timer = setTimeout(() => {
+    navigate("/pet-behaviorist", { replace: true });
+  }, 1000);
+
+  return () => clearTimeout(timer);
+
+
       } else {
         const msg = resp && resp.data ? resp.data : 'Unexpected server response.'
         // alert('Submission failed: ' + msg)

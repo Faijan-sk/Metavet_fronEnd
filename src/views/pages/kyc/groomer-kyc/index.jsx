@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
+import { useNavigate } from "react-router-dom";
+
 
 // 🔹 1. Initial state ko function me nikalo
 const getInitialFormData = () => ({
@@ -62,6 +64,9 @@ const PetGroomerKYC = () => {
 const [locationQuery, setLocationQuery] = useState('')
 const [locationSuggestions, setLocationSuggestions] = useState([])
 const [isGettingLocation, setIsGettingLocation] = useState(false)
+const navigate = useNavigate();
+
+
   const setIfValid = (field, value, regex) => {
     if (value === '' || regex.test(value)) {
       setFormData(prev => ({ ...prev, [field]: value }))
@@ -224,6 +229,20 @@ if (formData.longitude) apiFormData.append('longitude', formData.longitude)
       setFormData(getInitialFormData())
       // (optional) agar form ke native controls bhi reset karne hain:
       // e.target.reset()
+
+      // ✅ Reset form
+setFormData(getInitialFormData());
+setLocationQuery('');
+setLocationSuggestions([]);
+
+// ⏳ 0.5 second baad redirect
+ const timer = setTimeout(() => {
+    navigate("/pet-groomer", { replace: true });
+  }, 1000);
+
+  return () => clearTimeout(timer); 
+
+
 
     } catch (error) {
       console.error('Error submitting form:', error)

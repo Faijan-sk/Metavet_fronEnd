@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
 import KycNotFound from "./../KycNotFound";
-import WalkerDashBoard from "./WalkerDashboard"
+import KycPending from "./../KycPending";
 import { ClipLoader } from "react-spinners";
-import KycPending from "./../KycPending"
+import BehaviouristDashBoard from "./BehaviouristDashBoard";
 
 function Index() {
   const [loading, setLoading] = useState(true);
-  const [kycStatus, setKycStatus] = useState(null); // NOT_SUBMITTED | PENDING | APPROVED
+  const [kycStatus, setKycStatus] = useState(null); // 👈 IMPORTANT
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
         const response = await useJwt.getServiceProviderStatus();
-        console.log("response ====> ", response.data);
+        console.log("response =====> ", response.data);
 
-        if (response.data?.success === false) {
-          setKycStatus("NOT_SUBMITTED");
+        if (response?.data?.success) {
+          setKycStatus(response.data.status); 
+          // NOT_SUBMITTED | PENDING | APPROVED
         } else {
-          setKycStatus(response.data?.status);
+          setKycStatus("NOT_SUBMITTED");
         }
       } catch (error) {
         console.error("Error fetching KYC status:", error);
@@ -40,23 +41,18 @@ function Index() {
     );
   }
 
-  // ❌ Not submitted
+  // ❌ KYC not submitted
   if (kycStatus === "NOT_SUBMITTED") {
-    return <KycNotFound redirectTo="/walker-kyc" />;
+    return <KycNotFound redirectTo="/behaviourist-kyc" />;
   }
 
-  // ⏳ Pending
+  // ⏳ KYC pending
   if (kycStatus === "PENDING") {
     return <KycPending />;
   }
 
-  // ✅ Approved
-  if (kycStatus === "APPROVED") {
-    return <WalkerDashBoard />;
-  }
-
-  // 🛑 Fallback (unexpected status)
-  return <div>Something went wrong</div>;
+  // ✅ KYC approved → Dashboard
+  return <BehaviouristDashBoard />;
 }
 
 export default Index;

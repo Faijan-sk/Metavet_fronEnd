@@ -3,6 +3,7 @@ import { Search, MapPin, Brain, Star, Award, Clock, Heart, Phone, Sparkles, Load
 import KycWarning from '../KycWarning'
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
+import BookingModal from "./BookingModal"  // ✅ Fixed: was imported as BookSessionModal but used as BookingModal
 
 // --- DefaultPage Component (Verification Progress) ---
 function DefaultPage() {
@@ -20,7 +21,7 @@ function DefaultPage() {
 }
 
 // --- BehaviouristCard Component ---
-function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
+function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const formatTag = (text) => text.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
@@ -53,10 +54,10 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
           </span>
         </div>
         <div className="absolute bottom-4 right-4">
-            <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              Active
-            </span>
+          <span className="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full flex items-center gap-1">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            Active
+          </span>
         </div>
       </div>
 
@@ -69,7 +70,7 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-bold text-gray-900">4.5</span>
+            <span className="font-bold text-gray-900">4.9</span>
             <span className="text-xs text-gray-500">(New)</span>
           </div>
           
@@ -112,7 +113,10 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite }) {
         </div>
 
         <div className="flex gap-2">
-          <button className="flex-1 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200">
+          <button
+            onClick={() => onBookSession(behaviourist)}
+            className="flex-1 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200"
+          >
             Book Session
           </button>
           <a href={`tel:${behaviourist.phoneNumber}`} className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
@@ -130,29 +134,38 @@ function Index() {
   const [behaviourists, setBehaviourists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [maxDistance, setMaxDistance] = useState(""); // Default distance 250
+  const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
-  const [coords, setCoords] = useState({ lat: '20.00734825160445', lng: '73.7637480064178' }); // Default Coords
-  
+  const [coords, setCoords] = useState({ lat: '20.00734825160445', lng: '73.7637480064178' });
+  const [selectedBehaviourist, setSelectedBehaviourist] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const kycUrl = '/behaviouristTo-client-kyc';
 
   const toggleFavorite = (id) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  // API Call function encapsulated in useCallback
+  const handleBookSession = (behaviourist) => {
+    setSelectedBehaviourist(behaviourist);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedBehaviourist(null);
+  };
+
   const loadData = useCallback(async (lat, lng, distance) => {
     try {
       setLoading(true);
-      // 1. Fetch KYC Status
       const kycRes = await useJwt.getKycStatusBehaviouristToClinet();
       setKycStatus(kycRes.data.data.status);
 
-      // 2. Fetch Behaviourists with Dynamic Params
       const response = await useJwt.getAllBehaviouristByDistance(
         lat.toString(),
         lng.toString(),
-        '0', // Page
+        '0',
         distance || '1000'
       );
       
@@ -166,7 +179,6 @@ function Index() {
     }
   }, []);
 
-  // Initial Geolocation and First Load
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -178,32 +190,28 @@ function Index() {
         },
         (error) => {
           console.error("Geolocation error:", error);
-          loadData(coords.lat, coords.lng, maxDistance); // Load with defaults if blocked
+          loadData(coords.lat, coords.lng, maxDistance);
         }
       );
     } else {
       loadData(coords.lat, coords.lng, maxDistance);
     }
-  }, []); // Run once on mount
+  }, []);
 
-  // Watch for maxDistance changes with Debounce
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      // Sirf tab hit karega jab initial loading khatam ho jaye aur distance valid ho
-      if(maxDistance) {
+      if (maxDistance) {
         loadData(coords.lat, coords.lng, maxDistance);
       }
-    }, 800); // 800ms wait after typing
+    }, 800);
 
     return () => clearTimeout(delayDebounceFn);
   }, [maxDistance, coords.lat, coords.lng, loadData]);
 
-  // Filtering for Search (Clientside)
   const filteredBehaviourists = behaviourists.filter(b => {
     const matchesSearch = !searchQuery || 
       b.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       b.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
-    
     return matchesSearch;
   });
 
@@ -270,12 +278,12 @@ function Index() {
         {filteredBehaviourists.length === 0 ? (
           <div className="text-center py-20">
             {loading ? (
-                <Loader2 className="w-12 h-12 text-[#52B2AD] animate-spin mx-auto" />
+              <Loader2 className="w-12 h-12 text-[#52B2AD] animate-spin mx-auto" />
             ) : (
-                <>
-                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-xl">No behaviourists found within {maxDistance}km</p>
-                </>
+              <>
+                <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-xl">No behaviourists found within {maxDistance}km</p>
+              </>
             )}
           </div>
         ) : (
@@ -286,11 +294,19 @@ function Index() {
                 behaviourist={b}
                 onFavorite={toggleFavorite}
                 isFavorite={favorites.includes(b.uid)}
+                onBookSession={handleBookSession}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* ✅ BookingModal - correct component name matches import */}
+      <BookingModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        behaviourist={selectedBehaviourist}
+      />
     </div>
   );
 }

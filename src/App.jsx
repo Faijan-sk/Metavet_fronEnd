@@ -20,6 +20,9 @@ import PaymentCheckOutForm from "./../src/views/pages/payment/CheckOut"
 import PaymentSuccess from "./../src/views/pages/payment/PaymentSuccess"
 import PaymentFailed from "./../src/views/pages/payment/PaymentFailed"
 import PayNOw from "./../src/views/pages/appointment/PayNow"
+import GroomerDashboard from "./../src/views/pages/petServicesAppointment/groomer/index"
+import WalkerDashboard from "./../src/views/pages/petServicesAppointment/walker/index"
+import BehaviouristDashboard from "./../src/views/pages/petServicesAppointment/behaviourist/index";
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -222,6 +225,13 @@ const App = () => {
 <Route path="/payment-sucess" element={<PaymentSuccess />} />
 <Route path="/payment-failed" element={<PaymentFailed />} />
 <Route path="/pay-now" element={<PayNOw />} />
+
+
+{/* service Provider */}
+
+<Route path="/pet-groomer" element={<GroomerDashboard />} />
+<Route path="/pet-walker" element={<WalkerDashboard />} />
+<Route path="/pet-behaviorist" element={<BehaviouristDashboard />} />
 
               </Route>
             </Routes>
