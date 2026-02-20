@@ -74,7 +74,10 @@ export default {
   getStatusBehaviouristToClient : '/api/behaviorist-kyc/get-status',
   getAllBehaviouristByDistance : '/behaviouristkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page={page}&size=10',
 
-  verifyAppointmentPaymentEndpoint: '/api/appointments/verify-payment/{SessionId}',
+
+  //stripe verify payment
+  // verifyAppointmentPaymentEndpoint: '/api/appointments/verify-payment/{SessionId}',
+  verifyAppointmentPaymentEndpoint: '{UserTypeEndpoint}/verify-payment/{SessionId}',
   dummyBook : '/api/appointments/dummy-book',
 
   // redirectToStripe : '/api/stripe/endpoint'
@@ -102,8 +105,9 @@ export default {
 getAvailableWalkerslotEndPoint: '/api/walker-appointments/available-slots?petWalkerUid={walkerUid}&petWalkerDayUid={dayUid}&date={date}',  
 //behaviourist-client side 
 getAvailableBehaviouristDay : '/api/behaviourist-days/service-provider/{Uid}',
-getAvailableSlotBehaviourist : '/api/behaviourist-appointments/available-slots?serviceProviderUid={providerUid}&behaviouristDayUid={dayUid}&date={date}'
-
+getAvailableSlotBehaviourist : '/api/behaviourist-appointments/available-slots?serviceProviderUid={providerUid}&behaviouristDayUid={dayUid}&date={date}',
+bookBehaviouristAppointment : '/api/behaviourist-appointments/book',
+getBehaviBookedAppointment : '/api/behaviourist-appointments/my-appointments'
 
 
 }

@@ -470,7 +470,7 @@ return (
         )}
 
         {/* Specialization Dropdown */}
-        {specializations.length > 0 && (
+        {/* {specializations.length > 0 && (
           <div className="md:col-span-2">
             <label htmlFor="specialization" className="block text-xs font-semibold text-gray-600 mb-1">
               Select Specialization (Optional - filter doctors)
@@ -498,7 +498,7 @@ return (
               </div>
             )}
           </div>
-        )}
+        )} */}
 
         {/* Rest of the form - only show when doctors are available */}
         {!doctorsLoading && visibleDoctors.length > 0 && (

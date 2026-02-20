@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, MapPin, Brain, Star, Award, Clock, Heart, Phone, Sparkles, Loader2 } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Search, MapPin, Brain, Star, Award, Clock, Heart, Phone, Sparkles, Loader2, CalendarDays } from "lucide-react";
 import KycWarning from '../KycWarning'
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
-import BookingModal from "./BookingModal"  // ✅ Fixed: was imported as BookSessionModal but used as BookingModal
+import BookingModal from "./BookingModal"
 
-// --- DefaultPage Component (Verification Progress) ---
 function DefaultPage() {
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
@@ -20,7 +20,6 @@ function DefaultPage() {
   );
 }
 
-// --- BehaviouristCard Component ---
 function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession }) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -128,7 +127,6 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
   );
 }
 
-// --- Main Index Component ---
 function Index() {
   const [kycStatus, setKycStatus] = useState('NOT_FOUND');
   const [behaviourists, setBehaviourists] = useState([]);
@@ -140,6 +138,7 @@ function Index() {
   const [selectedBehaviourist, setSelectedBehaviourist] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const navigate = useNavigate();
   const kycUrl = '/behaviouristTo-client-kyc';
 
   const toggleFavorite = (id) => {
@@ -234,7 +233,17 @@ function Index() {
       <div className="container mx-auto px-4 py-8">
         
         {/* Header */}
-        <div className="mb-10 text-center">
+        <div className="relative mb-10 text-center">
+
+          {/* My Appointments Button - Top Right */}
+          <button
+            onClick={() => navigate('/behaviourist-appointments')}
+            className="absolute top-0 right-0 flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#52B2AD] text-[#52B2AD] rounded-2xl font-semibold hover:bg-[#52B2AD] hover:text-white transition-all duration-200 shadow-md"
+          >
+            <CalendarDays className="w-5 h-5" />
+            My Appointments
+          </button>
+
           <div className="inline-flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
               <Brain className="w-10 h-10 text-white" />
@@ -301,7 +310,7 @@ function Index() {
         )}
       </div>
 
-      {/* ✅ BookingModal - correct component name matches import */}
+      {/* BookingModal */}
       <BookingModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

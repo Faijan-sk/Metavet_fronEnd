@@ -9,7 +9,7 @@ const getInitialFormData = () => ({
   businessName: '',
   email: '',
   phone: '',
-
+consultationFees : '',
     address: '',
   latitude: '',
   longitude: '',
@@ -131,7 +131,7 @@ const [isGettingLocation, setIsGettingLocation] = useState(false)
       if (formData.address) fd.append('address', formData.address)
       if (formData.serviceArea) fd.append('serviceArea', formData.serviceArea)
       if (formData.yearsExperience) fd.append('yearsExperience', formData.yearsExperience)
-
+if (formData.consultationFees) fd.append('consultationFees', formData.consultationFees)
       // --- Professional credentials ---
       // backend expects "hasBehaviouralCertifications" and "behaviouralCertificateDoc"
       if (formData.hasCertifications !== null) {
@@ -761,6 +761,20 @@ const getCurrentLocation = () => {
                   )}
                 </div>
               </div>
+
+<div>
+  <label className="block font-medium text-gray-700 mb-2">Consultation Fees ($) *</label>
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={formData.consultationFees}
+    onChange={(e) => setFormData(prev => ({ ...prev, consultationFees: e.target.value }))}
+    placeholder="e.g., 500"
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+    required
+  />
+</div>
 
               <div>
                 <label className="block font-medium text-gray-700 mb-2">Service Radius / Availability</label>

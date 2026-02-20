@@ -13,7 +13,7 @@ const getInitialFormData = () => ({
   longitude: '',
   serviceArea: '',
   yearsExperience: '',
-
+consultationFees: '',
   hasPetCareCertifications: null,
   petCareCertificationsDetails: '',
   petCareCertificationDoc: null,
@@ -158,6 +158,7 @@ const navigate = useNavigate();
       const formDataToSend = new FormData()
 
       // Add all text fields (must match DTO field names)
+      if (formData.consultationFees) formDataToSend.append('consultationFees', formData.consultationFees)
       formDataToSend.append('fullLegalName', formData.fullLegalName)
       if (formData.businessName) formDataToSend.append('businessName', formData.businessName)
       formDataToSend.append('email', formData.email)
@@ -860,6 +861,20 @@ const getCurrentLocation = () => {
                 </div>
               </div>
             </div>
+
+            <div>
+  <label className="block font-medium text-gray-700 mb-2">Consultation Fees ($) *</label>
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={formData.consultationFees}
+    onChange={(e) => setFormData(prev => ({ ...prev, consultationFees: e.target.value }))}
+    placeholder="e.g., 500"
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+    required
+  />
+</div>
           </section>
 
           {/* Declarations & Signature */}

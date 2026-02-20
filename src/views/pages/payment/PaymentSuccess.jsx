@@ -9,30 +9,41 @@ export const PaymentSuccessV2 = () => {
   const navigate = useNavigate();
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [appointmentType, setAppointmentType] = useState('');
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
-    if (sessionId) {
-      verifyPayment(sessionId);
+    const type = searchParams.get('type'); // 'doctor' or 'behaviourist'
+    setAppointmentType(type);
+
+    if (sessionId && type) {
+      verifyPayment(sessionId, type);
     } else {
       setLoading(false);
     }
   }, [searchParams]);
 
-  const verifyPayment = async (sessionId) => {
+  const verifyPayment = async (sessionId, type) => {
     try {
-      
-      const response = await useJwt.veriFyAppointmentPayment(sessionId);
-      
-      
-      
-       setPaymentData(response.data);
-    
+      const userTypeEndpoint = type === 'behaviourist'
+        ? '/api/behaviourist-appointments'
+        : '/api/appointments';
+
+      const response = await useJwt.veriFyAppointmentPayment(sessionId, userTypeEndpoint);
+      setPaymentData(response.data);
+
     } catch (error) {
       console.error('Verification error:', error);
-     
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDashboardRedirect = () => {
+    if (appointmentType === 'behaviourist') {
+      navigate('/service-provider/petBehaviourist');
+    } else {
+      navigate('/appointments');
     }
   };
 
@@ -78,7 +89,7 @@ export const PaymentSuccessV2 = () => {
               </div>
 
               <button
-                onClick={() => navigate('/appointment')}
+                onClick={handleDashboardRedirect}
                 className="bg-white hover:bg-primary-50 text-primary-700 font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 inline-flex items-center"
               >
                 Back to Dashboard
@@ -151,7 +162,7 @@ export const PaymentSuccessV2 = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-primary-700">Appointment ID</span>
-                  <span className="font-bold text-primary-900">#{paymentData?.appointmentId || '1025220'}</span>
+                  <span className="font-bold text-primary-900">#{paymentData?.appointmentId || paymentData?.appointmentUid || '1025220'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-primary-700">Status</span>

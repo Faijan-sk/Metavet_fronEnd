@@ -17,7 +17,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [pets, setPets] = useState([])
-  const [selectedPet, setSelectedPet] = useState("")
+  const [selectedPet, setSelectedPet] = useState({})
   const [behaviouristDayId, setBehaviouristDayId] = useState(null)
   const [availableSlots, setAvailableSlots] = useState([])
   const [slotsLoading, setSlotsLoading] = useState(false)
@@ -37,13 +37,14 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     const fetchPets = async () => {
       try {
         const response = await useJwt.getAllPetsByOwner()
-        const petsList = response.data.data.map((pet) => ({
-          id: pet.id,
-          petName: pet.petName,
-          petSpecies: pet.petSpecies,
-          petBreed: pet.petBreed,
-        }))
-        setPets(petsList)
+        setPets(response.data.data) // store full objects directly
+        // const petsList = response.data.data.map((pet) => ({
+        //   id: pet.id,
+        //   petName: pet.petName,
+        //   petSpecies: pet.petSpecies,
+        //   petBreed: pet.petBreed,
+        // }))
+        // setPets(petsList)
       } catch (error) {
         console.error("Error fetching pets:", error)
       }
@@ -111,7 +112,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
   }
 
   const resetForm = () => {
-    setSelectedPet("")
+    setSelectedPet(null)
     setSelectedDate(null)
     setSelectedSlot(null)
     setNotes("")
@@ -136,22 +137,36 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       return
     }
 
+  //   payload : {
+  //     "petUid" = selectedPet.uid,
+  // "serviceProviderUid",
+  // "behaviouristDayUid",
+  // "slotUid"= selectedSlot.uid,
+  // "appointmentDate" = selectedDate
+  //   }
+
     setLoading(true)
     setBookingError("")
 
     try {
-     
+
       const payload = {
-        petId: parseInt(selectedPet),
-        behaviouristId: behaviourist.uid,
-        behaviouristDayId: behaviouristDayId,
-        slotId: selectedSlot.slotId,
-        sessionDate: selectedDate.toISOString().split("T")[0],
+        petUid: selectedPet?.uid,
+        serviceProviderUid: selectedSlot?.serviceProviderDay?.serviceProviderUid,
+        behaviouristDayUid: selectedSlot?.serviceProviderDay?.uid,
+        slotUid: selectedSlot?.uid,
+        appointmentDate: selectedDate.toISOString().split("T")[0],
         notes: notes || undefined,
       }
 
-      const response = await useJwt.bookBehaviouristSession(payload)
-      console.log("Booking response:", response)
+      
+      const response = await useJwt.bookBehaviouristAppointment(payload)
+     
+    const { checkoutUrl } = response.data
+
+  if (checkoutUrl) {
+    window.location.href = checkoutUrl  // ✅ Stripe pe redirect
+  }
 
       setBookingSuccess(true)
 
@@ -255,18 +270,21 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1">Select Pet *</label>
             <select
-              value={selectedPet}
-              onChange={(e) => setSelectedPet(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-              required
-            >
-              <option value="">Select a pet</option>
-              {pets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.petName} • {p.petSpecies} ({p.petBreed})
-                </option>
-              ))}
-            </select>
+  value={selectedPet?.uid || ""}
+  onChange={(e) => {
+    const pet = pets.find((p) => p.uid === e.target.value)
+    setSelectedPet(pet || null)
+  }}
+  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+  required
+>
+  <option value="">Select a pet</option>
+  {pets.map((p) => (
+    <option key={p.uid} value={p.uid}>
+      {p.petName} • {p.petSpecies} ({p.petBreed})
+    </option>
+  ))}
+</select>
           </div>
 
           {/* DATE SELECTOR */}
@@ -352,13 +370,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
             />
           </div>
 
+
           {bookingError && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{bookingError}</div>
           )}
 
-          {bookingSuccess && (
-            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl">Session booked successfully! 🎉</div>
-          )}
+         
 
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-end gap-3 pt-2">

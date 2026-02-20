@@ -23,6 +23,7 @@ import PayNOw from "./../src/views/pages/appointment/PayNow"
 import GroomerDashboard from "./../src/views/pages/petServicesAppointment/groomer/index"
 import WalkerDashboard from "./../src/views/pages/petServicesAppointment/walker/index"
 import BehaviouristDashboard from "./../src/views/pages/petServicesAppointment/behaviourist/index";
+import BehavioAppointment from "./../src/views/pages/serviceProvider/petBehaviourist/AppointmentListing"
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -232,6 +233,8 @@ const App = () => {
 <Route path="/pet-groomer" element={<GroomerDashboard />} />
 <Route path="/pet-walker" element={<WalkerDashboard />} />
 <Route path="/pet-behaviorist" element={<BehaviouristDashboard />} />
+
+<Route path="/behaviourist-appointments" element={<BehavioAppointment />} />
 
               </Route>
             </Routes>
