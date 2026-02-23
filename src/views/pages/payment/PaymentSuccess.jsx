@@ -51,7 +51,7 @@ export const PaymentSuccessV2 = () => {
     } else if (appointmentType === 'groomer') {
       navigate('/service-provider/petGroomer');
     } else {
-      navigate('/appointments');
+      navigate('/appointment');
     }
   };
 
