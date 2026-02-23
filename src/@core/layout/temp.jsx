@@ -77,7 +77,7 @@ const baseNavItems = useMemo(() => {
           dropdownItems: [
             { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
             { label: 'Pet Walker', path: '/service-provider/petWalker' },
-            { label: 'Pet Grooming', path: '/service-provider/petGroomer' },
+            { label: 'Pet Groomer', path: '/service-provider/petGroomer' },
           ],
         }]
       : []),

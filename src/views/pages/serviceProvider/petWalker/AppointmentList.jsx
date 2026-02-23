@@ -1,11 +1,17 @@
 import {
-  Save, X, Calendar, Clock, ChevronLeft, ChevronRight,
-  Footprints, User, Pencil, Trash2, XCircle, Timer
+  Calendar,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Footprints,
+  MapPin,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
 
-// Helper: format time "15:00:00" → "3:00 PM"
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 const formatTime = (t) => {
   if (!t) return "";
   const [h, m] = t.split(":").map(Number);
@@ -14,11 +20,13 @@ const formatTime = (t) => {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 };
 
-// Helper: format date "2026-02-22" → "Sun, 22 Feb 2026"
 const formatDate = (d) => {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("en-IN", {
-    weekday: "short", day: "2-digit", month: "short", year: "numeric",
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 };
 
@@ -36,19 +44,32 @@ const getStatus = (appt) => {
   return "upcoming";
 };
 
-// Only primary color #52B2AD and its shades used
-// upcoming  → full primary
-// completed → light primary
-// cancelled → lighter primary / muted
+const getPetIcon = (species) => {
+  switch ((species || "").toLowerCase()) {
+    case "dog":    return "🐕";
+    case "cat":    return "🐈";
+    case "rabbit": return "🐰";
+    case "bird":   return "🐦";
+    default:       return "🐾";
+  }
+};
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const PRIMARY       = "#52B2AD";
+const PRIMARY_LIGHT = "#EAF6F5";
+const PRIMARY_MID   = "#A8D8D6";
+const ITEMS_PER_PAGE = 3;
+
 const STATUS_CONFIG = {
   upcoming:  {
     label: "Upcoming",
-    barStyle:   { background: "#52B2AD" },
-    badgeStyle: { background: "#EAF6F5", color: "#52B2AD", border: "1px solid #52B2AD" },
+    barStyle:   { background: PRIMARY },
+    badgeStyle: { background: "#EAF6F5", color: PRIMARY, border: "1px solid #52B2AD" },
   },
   completed: {
     label: "Completed",
-    barStyle:   { background: "#A8D8D6" },
+    barStyle:   { background: PRIMARY_MID },
     badgeStyle: { background: "#F0FAF9", color: "#3D8F8A", border: "1px solid #A8D8D6" },
   },
   cancelled: {
@@ -58,47 +79,54 @@ const STATUS_CONFIG = {
   },
 };
 
-// Map raw API appointment → display shape
+// ── Map API response → display shape ─────────────────────────────────────────
+
 const mapAppointment = (appt) => ({
-  uid: appt.uid,
-  id: appt.id,
+  uid:             appt.appointmentId,
+  id:              appt.appointmentId,
   appointmentDate: appt.appointmentDate,
-  status: appt.status,
-  walkerServiceType: appt.petWalker?.serviceType?.replace("_", " ") || "Pet Walker",
-  slotStart: appt.slot?.startTime,
-  slotEnd: appt.slot?.endTime,
-  dayOfWeek: appt.slot?.petWalkerDay?.dayOfWeek,
-  userName: `${appt.user?.firstName?.trim() || ""} ${appt.user?.lastName?.trim() || ""}`.trim(),
-  userEmail: appt.user?.email,
-  userPhone: appt.user?.fullPhoneNumber,
-  petUid: appt.petUid,
-  petWalkerUid: appt.petWalkerUid,
-  editDate: appt.appointmentDate,
-  editSlotStart: appt.slot?.startTime,
-  editSlotEnd: appt.slot?.endTime,
+  status:          appt.status,
+  // Slot
+  slotStart:       appt.slot?.startTime,
+  slotEnd:         appt.slot?.endTime,
+  dayOfWeek:       appt.slot?.dayOfWeek,
+  // Pet (nullable)
+  petName:         appt.pet?.petName     || null,
+  petSpecies:      appt.pet?.petSpecies  || null,
+  petBreed:        appt.pet?.petBreed    || null,
+  petGender:       appt.pet?.petGender   || null,
+  petAge:          appt.pet?.petAge      ?? null,
+  healthStatus:    appt.pet?.healthStatus || null,
+  // Service Provider
+  providerName:    appt.serviceProvider?.name        || "—",
+  serviceType:     appt.serviceProvider?.serviceType || "—",
+  providerAddress: appt.serviceProvider?.address     || "",
 });
 
-const STATIC = { appointments: [], totalAppointments: 0 };
-const ITEMS_PER_PAGE = 3;
-const PRIMARY = "#52B2AD";
-const PRIMARY_LIGHT = "#EAF6F5";
-const PRIMARY_MID = "#A8D8D6";
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-xs text-gray-400">{label}</span>
+    <span className="text-sm font-semibold text-gray-700">{value || "—"}</span>
+  </div>
+);
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function WalkerAppointmentListing() {
-  const [raw, setRaw] = useState([]);
+  const [raw, setRaw]       = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [editId, setEditId] = useState(null);
-  const [editData, setEditData] = useState({});
-  const [page, setPage] = useState(0);
+  const [error, setError]   = useState(null);
+  const [page, setPage]     = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await useJwt.getWalkerBookedAppointment();
-        const data = response?.data || STATIC;
+        const data = response?.data || {};
         setRaw((data.appointments || []).map(mapAppointment));
-      } catch (e) {
+      } catch {
         setError("Could not load appointments.");
       } finally {
         setLoading(false);
@@ -108,49 +136,22 @@ export default function WalkerAppointmentListing() {
   }, []);
 
   const totalPages = Math.ceil(raw.length / ITEMS_PER_PAGE);
-  const visible = raw.slice(page * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
-
-  const startEdit = (appt) => {
-    setEditId(appt.uid);
-    setEditData({ editDate: appt.editDate, editSlotStart: appt.editSlotStart, editSlotEnd: appt.editSlotEnd });
-  };
-
-  const saveEdit = (uid) => {
-    setRaw((prev) =>
-      prev.map((a) =>
-        a.uid === uid
-          ? { ...a, ...editData, appointmentDate: editData.editDate, slotStart: editData.editSlotStart, slotEnd: editData.editSlotEnd }
-          : a
-      )
-    );
-    setEditId(null);
-  };
-
-  const deleteAppt = (uid) => {
-    setRaw((prev) => prev.filter((a) => a.uid !== uid));
-    const newPages = Math.ceil((raw.length - 1) / ITEMS_PER_PAGE);
-    if (page >= newPages && page > 0) setPage(page - 1);
-  };
+  const visible    = raw.slice(page * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
 
       {/* ── Header ── */}
-      <div className="mb-8 flex items-center gap-4">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
-          style={{ background: PRIMARY }}
-        >
-          <Footprints size={28} className="text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Walker Appointments</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            {raw.length > 0
-              ? `${raw.length} appointment${raw.length !== 1 ? "s" : ""} booked`
-              : "No appointments yet"}
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+          <Footprints style={{ color: PRIMARY }} size={32} />
+          Walker Appointments
+        </h1>
+        <p className="text-gray-500 mt-1">
+          {raw.length > 0
+            ? `${raw.length} appointment${raw.length !== 1 ? "s" : ""} booked`
+            : "Manage your pet walker sessions"}
+        </p>
       </div>
 
       {/* ── Loading ── */}
@@ -160,7 +161,7 @@ export default function WalkerAppointmentListing() {
             className="w-12 h-12 rounded-full border-4 animate-spin"
             style={{ borderColor: PRIMARY_MID, borderTopColor: PRIMARY }}
           />
-          <p className="text-gray-500">Fetching appointments…</p>
+          <p className="text-gray-500 text-sm">Loading appointments…</p>
         </div>
       )}
 
@@ -179,191 +180,173 @@ export default function WalkerAppointmentListing() {
       {!loading && !error && raw.length === 0 && (
         <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <Footprints size={48} className="mx-auto mb-4" style={{ color: PRIMARY_MID }} />
-          <p className="text-gray-500 font-medium">No walker appointments found.</p>
+          <p className="text-gray-500 font-medium text-xl">No walker appointments found.</p>
+          <p className="text-sm text-gray-400 mt-2">Book a session with a pet walker to get started.</p>
         </div>
       )}
 
       {/* ── Cards ── */}
       {!loading && !error && visible.length > 0 && (
-        <div className="space-y-5">
-          {visible.map((appt) => {
+        <div className="space-y-6 mb-8">
+          {visible.map((appt, index) => {
             const status = getStatus(appt);
-            const cfg = STATUS_CONFIG[status];
-            const isEditing = editId === appt.uid;
+            const cfg    = STATUS_CONFIG[status];
 
             return (
               <div
-                key={appt.uid}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 duration-200"
+                key={appt.uid || index}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
               >
                 {/* Top color bar */}
-                <div className="h-1.5" style={cfg.barStyle} />
+                <div className="h-2" style={cfg.barStyle} />
 
-                <div className="p-5">
-                  {/* Row 1: Date block + status badge + action buttons */}
-                  <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-3">
-
-                      {/* Date block */}
-                      <div
-                        className="flex-shrink-0 w-14 text-center rounded-xl py-2 border"
-                        style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
-                      >
-                        <p className="text-xs uppercase tracking-wider leading-none" style={{ color: PRIMARY }}>
-                          {new Date(appt.appointmentDate).toLocaleDateString("en-IN", { month: "short" })}
-                        </p>
-                        <p className="text-2xl font-bold text-gray-800 leading-tight">
-                          {new Date(appt.appointmentDate).getDate()}
-                        </p>
-                        <p className="text-xs text-gray-400 leading-none">
-                          {new Date(appt.appointmentDate).getFullYear()}
-                        </p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
-                            style={cfg.badgeStyle}
-                          >
-                            {cfg.label}
-                          </span>
-                          <span className="text-xs text-gray-400 font-mono">#{appt.id}</span>
-                        </div>
-                        <p className="text-gray-700 font-semibold text-base">{appt.walkerServiceType}</p>
-                        <p className="text-gray-400 text-xs flex items-center gap-1 mt-0.5">
-                          <Calendar size={11} />
-                          {formatDate(appt.appointmentDate)}
-                          {appt.dayOfWeek && (
-                            <span className="ml-1 font-medium" style={{ color: PRIMARY }}>
-                              · {appt.dayOfWeek.charAt(0) + appt.dayOfWeek.slice(1).toLowerCase()}
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                {/* Card Header */}
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">
+                      {appt.petSpecies ? getPetIcon(appt.petSpecies) : "🐾"}
                     </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2 flex-shrink-0">
-                      {isEditing ? (
-                        <>
-                          <button
-                            onClick={() => saveEdit(appt.uid)}
-                            className="p-2 rounded-xl transition-colors"
-                            style={{ background: PRIMARY_LIGHT, color: PRIMARY }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = PRIMARY_MID}
-                            onMouseLeave={(e) => e.currentTarget.style.background = PRIMARY_LIGHT}
-                            title="Save"
-                          >
-                            <Save size={18} />
-                          </button>
-                          <button
-                            onClick={() => setEditId(null)}
-                            className="p-2 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors"
-                            title="Cancel"
-                          >
-                            <X size={18} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {/* <button
-                            onClick={() => startEdit(appt)}
-                            className="p-2 rounded-xl transition-colors"
-                            style={{ background: PRIMARY_LIGHT, color: PRIMARY }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = PRIMARY_MID}
-                            onMouseLeave={(e) => e.currentTarget.style.background = PRIMARY_LIGHT}
-                            title="Edit"
-                          >
-                            <Pencil size={18} />
-                          </button> */}
-                          <button
-                            onClick={() => deleteAppt(appt.uid)}
-                            className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"
-                            title="Remove"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </>
-                      )}
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-800">
+                        {appt.petName || appt.serviceType?.replace(/_/g, " ")}
+                      </h3>
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1"
+                        style={cfg.badgeStyle}
+                      >
+                        {cfg.label}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-dashed border-gray-100 mb-4" />
+                  {/* Short ID badge */}
+                  <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                    #{appt.id?.slice(0, 8) || index + 1}
+                  </span>
+                </div>
 
-                  {/* Row 2: Edit form OR Info pills */}
-                  {isEditing ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {[
-                        { label: "Appointment Date", key: "editDate",      type: "date", val: editData.editDate || "",                  fmt: (v) => v },
-                        { label: "Slot Start",       key: "editSlotStart", type: "time", val: editData.editSlotStart?.slice(0, 5) || "", fmt: (v) => v + ":00" },
-                        { label: "Slot End",         key: "editSlotEnd",   type: "time", val: editData.editSlotEnd?.slice(0, 5)   || "", fmt: (v) => v + ":00" },
-                      ].map(({ label, key, type, val, fmt }) => (
-                        <div key={key}>
-                          <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
-                          <input
-                            type={type}
-                            value={val}
-                            onChange={(e) => setEditData((p) => ({ ...p, [key]: fmt(e.target.value) }))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none"
-                            onFocus={(e) => { e.target.style.borderColor = PRIMARY; e.target.style.boxShadow = `0 0 0 2px ${PRIMARY_MID}`; }}
-                            onBlur={(e)  => { e.target.style.borderColor = "#e5e7eb"; e.target.style.boxShadow = "none"; }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        { icon: <Clock size={15} style={{ color: PRIMARY }} />, label: "Slot", value: `${formatTime(appt.slotStart)} – ${formatTime(appt.slotEnd)}` },
-                        { icon: <Footprints size={15} style={{ color: PRIMARY }} />, label: "Service", value: appt.walkerServiceType },
-                        { icon: <User size={15} style={{ color: PRIMARY }} />, label: "Client", value: appt.userName, truncate: true },
-                        {
-                          icon: <Timer size={15} style={{ color: PRIMARY }} />,
-                          label: "Duration",
-                          value: (() => {
-                            if (!appt.slotStart || !appt.slotEnd) return "—";
-                            const [sh, sm] = appt.slotStart.split(":").map(Number);
-                            const [eh, em] = appt.slotEnd.split(":").map(Number);
-                            const diff = (eh * 60 + em) - (sh * 60 + sm);
-                            return diff >= 60 ? `${diff / 60}h` : `${diff}m`;
-                          })(),
-                        },
-                      ].map(({ icon, label, value, truncate }) => (
-                        <div key={label} className="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2.5">
+                {/* Card Body */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                  {/* ── Pet Details ── */}
+                  <div
+                    className="rounded-xl p-4 border"
+                    style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+                  >
+                    <p
+                      className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                      style={{ color: "#42948f" }}
+                    >
+                      <span>🐾</span> Pet Details
+                    </p>
+                    {appt.petName ? (
+                      <div className="space-y-2">
+                        <InfoRow label="Name"    value={appt.petName} />
+                        <InfoRow label="Species" value={appt.petSpecies} />
+                        <InfoRow label="Breed"   value={appt.petBreed} />
+                        <InfoRow
+                          label="Gender / Age"
+                          value={
+                            [
+                              appt.petGender,
+                              appt.petAge !== null ? `${appt.petAge} yrs` : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "—"
+                          }
+                        />
+                        {appt.healthStatus && (
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ background: PRIMARY_LIGHT }}
+                            className="pt-2 border-t mt-1"
+                            style={{ borderColor: PRIMARY_MID }}
                           >
-                            {icon}
+                            <span className="text-xs text-gray-500 block mb-0.5">Health Status</span>
+                            <span className="text-xs text-gray-700">{appt.healthStatus}</span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs text-gray-400">{label}</p>
-                            <p className={`text-sm font-semibold text-gray-700 ${truncate ? "truncate" : ""}`}>
-                              {value}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">No pet information provided.</p>
+                    )}
+                  </div>
 
-                  {/* Row 3: Contact strip */}
-                  {/* {!isEditing && (appt.userEmail || appt.userPhone) && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-4">
-                      {appt.userEmail && (
-                        <p className="text-xs text-gray-400">
-                          📧 <span className="text-gray-600">{appt.userEmail}</span>
-                        </p>
-                      )}
-                      {appt.userPhone && (
-                        <p className="text-xs text-gray-400">
-                          📞 <span className="text-gray-600">{appt.userPhone}</span>
-                        </p>
+                  {/* ── Service Provider Details ── */}
+                  <div
+                    className="rounded-xl p-4 border"
+                    style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+                  >
+                    <p
+                      className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                      style={{ color: "#42948f" }}
+                    >
+                      <Footprints size={13} /> Service Provider
+                    </p>
+                    <div className="space-y-2">
+                      <InfoRow label="Name"    value={appt.providerName} />
+                      <InfoRow
+                        label="Service"
+                        value={appt.serviceType?.replace(/_/g, " ")}
+                      />
+                      {appt.providerAddress && (
+                        <div className="flex items-start gap-2 pt-1">
+                          <MapPin size={13} style={{ color: PRIMARY }} className="mt-0.5 flex-shrink-0" />
+                          <span className="text-xs text-gray-600 leading-relaxed">
+                            {appt.providerAddress}
+                          </span>
+                        </div>
                       )}
                     </div>
-                  )} */}
+                  </div>
+                </div>
+
+                {/* ── Slot Footer ── */}
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Date */}
+                    <div
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
+                    >
+                      <div
+                        className="rounded-lg p-2 flex-shrink-0"
+                        style={{ background: PRIMARY }}
+                      >
+                        <Calendar size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Appointment Date</p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {formatDate(appt.appointmentDate)}
+                        </p>
+                        {appt.dayOfWeek && (
+                          <p className="text-xs font-medium capitalize" style={{ color: "#42948f" }}>
+                            {appt.dayOfWeek.charAt(0) + appt.dayOfWeek.slice(1).toLowerCase()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time Slot */}
+                    <div
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
+                    >
+                      <div
+                        className="rounded-lg p-2 flex-shrink-0"
+                        style={{ background: "#42948f" }}
+                      >
+                        <Clock size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Time Slot</p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {appt.slotStart && appt.slotEnd
+                            ? `${formatTime(appt.slotStart)} – ${formatTime(appt.slotEnd)}`
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -374,28 +357,29 @@ export default function WalkerAppointmentListing() {
       {/* ── Pagination ── */}
       {totalPages > 1 && (
         <>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-6 mt-8">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.background = PRIMARY_LIGHT; e.currentTarget.style.borderColor = PRIMARY; e.currentTarget.style.color = PRIMARY; }}}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#4b5563"; }}
+              className="p-3 rounded-full text-white transition-all transform hover:scale-110 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+              style={{ background: PRIMARY }}
+              title="Previous"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={24} />
             </button>
 
-            <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setPage(i)}
-                  className="rounded-full transition-all duration-300"
+                  className="transition-all duration-300 rounded-full"
                   style={{
-                    width: i === page ? "2rem" : "0.625rem",
-                    height: "0.625rem",
+                    width:      i === page ? "2.5rem" : "0.75rem",
+                    height:     "0.75rem",
                     background: i === page ? PRIMARY : PRIMARY_MID,
                   }}
+                  title={`Page ${i + 1}`}
                 />
               ))}
             </div>
@@ -403,17 +387,19 @@ export default function WalkerAppointmentListing() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
-              className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.background = PRIMARY_LIGHT; e.currentTarget.style.borderColor = PRIMARY; e.currentTarget.style.color = PRIMARY; }}}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#4b5563"; }}
+              className="p-3 rounded-full text-white transition-all transform hover:scale-110 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+              style={{ background: PRIMARY }}
+              title="Next"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={24} />
             </button>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-3">
-            Showing {page * ITEMS_PER_PAGE + 1}–{Math.min((page + 1) * ITEMS_PER_PAGE, raw.length)} of {raw.length}
-          </p>
+          <div className="text-center mt-4">
+            <p className="text-gray-500 text-sm">
+              Showing {page * ITEMS_PER_PAGE + 1}–{Math.min((page + 1) * ITEMS_PER_PAGE, raw.length)} of {raw.length} appointments
+            </p>
+          </div>
         </>
       )}
     </div>

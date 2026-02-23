@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, IndianRupee, Clock, AlignLeft } from "lucide-react";
+import { Plus, X, IndianRupee, Clock, AlignLeft, DollarSign } from "lucide-react";
 import useJwt from "../../../../enpoints/jwt/useJwt"; 
 
 const GroomingServiceForm = ({ onClose, onCreated, initialValues = null }) => {
@@ -106,7 +106,7 @@ const GroomingServiceForm = ({ onClose, onCreated, initialValues = null }) => {
             />
           </div>
           <div className="relative">
-             <IndianRupee className="absolute left-3 top-3.5 text-gray-400" size={18} />
+             <DollarSign className="absolute left-3 top-3.5 text-gray-400" size={18} />
              <input
               type="number"
               name="price"

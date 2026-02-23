@@ -9,7 +9,7 @@ const getUserInfo = () => {
     const userInfo = localStorage.getItem("userInfo");
     return userInfo ? JSON.parse(userInfo) : null;
   } catch (error) {
-    console.error('Error parsing userInfo:', error);
+    console.error("Error parsing userInfo:", error);
     return null;
   }
 };
@@ -42,9 +42,7 @@ const Appointment = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [modalOpen, deleteConfirmModal]);
 
-  const handleDeleteClick = (appointment) => {
-    setDeleteConfirmModal(appointment);
-  };
+  const handleDeleteClick = (appointment) => setDeleteConfirmModal(appointment);
 
   const handleConfirmDelete = () => {
     if (deleteConfirmModal) {
@@ -57,34 +55,36 @@ const Appointment = () => {
     setLoading(true);
     try {
       const response = await useJwt.getWalkerBookedAppointment();
-      const data = response.data;
+      const data = response?.data || {};
 
       const mapped = (data.appointments || []).map((appt) => ({
-        id: appt.id,
-        uid: appt.uid,
-        status: appt.status ? appt.status.toLowerCase() : "booked",
+        id:              appt.appointmentId,
+        uid:             appt.appointmentId,
         appointmentDate: appt.appointmentDate,
+        status:          appt.status?.toLowerCase() || "booked",
 
-        // Pet info
-        petName: appt.pet?.petName || "N/A",
-        petBreed: appt.pet?.petBreed || "",
-        petType: appt.pet?.petSpecies || "",
+        // Slot
+        slotStart: appt.slot?.startTime || null,
+        slotEnd:   appt.slot?.endTime   || null,
+        dayOfWeek: appt.slot?.dayOfWeek || null,
 
-        // Walker info mapped to doctor fields used in child
-        doctorName: `${appt.user?.firstName || ""} ${appt.user?.lastName || ""}`.trim(),
-        doctorBio: appt.petWalker?.serviceType || "",
+        // Pet (nullable)
+        petName:     appt.pet?.petName      || null,
+        petSpecies:  appt.pet?.petSpecies   || null,
+        petBreed:    appt.pet?.petBreed     || null,
+        petGender:   appt.pet?.petGender    || null,
+        petAge:      appt.pet?.petAge       ?? null,
+        healthStatus: appt.pet?.healthStatus || null,
 
-        // Slot / time info
-        date: appt.appointmentDate,
-        time: appt.slot
-          ? `${appt.slot.startTime?.slice(0, 5)} - ${appt.slot.endTime?.slice(0, 5)}`
-          : "N/A",
+        // User (client)
+        userName:  `${appt.user?.firstName?.trim() || ""} ${appt.user?.lastName?.trim() || ""}`.trim(),
+        userEmail: appt.user?.email           || null,
+        userPhone: appt.user?.fullPhoneNumber || null,
 
-        // Day info mapped to hospital fields used in child
-        hospitalName: appt.slot?.petWalkerDay?.dayOfWeek || "",
-        hospitalAddress: appt.slot?.petWalkerDay
-          ? `Working hours: ${appt.slot.petWalkerDay.startTime?.slice(0, 5)} – ${appt.slot.petWalkerDay.endTime?.slice(0, 5)}`
-          : "",
+        // Service Provider
+        providerName:    appt.serviceProvider?.name        || "—",
+        serviceType:     appt.serviceProvider?.serviceType || "—",
+        providerAddress: appt.serviceProvider?.address     || "",
       }));
 
       setAppointments(mapped);
@@ -158,11 +158,6 @@ const Appointment = () => {
       ) : (
         <AppointmentListing
           appointments={appointments}
-          onUpdate={(updated) =>
-            setAppointments((prev) =>
-              prev.map((a) => (a.id === updated.id ? updated : a))
-            )
-          }
           onDelete={handleDeleteClick}
         />
       )}
@@ -175,7 +170,6 @@ const Appointment = () => {
             onClick={() => setModalOpen(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b">
               <h3 className="text-xl font-bold text-gray-800">Setup Schedule</h3>
               <button
@@ -185,8 +179,6 @@ const Appointment = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-
-            {/* Modal Body */}
             <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(90vh - 80px)" }}>
               <CreateWalkerSlot
                 onClose={() => setModalOpen(false)}
