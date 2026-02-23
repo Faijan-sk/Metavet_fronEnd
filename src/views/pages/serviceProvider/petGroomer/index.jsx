@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Search, X, MapPin, Scissors, Star, Award, Clock, Heart, MessageCircle, Phone, Sparkles } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Search, X, MapPin, Scissors, Star, Award, Clock, Heart, MessageCircle, Phone, Sparkles, CalendarDays } from "lucide-react";
 import KycWarning from "./../KycWarning"
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
-import GroomerBookingModal from './BookingModal';  // ← tumhara GroomerBookingModal
+import GroomerBookingModal from './BookingModal';
 
 // Default Page Component
 function DefaultPage() {
@@ -152,6 +153,7 @@ function Index({ location }) {
   const [locationError, setLocationError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const navigate = useNavigate();
   const kycUrl = '/groomerTo-client-kyc';
 
   const clearSearch = () => setSearchQuery("");
@@ -287,7 +289,17 @@ function Index({ location }) {
       <div className="container mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="mb-10 text-center">
+        <div className="relative mb-10 text-center">
+
+          {/* My Appointments Button - Top Right */}
+          <button
+            onClick={() => navigate('/groomer-appointments')}
+            className="absolute top-0 right-0 flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#52B2AD] text-[#52B2AD] rounded-2xl font-semibold hover:bg-[#52B2AD] hover:text-white transition-all duration-200 shadow-md"
+          >
+            <CalendarDays className="w-5 h-5" />
+            My Appointments
+          </button>
+
           <div className="inline-flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
               <Scissors className="w-10 h-10 text-white" />

@@ -97,17 +97,13 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
           </div>
         </div>
 
+        {/* ── Consultation Fees (replaces specializations) ── */}
         <div className="mb-4">
-          <p className="text-xs text-gray-500 mb-2">Specializations:</p>
-          <div className="flex flex-wrap gap-1 h-14 overflow-hidden">
-            {behaviourist.specializations.map((area, idx) => (
-              <span 
-                key={idx}
-                className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-[10px] rounded-lg font-medium"
-              >
-                {formatTag(area)}
-              </span>
-            ))}
+          <p className="text-xs text-gray-500 mb-2">Consultation Fees:</p>
+          <div className="flex items-center h-14">
+            <span className="px-4 py-2 bg-[#52B2AD]/10 text-[#52B2AD] text-sm rounded-lg font-semibold">
+              ${behaviourist.consultationFees}
+            </span>
           </div>
         </div>
 

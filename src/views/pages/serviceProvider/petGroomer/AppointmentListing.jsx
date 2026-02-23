@@ -1,33 +1,126 @@
-import { Pencil, Save, Trash2, X, Calendar, Clock, Brain, PawPrint, User, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Pencil, Save, Trash2, X, Calendar, Clock,
+  PawPrint, User, FileText, ChevronLeft, ChevronRight,
+  Scissors, MapPin, Star, Package
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
 
-// Static mock data for pet behaviourist appointments
-const staticAppointments = [
-  {
-    id: 1,
-    doctorName: "Dr. Priya Sharma",
-    petName: "Bruno",
-    petType: "dog",
-    petBreed: "Labrador Retriever",
-    hospitalName: "PawsMind Behaviour Clinic",
-    hospitalAddress: "Plot 12, Sitabuldi, Nagpur - 440012",
-    date: "2026-03-05",
-    time: "10:00 AM - 10:45 AM",
-    status: "booked",
-    fullDoctor: { specialization: "Canine Behaviourist" },
-    doctorBio: "7+ years in canine anxiety and aggression therapy.",
-  }
- 
-];
-
 const AppointmentListing = () => {
-  const [appointments, setAppointments] = useState(staticAppointments);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editAppointment, setEditAppointment] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
 
-  const handleEdit = (appointment) => setEditAppointment({ ...appointment });
+  // ── helpers ──────────────────────────────────────────────────────────────
+
+  /** Format "10:30:00" → "10:30 AM" */
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":").map(Number);
+    const suffix = h >= 12 ? "PM" : "AM";
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
+  };
+
+  /** Map raw API object → display-friendly shape */
+  const mapApiAppointment = (appt) => ({
+    id: appt.id,
+    uid: appt.uid,
+    groomerName:
+      `${appt.serviceProvider?.owner?.firstName ?? ""} ${appt.serviceProvider?.owner?.lastName ?? ""}`.trim(),
+    groomerEmail: appt.serviceProvider?.owner?.email ?? "",
+    petName: appt.pet?.petName ?? "—",
+    petType: appt.pet?.petSpecies ?? "",
+    petBreed: appt.pet?.petBreed ?? "",
+    serviceName: appt.service?.serviceName ?? "—",
+    serviceDuration: appt.service?.durationMinutes ?? null,
+    servicePrice: appt.service?.price ?? null,
+    date: appt.appointmentDate ?? "",
+    startTime: appt.startTime ?? "",
+    endTime: appt.endTime ?? "",
+    status: appt.status ?? "PENDING",
+    notes: appt.notes ?? "",
+    // keep raw for edits
+    _raw: appt,
+  });
+
+  const isPastDate = (dateString) => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    return d < today;
+  };
+
+  const getActualStatus = (appt) => {
+    const s = appt.status?.toUpperCase();
+    if (s === "CANCELLED") return "cancelled";
+    if (isPastDate(appt.date) && s !== "CANCELLED") return "completed";
+    if (s === "CONFIRMED") return "confirmed";
+    return "pending";
+  };
+
+  const statusStyle = (status) => {
+    switch (status) {
+      case "confirmed":  return "bg-[#d0ecea] text-[#2a8a85]";
+      case "completed":  return "bg-[#52B2AD] text-white";
+      case "cancelled":  return "bg-[#f0fafa] text-[#52B2AD] border border-[#52B2AD]";
+      case "pending":
+      default:           return "bg-[#e8f7f6] text-[#3a9e99]";
+    }
+  };
+
+  const statusLabel = (status) =>
+    status.charAt(0).toUpperCase() + status.slice(1);
+
+  const getPetIcon = (petType) => {
+    switch ((petType || "").toLowerCase()) {
+      case "dog":    return "🐕";
+      case "cat":    return "🐈";
+      case "rabbit": return "🐰";
+      case "bird":   return "🐦";
+      default:       return "🐾";
+    }
+  };
+
+  const barColor = (status) => {
+    switch (status) {
+      case "completed": return "bg-[#52B2AD]";
+      case "cancelled": return "bg-[#2a8a85]";
+      case "confirmed": return "bg-[#7ececa]";
+      default:          return "bg-[#a8dcda]";
+    }
+  };
+
+  const avatarSvg =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
+
+  // ── data fetching ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        const response = await useJwt.getGroomerBookedAppointmentForClient();
+        const data = response?.data ?? [];
+        setAppointments(data.map(mapApiAppointment));
+      } catch (err) {
+        console.error("Failed to fetch groomer appointments:", err);
+        setAppointments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAppointments();
+  }, []);
+
+  // ── edit handlers ─────────────────────────────────────────────────────────
+
+  const handleEdit = (appt) => setEditAppointment({ ...appt });
+  const handleCancelEdit = () => setEditAppointment(null);
 
   const handleSaveEdit = () => {
     setAppointments((prev) =>
@@ -36,11 +129,8 @@ const AppointmentListing = () => {
     setEditAppointment(null);
   };
 
-  const handleCancelEdit = () => setEditAppointment(null);
-
-  const handleDelete = (appointment) => {
-    setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
-    // Adjust page if needed
+  const handleDelete = (appt) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== appt.id));
     const newTotal = appointments.length - 1;
     const newTotalPages = Math.ceil(newTotal / itemsPerPage);
     if (currentPage >= newTotalPages && currentPage > 0) {
@@ -53,115 +143,68 @@ const AppointmentListing = () => {
     setEditAppointment((prev) => ({ ...prev, [name]: value }));
   };
 
-  const isPastDate = (dateString) => {
-    if (!dateString) return false;
-    const appointmentDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    appointmentDate.setHours(0, 0, 0, 0);
-    return appointmentDate < today;
-  };
+  // ── pagination ────────────────────────────────────────────────────────────
 
-  const getActualStatus = (appointment) => {
-    if (appointment.status?.toLowerCase() === "cancelled") return "cancelled";
-    if (isPastDate(appointment.date)) return "completed";
-    return appointment.status?.toLowerCase() || "booked";
-  };
+  const totalPages = Math.ceil(appointments.length / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const currentAppointments = appointments.slice(startIndex, startIndex + itemsPerPage);
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "booked":
-      case "upcoming":
-        return "bg-blue-100 text-blue-700";
-      case "completed":
-        return "bg-green-100 text-green-700";
-      case "cancelled":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
+  const handlePrevious = () =>
+    setCurrentPage((p) => (p > 0 ? p - 1 : totalPages - 1));
+  const handleNext = () =>
+    setCurrentPage((p) => (p < totalPages - 1 ? p + 1 : 0));
 
-  const getPetIcon = (petType) => {
-    switch ((petType || "").toLowerCase()) {
-      case "dog":
-        return "🐕";
-      case "cat":
-        return "🐈";
-      case "rabbit":
-        return "🐰";
-      case "bird":
-        return "🐦";
-      default:
-        return "🐾";
-    }
-  };
+  // ── render ────────────────────────────────────────────────────────────────
 
-  // Doctor avatar SVG (teal circle placeholder)
-  const drAvatar =
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
-
-  if (!appointments || appointments.length === 0) {
+  if (loading) {
     return (
-      <div className="text-center py-20 text-gray-400">
-        <p className="text-xl font-semibold">No appointments found.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#52B2AD] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 font-medium">Loading appointments…</p>
+        </div>
       </div>
     );
   }
 
-  const totalPages = Math.ceil(appointments.length / itemsPerPage);
-  const startIndex = currentPage * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAppointments = appointments.slice(startIndex, endIndex);
+  if (!appointments.length) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 text-gray-400">
+        <Scissors size={48} className="text-[#52B2AD] opacity-40" />
+        <p className="text-xl font-semibold">No grooming appointments found.</p>
+        <p className="text-sm">Book your first session to get started!</p>
+      </div>
+    );
+  }
 
-  const handlePrevious = () =>
-    setCurrentPage((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
-  const handleNext = () =>
-    setCurrentPage((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
-
-useEffect(()=>{
-
-    const fetchAppointment = async () =>{
-        const response = useJwt.getBehavioBookedAppoin();
-    }
-
-    fetchAppointment()
-},[])
-  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <Brain className="text-[#52B2AD]" size={32} />
-          Pet Behaviourist Appointments
+          <Scissors className="text-[#52B2AD]" size={32} />
+          Pet Groomer Appointments
         </h1>
         <p className="text-gray-500 mt-1">
-          Manage your pet's behaviour consultation sessions
+          Manage your pet's grooming sessions
         </p>
       </div>
 
-      {/* Appointments Grid */}
+      {/* Cards */}
       <div className="space-y-6 mb-8">
         {currentAppointments.map((appointment, index) => {
           const actualStatus = getActualStatus(appointment);
+          const isEditing = editAppointment?.id === appointment.id;
+
           return (
             <div
-              key={appointment.id || index}
+              key={appointment.id ?? index}
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
             >
-              {/* Colored Top Bar */}
-              <div
-                className={`h-2 ${
-                  actualStatus === "completed"
-                    ? "bg-green-500"
-                    : actualStatus === "cancelled"
-                    ? "bg-red-500"
-                    : "bg-[#52B2AD]"
-                }`}
-              />
+              {/* Colored top bar */}
+              <div className={`h-2 ${barColor(actualStatus)}`} />
 
-              {/* Card Header */}
+              {/* Card header */}
               <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="text-3xl">{getPetIcon(appointment.petType)}</div>
@@ -170,17 +213,15 @@ useEffect(()=>{
                       Appointment #{appointment.id}
                     </h3>
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(
-                        actualStatus
-                      )}`}
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${statusStyle(actualStatus)}`}
                     >
-                      {actualStatus.charAt(0).toUpperCase() + actualStatus.slice(1)}
+                      {statusLabel(actualStatus)}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  {editAppointment?.id === appointment.id ? (
+                  {isEditing ? (
                     <>
                       <button
                         onClick={handleSaveEdit}
@@ -199,38 +240,38 @@ useEffect(()=>{
                     </>
                   ) : (
                     <>
-                      <button
+                      {/* <button
                         onClick={() => handleEdit(appointment)}
                         className="p-2.5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all transform hover:scale-110"
                         title="Edit"
                       >
                         <Pencil size={20} />
-                      </button>
-                      <button
+                      </button> */}
+                      {/* <button
                         onClick={() => handleDelete(appointment)}
                         className="p-2.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all transform hover:scale-110"
                         title="Delete"
                       >
                         <Trash2 size={20} />
-                      </button>
+                      </button> */}
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Card Content */}
+              {/* Card body */}
               <div className="p-6">
-                {editAppointment?.id === appointment.id ? (
-                  // Edit Mode
+                {isEditing ? (
+                  /* ── Edit mode ── */
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { label: "Pet Name", name: "petName", type: "text" },
-                        { label: "Behaviourist", name: "doctorName", type: "text" },
-                        { label: "Date", name: "date", type: "date" },
-                        { label: "Time", name: "time", type: "text" },
-                        { label: "Hospital Name", name: "hospitalName", type: "text" },
-                        { label: "Hospital Address", name: "hospitalAddress", type: "text" },
+                        { label: "Pet Name",     name: "petName",     type: "text" },
+                        { label: "Groomer Name", name: "groomerName", type: "text" },
+                        { label: "Date",         name: "date",        type: "date" },
+                        { label: "Start Time",   name: "startTime",   type: "time" },
+                        { label: "End Time",     name: "endTime",     type: "time" },
+                        { label: "Notes",        name: "notes",       type: "text" },
                       ].map(({ label, name, type }) => (
                         <div key={name}>
                           <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -239,7 +280,7 @@ useEffect(()=>{
                           <input
                             type={type}
                             name={name}
-                            value={editAppointment[name] || ""}
+                            value={editAppointment[name] ?? ""}
                             onChange={handleInputChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-transparent"
                           />
@@ -248,39 +289,39 @@ useEffect(()=>{
                     </div>
                   </div>
                 ) : (
-                  // View Mode
+                  /* ── View mode ── */
                   <div className="flex items-start gap-6">
-                    {/* Doctor Avatar */}
+                    {/* Groomer avatar */}
                     <div className="flex-shrink-0">
                       <div className="relative">
                         <img
-                          src={drAvatar}
-                          alt={appointment.doctorName}
+                          src={avatarSvg}
+                          alt={appointment.groomerName}
                           className="w-20 h-20 rounded-full border-4 border-[#52B2AD] shadow-lg object-cover bg-white"
                         />
-                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-purple-500 rounded-full border-2 border-white flex items-center justify-center">
-                          <Brain className="w-4 h-4 text-white" />
+                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-teal-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <Scissors className="w-4 h-4 text-white" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Details */}
+                    {/* Details grid */}
                     <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {/* Groomer */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <User size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Behaviourist</span>
+                          <span className="font-semibold">Groomer</span>
                         </div>
-                        <p className="font-medium text-gray-800">{appointment.doctorName}</p>
-                        <p className="text-xs text-gray-500">
-                          {appointment.fullDoctor?.specialization}
-                        </p>
+                        <p className="font-medium text-gray-800">{appointment.groomerName}</p>
+                        <p className="text-xs text-gray-500">{appointment.groomerEmail}</p>
                       </div>
 
+                      {/* Pet */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <PawPrint size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Pet Name</span>
+                          <span className="font-semibold">Pet</span>
                         </div>
                         <p className="font-medium text-gray-800">{appointment.petName}</p>
                         {appointment.petBreed && (
@@ -288,16 +329,24 @@ useEffect(()=>{
                         )}
                       </div>
 
+                      {/* Service */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <span className="text-[#52B2AD]">🏥</span>
-                          <span className="font-semibold">Clinic</span>
+                          <Package size={14} className="text-[#52B2AD]" />
+                          <span className="font-semibold">Service</span>
                         </div>
-                        <p className="font-medium text-gray-800 text-sm">
-                          {appointment.hospitalName}
-                        </p>
+                        <p className="font-medium text-gray-800">{appointment.serviceName}</p>
+                        {appointment.serviceDuration && (
+                          <p className="text-xs text-gray-500">{appointment.serviceDuration} min</p>
+                        )}
+                        {appointment.servicePrice != null && (
+                          <p className="text-xs font-semibold text-[#52B2AD]">
+                            ${appointment.servicePrice}
+                          </p>
+                        )}
                       </div>
 
+                      {/* Date */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <Calendar size={14} className="text-[#52B2AD]" />
@@ -306,43 +355,29 @@ useEffect(()=>{
                         <p className="font-medium text-gray-800">{appointment.date}</p>
                       </div>
 
+                      {/* Time */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <Clock size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Time Slot</span>
+                          <span className="font-semibold">Time</span>
                         </div>
-                        <p className="font-medium text-gray-800 text-sm">{appointment.time}</p>
+                        <p className="font-medium text-gray-800 text-sm">
+                          {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
+                        </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Bottom Details */}
-                {!editAppointment && (appointment.hospitalAddress || appointment.doctorBio) && (
+                {/* Notes row */}
+                {!isEditing && appointment.notes && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {appointment.hospitalAddress && (
-                        <div className="flex items-start gap-2">
-                          <FileText size={16} className="text-[#52B2AD] mt-1 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1">
-                              Clinic Address
-                            </p>
-                            <p className="text-sm text-gray-700">{appointment.hospitalAddress}</p>
-                          </div>
-                        </div>
-                      )}
-                      {appointment.doctorBio && (
-                        <div className="flex items-start gap-2">
-                          <User size={16} className="text-[#52B2AD] mt-1 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs font-semibold text-gray-600 mb-1">
-                              Behaviourist Bio
-                            </p>
-                            <p className="text-sm text-gray-700">{appointment.doctorBio}</p>
-                          </div>
-                        </div>
-                      )}
+                    <div className="flex items-start gap-2">
+                      <FileText size={16} className="text-[#52B2AD] mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">Notes</p>
+                        <p className="text-sm text-gray-700">{appointment.notes}</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -359,22 +394,20 @@ useEffect(()=>{
             <button
               onClick={handlePrevious}
               className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
-              title="Previous"
             >
               <ChevronLeft size={24} />
             </button>
 
             <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }).map((_, index) => (
+              {Array.from({ length: totalPages }).map((_, i) => (
                 <button
-                  key={index}
-                  onClick={() => setCurrentPage(index)}
+                  key={i}
+                  onClick={() => setCurrentPage(i)}
                   className={`transition-all duration-300 rounded-full ${
-                    currentPage === index
+                    currentPage === i
                       ? "w-10 h-3 bg-[#52B2AD]"
                       : "w-3 h-3 bg-gray-300 hover:bg-gray-400"
                   }`}
-                  title={`Page ${index + 1}`}
                 />
               ))}
             </div>
@@ -382,7 +415,6 @@ useEffect(()=>{
             <button
               onClick={handleNext}
               className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
-              title="Next"
             >
               <ChevronRight size={24} />
             </button>
@@ -390,7 +422,7 @@ useEffect(()=>{
 
           <div className="text-center mt-4">
             <p className="text-gray-600 text-sm">
-              Showing {startIndex + 1}–{Math.min(endIndex, appointments.length)} of{" "}
+              Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
               {appointments.length} appointments
             </p>
           </div>

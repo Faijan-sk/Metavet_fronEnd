@@ -99,6 +99,7 @@ export default {
   getWalkerBookedAppointment : '/api/walker-appointments/my-appointments',
   //walker-client side
   getWalkerDaysEndPoint : '/api/pet-walker-days/pet-walker/{Uid}',
+  bookWalkerAppointment : '/api/walker-appointments/book',
 
   //behaviourist
   createBehaviouristDayAndSlot : '/api/behaviourist-days/days',
@@ -107,7 +108,12 @@ getAvailableWalkerslotEndPoint: '/api/walker-appointments/available-slots?petWal
 getAvailableBehaviouristDay : '/api/behaviourist-days/service-provider/{Uid}',
 getAvailableSlotBehaviourist : '/api/behaviourist-appointments/available-slots?serviceProviderUid={providerUid}&behaviouristDayUid={dayUid}&date={date}',
 bookBehaviouristAppointment : '/api/behaviourist-appointments/book',
-getBehaviBookedAppointment : '/api/behaviourist-appointments/my-appointments'
+getBehaviBookedAppointment : '/api/behaviourist-appointments/my-appointments',
+getWalkerBookedAppointment : '/api/walker-appointments/my-appointments',
+getGroomerBookedAppointment : '/groomer/appointment/my-appointments',
+bookGroomerAppointment : '/groomer/appointment/book',
+
+getGroomerBookedAppointmnetforClient:'/groomer/appointment/user/appointments'
 
 
 }

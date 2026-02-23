@@ -40,7 +40,13 @@ const AppointmentCard = ({ item }) => {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-            <h3 className="font-bold text-lg text-gray-800">Pet Parent : {item.client?.name}</h3>
+           <h3 className="font-bold text-lg text-gray-800">
+        Pet Name : {item?.pet?.name} ({item?.pet?.species})
+      </h3>
+            <br/>
+            <h1 className="font-bold text-lg text-gray-400">Pet Parent : {item.client?.name}</h1>
+
+            
             <span className="bg-[#52B2AD]/10 text-[#52B2AD] px-4 py-1 rounded-full font-bold text-sm">
               ₹{item.service?.price}
             </span>

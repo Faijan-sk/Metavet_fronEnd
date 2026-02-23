@@ -16,11 +16,11 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // ---- NEW STATES ----
-  const [slotsData, setSlotsData] = useState(null)       // full API response
+  const [slotsData, setSlotsData] = useState(null)
   const [slotsLoading, setSlotsLoading] = useState(false)
-  const [selectedSlot, setSelectedSlot] = useState(null) // { slotStartTime, slotEndTime, compatibleServices }
-  const [selectedService, setSelectedService] = useState("")  // service uid
+  const [selectedSlot, setSelectedSlot] = useState(null)
+  const [selectedService, setSelectedService] = useState("")
+  const [selectedStartTime, setSelectedStartTime] = useState("")
 
   const monthNames = [
     "January","February","March","April","May","June",
@@ -35,6 +35,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
         const response = await useJwt.getAllPetsByOwner()
         const petsList = response.data.data.map((pet) => ({
           id: pet.id,
+          uid: pet.uid,
           petName: pet.petName,
           petSpecies: pet.petSpecies,
           petBreed: pet.petBreed,
@@ -66,24 +67,25 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     if (!selectedDate || !groomer?.id) return
 
     const fetchSlotsAndServices = async () => {
-  setSlotsLoading(true)
-  setSlotsData(null)
-  setSelectedSlot(null)
-  setSelectedService("")
-  try {
-    const dateStr = [
-      selectedDate.getFullYear(),
-      String(selectedDate.getMonth() + 1).padStart(2, "0"),
-      String(selectedDate.getDate()).padStart(2, "0")
-    ].join("-")
-    const response = await useJwt.getGroomerAvailableSlotServices(dateStr, groomer.id)
-    setSlotsData(response.data)
-  } catch (error) {
-    console.error("Error fetching slots:", error)
-  } finally {
-    setSlotsLoading(false)
-  }
-}
+      setSlotsLoading(true)
+      setSlotsData(null)
+      setSelectedSlot(null)
+      setSelectedService("")
+      setSelectedStartTime("")
+      try {
+        const dateStr = [
+          selectedDate.getFullYear(),
+          String(selectedDate.getMonth() + 1).padStart(2, "0"),
+          String(selectedDate.getDate()).padStart(2, "0")
+        ].join("-")
+        const response = await useJwt.getGroomerAvailableSlotServices(dateStr, groomer.id)
+        setSlotsData(response.data)
+      } catch (error) {
+        console.error("Error fetching slots:", error)
+      } finally {
+        setSlotsLoading(false)
+      }
+    }
 
     fetchSlotsAndServices()
   }, [selectedDate, groomer?.uid])
@@ -100,6 +102,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     setSlotsData(null)
     setSelectedSlot(null)
     setSelectedService("")
+    setSelectedStartTime("")
   }
 
   const handleClose = () => {
@@ -120,7 +123,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     return date >= today && isAvailableDay(date)
   }
 
-  const formatTime = (time) => time?.slice(0, 5) // "10:00:00" → "10:00"
+  const formatTime = (time) => time?.slice(0, 5)
 
   // ================= CALENDAR =================
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate()
@@ -183,7 +186,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
             }
           }}
           className={`
-            aspect-square rounded-lg text-xs font-medium transition-all
+            aspect-square rounded-lg text-sm font-medium transition-all
             ${isSelected
               ? "bg-[#52B2AD] text-white shadow-md scale-105"
               : selectable
@@ -206,37 +209,66 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
   const handleBookSession = async (e) => {
     e.preventDefault()
 
-    if (!selectedPet)    { setBookingError("Please select a pet");     return }
-    if (!selectedDate)   { setBookingError("Please select a date");    return }
-    if (!selectedSlot)   { setBookingError("Please select a time slot"); return }
-    if (!selectedService){ setBookingError("Please select a service"); return }
+    if (!selectedPet)       { setBookingError("Please select a pet");        return }
+    if (!selectedDate)      { setBookingError("Please select a date");        return }
+    if (!selectedSlot)      { setBookingError("Please select a time slot");   return }
+    if (!selectedStartTime) { setBookingError("Please select a start time");  return }
+    if (!selectedService)   { setBookingError("Please select a service");     return }
 
     setLoading(true)
     setBookingError("")
 
     try {
       const payload = {
-        petId:      parseInt(selectedPet),
-        groomerId:  groomer.id,
-        date:       selectedDate.toISOString().split("T")[0],
-        slotStart:  selectedSlot.slotStartTime,
-        slotEnd:    selectedSlot.slotEndTime,
-        serviceUid: selectedService,
+        petUid:             selectedPet.uid,
+        serviceProviderUid: groomer.id,
+        // ✅ FIX: local date use karo, toISOString() nahi
+        appointmentDate: [
+          selectedDate.getFullYear(),
+          String(selectedDate.getMonth() + 1).padStart(2, "0"),
+          String(selectedDate.getDate()).padStart(2, "0")
+        ].join("-"),
+        startTime:          selectedStartTime + ":00",
+        serviceUid:         selectedService,
+        notes:              ""
       }
 
-      const response = await useJwt.bookGroomerSession(payload)
-      console.log("Booking response:", response)
-      setBookingSuccess(true)
+      console.log("Booking payload:", payload)
 
-      setTimeout(() => {
-        resetForm()
-        onClose && onClose()
-      }, 1500)
+      const response = await useJwt.BookGroomerAppointment(payload)
+
+      console.log("Booking response:", response)
+
+      // ✅ Stripe checkout URL pe redirect karo
+      if (response.data?.checkoutUrl) {
+        setBookingSuccess(true)
+        setTimeout(() => {
+          window.location.href = response.data.checkoutUrl
+        }, 800)
+      } else {
+        setBookingError("Payment session could not be created. Please try again.")
+      }
+
     } catch (error) {
       console.error("Error booking session:", error)
-      setBookingError(
-        error.response?.data?.message || "Failed to book session. Please try again."
-      )
+
+      if (error.response?.status === 409) {
+        const errData = error.response.data
+        let msg = errData?.error || "This slot is already booked."
+        if (errData?.details?.availableSlots?.length > 0) {
+          const slots = errData.details.availableSlots
+            .map(s => `${s.startTime} – ${s.endTime}`)
+            .join(", ")
+          msg += ` Available slots: ${slots}`
+        }
+        setBookingError(msg)
+      } else {
+        setBookingError(
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to book session. Please try again."
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -248,29 +280,33 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* ✅ max-w-2xl - modal bada kiya */}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-3xl">
+        <div className="px-8 pt-7 pb-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-3xl">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Book a Session</h2>
-            <p className="text-sm text-[#52B2AD] font-medium mt-0.5">with {groomer.name}</p>
+            <h2 className="text-2xl font-bold text-gray-900">Book a Session</h2>
+            <p className="text-base text-[#52B2AD] font-medium mt-0.5">with {groomer.name}</p>
           </div>
-          <button type="button" onClick={handleClose} className="p-2 rounded-full hover:bg-gray-100 transition">
-            <X className="w-5 h-5 text-gray-500" />
+          <button type="button" onClick={handleClose} className="p-2.5 rounded-full hover:bg-gray-100 transition">
+            <X className="w-6 h-6 text-gray-500" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleBookSession} className="px-6 py-5 space-y-5">
+        <form onSubmit={handleBookSession} className="px-8 py-6 space-y-6">
 
           {/* PET SELECT */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Select Pet *</label>
+            <label className="block text-base font-semibold text-gray-800 mb-2">Select Pet *</label>
             <select
-              value={selectedPet}
-              onChange={(e) => setSelectedPet(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+              value={selectedPet?.id || ""}
+              onChange={(e) => {
+                const pet = pets.find(p => p.id === parseInt(e.target.value))
+                setSelectedPet(pet || "")
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
               required
             >
               <option value="">Select a pet</option>
@@ -284,13 +320,13 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
 
           {/* DATE SELECTOR */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Select Date *</label>
+            <label className="block text-base font-semibold text-gray-800 mb-2">Select Date *</label>
 
             {availableDays.length > 0 && (
               <p className="text-xs text-gray-400 mb-2">
                 Available on:{" "}
                 {availableDays.map((d) => (
-                  <span key={d.dayOfWeek} className="inline-block bg-[#52B2AD]/10 text-[#2d7a75] rounded px-1.5 py-0.5 mr-1 font-medium">
+                  <span key={d.dayOfWeek} className="inline-block bg-[#52B2AD]/10 text-[#2d7a75] rounded px-2 py-0.5 mr-1 font-medium">
                     {d.dayName.charAt(0) + d.dayName.slice(1).toLowerCase()}
                   </span>
                 ))}
@@ -301,37 +337,37 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setCalendarOpen(!calendarOpen)}
-                className={`w-full px-3 py-2.5 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
+                className={`w-full px-4 py-3 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
                   selectedDate ? "border-[#52B2AD] bg-[#52B2AD]/5" : "border-gray-200 bg-gray-50 hover:border-gray-300"
                 }`}
               >
-                <span className={selectedDate ? "text-gray-800" : "text-gray-400"}>
+                <span className={selectedDate ? "text-gray-800 font-medium" : "text-gray-400"}>
                   {selectedDate
                     ? selectedDate.toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short", year:"numeric" })
                     : "Choose a date"}
                 </span>
-                <Calendar size={16} className="text-gray-400" />
+                <Calendar size={18} className="text-gray-400" />
               </button>
 
               {calendarOpen && (
-                <div className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <button type="button" onClick={goToPreviousMonth} className="p-1 rounded-lg hover:bg-gray-100 transition">
-                      <ChevronLeft size={16} className="text-gray-600" />
+                <div className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl p-5">
+                  <div className="flex justify-between items-center mb-4">
+                    <button type="button" onClick={goToPreviousMonth} className="p-1.5 rounded-lg hover:bg-gray-100 transition">
+                      <ChevronLeft size={18} className="text-gray-600" />
                     </button>
-                    <div className="font-semibold text-sm text-gray-800">
+                    <div className="font-semibold text-base text-gray-800">
                       {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                     </div>
-                    <button type="button" onClick={goToNextMonth} className="p-1 rounded-lg hover:bg-gray-100 transition">
-                      <ChevronRight size={16} className="text-gray-600" />
+                    <button type="button" onClick={goToNextMonth} className="p-1.5 rounded-lg hover:bg-gray-100 transition">
+                      <ChevronRight size={18} className="text-gray-600" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
-                  <div className="flex items-center gap-3 mt-3 pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-1">
+                  <div className="grid grid-cols-7 gap-1.5">{renderCalendar()}</div>
+                  <div className="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-1.5">
                       <div className="w-3 h-3 rounded bg-[#52B2AD]/20" /><span className="text-xs text-gray-400">Available</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <div className="w-3 h-3 rounded bg-[#52B2AD]" /><span className="text-xs text-gray-400">Selected</span>
                     </div>
                   </div>
@@ -340,12 +376,12 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
             </div>
           </div>
 
-          {/* ============ SLOTS & SERVICES (shown after date selected) ============ */}
+          {/* SLOTS & SERVICES */}
           {selectedDate && (
             <>
               {slotsLoading ? (
-                <div className="flex items-center justify-center py-4 gap-2 text-[#52B2AD] text-sm">
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center py-6 gap-2 text-[#52B2AD] text-sm">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
@@ -354,8 +390,8 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
               ) : slotsData ? (
                 <>
                   {/* Working hours info */}
-                  <div className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2 flex items-center gap-1.5">
-                    <Clock size={12} />
+                  <div className="text-sm text-gray-400 bg-gray-50 rounded-xl px-4 py-3 flex items-center gap-2">
+                    <Clock size={14} />
                     Working hours: <span className="font-semibold text-gray-600">
                       {formatTime(slotsData.workingHours?.startTime)} – {formatTime(slotsData.workingHours?.endTime)}
                     </span>
@@ -363,11 +399,11 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
 
                   {/* TIME SLOT SELECTION */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                      <Clock size={14} className="inline mr-1" />
+                    <label className="block text-base font-semibold text-gray-800 mb-3">
+                      <Clock size={15} className="inline mr-1" />
                       Select Time Slot *
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                       {slotsData.availableSlots?.map((slot, idx) => {
                         const isActive = selectedSlot?.slotStartTime === slot.slotStartTime
                         return (
@@ -376,16 +412,17 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                             key={idx}
                             onClick={() => {
                               setSelectedSlot(slot)
-                              setSelectedService("") // reset service on slot change
+                              setSelectedService("")
+                              setSelectedStartTime("")
                             }}
-                            className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-left ${
+                            className={`px-3 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left ${
                               isActive
                                 ? "border-[#52B2AD] bg-[#52B2AD] text-white shadow-md"
                                 : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#52B2AD]/50 hover:bg-[#52B2AD]/5"
                             }`}
                           >
                             <div className="font-semibold">{formatTime(slot.slotStartTime)} – {formatTime(slot.slotEndTime)}</div>
-                            <div className={`text-xs mt-0.5 ${isActive ? "text-white/80" : "text-gray-400"}`}>
+                            <div className={`text-xs mt-1 ${isActive ? "text-white/80" : "text-gray-400"}`}>
                               {slot.availableDurationMinutes} min available
                             </div>
                           </button>
@@ -394,14 +431,35 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                     </div>
                   </div>
 
-                  {/* SERVICE SELECTION — shown only after slot picked */}
+                  {/* START TIME INPUT */}
                   {selectedSlot && (
                     <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2">
-                        <Scissors size={14} className="inline mr-1" />
+                      <label className="block text-base font-semibold text-gray-800 mb-2">
+                        <Clock size={15} className="inline mr-1" />
+                        Select Start Time *
+                      </label>
+                      <input
+                        type="time"
+                        value={selectedStartTime}
+                        min={selectedSlot.slotStartTime?.slice(0, 5)}
+                        max={selectedSlot.slotEndTime?.slice(0, 5)}
+                        onChange={(e) => setSelectedStartTime(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-gray-50"
+                      />
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Choose between {formatTime(selectedSlot.slotStartTime)} – {formatTime(selectedSlot.slotEndTime)}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* SERVICE SELECTION */}
+                  {selectedSlot && (
+                    <div>
+                      <label className="block text-base font-semibold text-gray-800 mb-3">
+                        <Scissors size={15} className="inline mr-1" />
                         Select Service *
                       </label>
-                      <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-3">
                         {selectedSlot.compatibleServices?.map((svc) => {
                           const isActive = selectedService === svc.uid
                           return (
@@ -409,13 +467,13 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                               type="button"
                               key={svc.uid}
                               onClick={() => setSelectedService(svc.uid)}
-                              className={`w-full px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                              className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
                                 isActive
                                   ? "border-[#52B2AD] bg-[#52B2AD]/10 shadow-sm"
                                   : "border-gray-200 bg-gray-50 hover:border-[#52B2AD]/40 hover:bg-[#52B2AD]/5"
                               }`}
                             >
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between mb-1">
                                 <span className={`text-sm font-semibold ${isActive ? "text-[#2d7a75]" : "text-gray-800"}`}>
                                   {svc.serviceName}
                                 </span>
@@ -423,11 +481,11 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                                   ${svc.price.toFixed(2)}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 mt-0.5">
+                              <div className="flex items-center gap-1">
                                 <Clock size={11} className="text-gray-400" />
-                                <span className="text-xs text-gray-400">{svc.durationMinutes} minutes</span>
+                                <span className="text-xs text-gray-400">{svc.durationMinutes} min</span>
                                 {svc.description && (
-                                  <span className="text-xs text-gray-400 ml-2">• {svc.description}</span>
+                                  <span className="text-xs text-gray-400 ml-1">• {svc.description}</span>
                                 )}
                               </div>
                             </button>
@@ -438,19 +496,27 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                   )}
                 </>
               ) : (
-                <div className="text-sm text-red-500 bg-red-50 p-3 rounded-xl">
+                <div className="text-sm text-red-500 bg-red-50 p-4 rounded-xl">
                   Could not load slots for this date. Please try another date.
                 </div>
               )}
             </>
           )}
 
+          {/* ERROR */}
           {bookingError && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{bookingError}</div>
+            <div className="text-sm text-red-600 bg-red-50 p-4 rounded-xl">{bookingError}</div>
           )}
 
+          {/* SUCCESS */}
           {bookingSuccess && (
-            <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl">Session booked successfully! 🎉</div>
+            <div className="text-sm text-green-600 bg-green-50 p-4 rounded-xl flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Redirecting to payment…
+            </div>
           )}
 
           {/* ACTION BUTTONS */}
@@ -458,32 +524,32 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition text-sm font-medium text-gray-700"
+              className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition text-sm font-medium text-gray-700"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              disabled={loading || !selectedPet || !selectedDate || !selectedSlot || !selectedService}
-              className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                loading || !selectedPet || !selectedDate || !selectedSlot || !selectedService
+              disabled={loading || bookingSuccess || !selectedPet || !selectedDate || !selectedSlot || !selectedStartTime || !selectedService}
+              className={`px-8 py-3 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
+                loading || bookingSuccess || !selectedPet || !selectedDate || !selectedSlot || !selectedStartTime || !selectedService
                   ? "opacity-60 cursor-not-allowed bg-gray-400"
                   : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
               }`}
             >
-              {loading ? (
+              {loading || bookingSuccess ? (
                 <>
                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
-                  Booking…
+                  {bookingSuccess ? "Redirecting…" : "Processing…"}
                 </>
               ) : (
                 <>
                   <Plus size={16} />
-                  Book Session
+                  Book & Pay
                 </>
               )}
             </button>

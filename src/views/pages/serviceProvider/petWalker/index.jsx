@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Search, X, MapPin, Star, Award, Clock, Heart, MessageCircle, Phone, Footprints } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Search, X, MapPin, Star, Award, Clock, Heart, MessageCircle, Phone, Footprints, CalendarDays } from "lucide-react";
 import KycWarning from "./../KycWarning"
 import MainPage from "./../DefaultPage"
 import useJwt from "./../../../../enpoints/jwt/useJwt"
@@ -94,27 +95,20 @@ function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
+          {/* <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
             <Award className="w-4 h-4 text-[#52B2AD]" />
             <div>
               <p className="text-xs text-gray-500">Per Walk</p>
               <p className="text-sm font-bold text-gray-900">{walker.price}</p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="mb-4">
-          <p className="text-xs text-gray-500 mb-2">Services:</p>
-          <div className="flex flex-wrap gap-1">
-            {walker.services && walker.services.map((service, idx) => (
-              <span
-                key={idx}
-                className="px-2 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-xs rounded-lg font-medium"
-              >
-                {service}
-              </span>
-            ))}
-          </div>
+          <p className="text-xs text-gray-500 mb-2">Consultation Fees:</p>
+          <span className="px-3 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-sm rounded-lg font-semibold">
+            ₹{walker.consultationFees}
+          </span>
         </div>
 
         <div className="flex gap-2">
@@ -144,11 +138,12 @@ function Index({ location }) {
   const [favorites, setFavorites] = useState([]);
   const [walkers, setWalkers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedWalker, setSelectedWalker] = useState(null); // ✅ Controls modal open/close
+  const [selectedWalker, setSelectedWalker] = useState(null);
 
   // Geolocation States
   const [coords, setCoords] = useState({ lat: null, lng: null });
 
+  const navigate = useNavigate();
   const kycUrl = '/walkerTo-client-Kyc';
 
   const clearSearch = () => setSearchQuery("");
@@ -211,7 +206,8 @@ function Index({ location }) {
             price: "₹200-500",
             available: true,
             badge: item.yearsExperience > 5 ? "Expert" : "New",
-            services: ["Dog Walking", "Pet Sitting"]
+            services: ["Dog Walking", "Pet Sitting"],
+            consultationFees: item.consultationFees ?? "N/A",
           }));
 
           setWalkers(mappedWalkers);
@@ -245,7 +241,18 @@ function Index({ location }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
 
-        <div className="mb-10 text-center">
+        {/* Header */}
+        <div className="relative mb-10 text-center">
+
+          {/* My Appointments Button - Top Right */}
+          <button
+            onClick={() => navigate('/walker-appointments')}
+            className="absolute top-0 right-0 flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#52B2AD] text-[#52B2AD] rounded-2xl font-semibold hover:bg-[#52B2AD] hover:text-white transition-all duration-200 shadow-md"
+          >
+            <CalendarDays className="w-5 h-5" />
+            My Appointments
+          </button>
+
           <div className="inline-flex items-center justify-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-[#52B2AD] to-[#459d99] rounded-2xl shadow-lg">
               <Footprints className="w-10 h-10 text-white" />
@@ -329,14 +336,14 @@ function Index({ location }) {
                 walker={walker}
                 onFavorite={toggleFavorite}
                 isFavorite={favorites.includes(walker.id)}
-                onBookWalk={setSelectedWalker} // ✅ Sets selected walker → opens modal
+                onBookWalk={setSelectedWalker}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* ✅ BookWalkModal — opens when selectedWalker is set */}
+      {/* BookWalkModal — opens when selectedWalker is set */}
       {selectedWalker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -364,7 +371,7 @@ function Index({ location }) {
               </button>
             </div>
 
-            {/* Modal Body — BookWalkModal form */}
+            {/* Modal Body */}
             <div className="px-6 py-5">
               <BookWalkModal
                 walker={selectedWalker}

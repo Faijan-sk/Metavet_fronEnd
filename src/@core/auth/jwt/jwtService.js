@@ -5,7 +5,7 @@
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
   axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  // axios.defaults.baseURL = 'http://192.168.1.15:8080/'
+  // axios.defaults.baseURL = 'http://192.168.1.10:8080/'
 
   export default class JwtService {
     //service file
@@ -516,6 +516,27 @@ bookBehaviouristAppointment(payload){
 
 getBehavioBookedAppoin(){
   return axios.get(this.jwtConfig.getBehaviBookedAppointment)
+}
+
+BookWalkerAppointment(payload){
+  return axios.post(this.jwtConfig.bookWalkerAppointment,payload)
+}
+
+getWalkerBookedAppointment(){
+  return axios.get(this.jwtConfig.getWalkerBookedAppointment)
+}
+
+getGroomerBookedAppointment(){
+  return axios.get(this.jwtConfig.getGroomerBookedAppointment)
+}
+
+BookGroomerAppointment(payload) {
+  return axios.post(this.jwtConfig.bookGroomerAppointment, payload)
+}
+
+
+getGroomerBookedAppointmentForClient(){
+  return axios.get(this.jwtConfig.getGroomerBookedAppointmnetforClient)
 }
 
 }

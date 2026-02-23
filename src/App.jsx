@@ -24,6 +24,8 @@ import GroomerDashboard from "./../src/views/pages/petServicesAppointment/groome
 import WalkerDashboard from "./../src/views/pages/petServicesAppointment/walker/index"
 import BehaviouristDashboard from "./../src/views/pages/petServicesAppointment/behaviourist/index";
 import BehavioAppointment from "./../src/views/pages/serviceProvider/petBehaviourist/AppointmentListing"
+import WalkerBookedAppointment  from "./../src/views/pages/serviceProvider/petWalker/AppointmentList"
+import GroomerBookedAppointment from "./../src/views/pages/serviceProvider/petGroomer/AppointmentListing"
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -235,7 +237,8 @@ const App = () => {
 <Route path="/pet-behaviorist" element={<BehaviouristDashboard />} />
 
 <Route path="/behaviourist-appointments" element={<BehavioAppointment />} />
-
+<Route path="/walker-appointments" element={<WalkerBookedAppointment />} />
+<Route path="/groomer-appointments" element={<GroomerBookedAppointment />} />
               </Route>
             </Routes>
           </Suspense>

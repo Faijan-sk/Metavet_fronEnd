@@ -27,7 +27,7 @@ const HeroSection = () => {
                 Metavet is dedicated to taking the worry out of waiting by
                 bringing veterinary care into the comfort of your own home
               </p>
-              <Link to={"/appointment"}>
+              {/* <Link to={"/appointment"}>
                 <button
                   title=""
                   className="inline-flex items-center px-6 py-4 mt-8 font-semibold text-white transition-all duration-200 bg-primary rounded-full lg:mt-16"
@@ -49,7 +49,7 @@ const HeroSection = () => {
                     />
                   </svg>
                 </button>
-              </Link>
+              </Link> */}
 
               <p className="mt-5 text-gray-600">
                 {/* Already joined us?{" "} */}

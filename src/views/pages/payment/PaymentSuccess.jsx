@@ -13,7 +13,7 @@ export const PaymentSuccessV2 = () => {
 
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
-    const type = searchParams.get('type'); // 'doctor' or 'behaviourist'
+    const type = searchParams.get('type');
     setAppointmentType(type);
 
     if (sessionId && type) {
@@ -27,6 +27,10 @@ export const PaymentSuccessV2 = () => {
     try {
       const userTypeEndpoint = type === 'behaviourist'
         ? '/api/behaviourist-appointments'
+        : type === 'walker'
+        ? '/api/walker-appointments'
+        : type === 'groomer'
+        ? '/groomer/appointment'
         : '/api/appointments';
 
       const response = await useJwt.veriFyAppointmentPayment(sessionId, userTypeEndpoint);
@@ -42,6 +46,10 @@ export const PaymentSuccessV2 = () => {
   const handleDashboardRedirect = () => {
     if (appointmentType === 'behaviourist') {
       navigate('/service-provider/petBehaviourist');
+    } else if (appointmentType === 'walker') {
+      navigate('/service-provider/petWalker');
+    } else if (appointmentType === 'groomer') {
+      navigate('/service-provider/petGroomer');
     } else {
       navigate('/appointments');
     }

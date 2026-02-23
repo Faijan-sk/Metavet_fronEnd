@@ -32,19 +32,10 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return
 
-     console.log('MOMOMOMOMOMOOM ---> ', )
-
     const fetchPets = async () => {
       try {
         const response = await useJwt.getAllPetsByOwner()
-        setPets(response.data.data) // store full objects directly
-        // const petsList = response.data.data.map((pet) => ({
-        //   id: pet.id,
-        //   petName: pet.petName,
-        //   petSpecies: pet.petSpecies,
-        //   petBreed: pet.petBreed,
-        // }))
-        // setPets(petsList)
+        setPets(response.data.data)
       } catch (error) {
         console.error("Error fetching pets:", error)
       }
@@ -137,19 +128,10 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       return
     }
 
-  //   payload : {
-  //     "petUid" = selectedPet.uid,
-  // "serviceProviderUid",
-  // "behaviouristDayUid",
-  // "slotUid"= selectedSlot.uid,
-  // "appointmentDate" = selectedDate
-  //   }
-
     setLoading(true)
     setBookingError("")
 
     try {
-
       const payload = {
         petUid: selectedPet?.uid,
         serviceProviderUid: selectedSlot?.serviceProviderDay?.serviceProviderUid,
@@ -159,14 +141,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         notes: notes || undefined,
       }
 
-      
       const response = await useJwt.bookBehaviouristAppointment(payload)
-     
-    const { checkoutUrl } = response.data
+      const { checkoutUrl } = response.data
 
-  if (checkoutUrl) {
-    window.location.href = checkoutUrl  // ✅ Stripe pe redirect
-  }
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl
+      }
 
       setBookingSuccess(true)
 
@@ -184,8 +164,8 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     }
   }
 
-  // ================= CALENDAR =================
-  const renderCalendar = () => {
+  // ================= CALENDAR (inline, not absolute) =================
+  const renderCalendarCells = () => {
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
     const firstDayOfMonth = new Date(year, month, 1).getDay()
@@ -194,7 +174,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
 
     weekDays.forEach((day) => {
       cells.push(
-        <div key={day} className="text-xs text-center text-gray-500">{day}</div>
+        <div key={day} className="text-xs text-center text-gray-500 font-medium py-1">{day}</div>
       )
     })
 
@@ -221,12 +201,11 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
           onClick={() => {
             if (!isDisabled) {
               setSelectedDate(dateObj)
-              setCalendarOpen(false)
-              setBehaviouristDayId(matchedDay.uid) // ✅ FIX: UUID use karo, integer id nahi
+              setBehaviouristDayId(matchedDay.uid)
               setSelectedSlot(null)
             }
           }}
-          className={`text-sm h-9 rounded-md transition font-medium
+          className={`text-sm h-10 rounded-md transition font-medium
             ${isSelected
               ? "bg-[#52B2AD] text-white"
               : isAvailable
@@ -250,7 +229,8 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* Modal — wider & taller to fit calendar inline */}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-3xl px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between z-10">
@@ -270,59 +250,75 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1">Select Pet *</label>
             <select
-  value={selectedPet?.uid || ""}
-  onChange={(e) => {
-    const pet = pets.find((p) => p.uid === e.target.value)
-    setSelectedPet(pet || null)
-  }}
-  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-  required
->
-  <option value="">Select a pet</option>
-  {pets.map((p) => (
-    <option key={p.uid} value={p.uid}>
-      {p.petName} • {p.petSpecies} ({p.petBreed})
-    </option>
-  ))}
-</select>
+              value={selectedPet?.uid || ""}
+              onChange={(e) => {
+                const pet = pets.find((p) => p.uid === e.target.value)
+                setSelectedPet(pet || null)
+              }}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+              required
+            >
+              <option value="">Select a pet</option>
+              {pets.map((p) => (
+                <option key={p.uid} value={p.uid}>
+                  {p.petName} • {p.petSpecies} ({p.petBreed})
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* DATE SELECTOR */}
+          {/* DATE SELECTOR — two-column layout: toggle button + inline calendar */}
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-1">Select Date *</label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setCalendarOpen(!calendarOpen)}
-                className={`w-full px-3 py-2.5 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
-                  selectedDate ? "border-[#52B2AD] bg-[#52B2AD]/5" : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                }`}
-              >
-                <span className={selectedDate ? "text-gray-900" : "text-gray-400"}>
-                  {selectedDate
-                    ? selectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
-                    : "Choose a date"}
-                </span>
-                <Calendar size={16} className="text-[#52B2AD]" />
-              </button>
 
-              {calendarOpen && (
-                <div className="absolute z-20 mt-1 w-full bg-white border-2 border-gray-200 rounded-xl shadow-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <button type="button" onClick={goToPreviousMonth} className="p-1 hover:bg-gray-100 rounded-lg">
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="font-semibold text-sm">
-                      {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                    </div>
-                    <button type="button" onClick={goToNextMonth} className="p-1 hover:bg-gray-100 rounded-lg">
-                      <ChevronRight size={18} />
-                    </button>
+            {/* Toggle button */}
+            <button
+              type="button"
+              onClick={() => setCalendarOpen(!calendarOpen)}
+              className={`w-full px-3 py-2.5 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
+                selectedDate ? "border-[#52B2AD] bg-[#52B2AD]/5" : "border-gray-200 bg-gray-50 hover:border-gray-300"
+              }`}
+            >
+              <span className={selectedDate ? "text-gray-900" : "text-gray-400"}>
+                {selectedDate
+                  ? selectedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+                  : "Choose a date"}
+              </span>
+              <Calendar size={16} className="text-[#52B2AD]" />
+            </button>
+
+            {/* Inline calendar — renders in document flow, no absolute positioning */}
+            {calendarOpen && (
+              <div className="mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-inner p-4">
+                {/* Month navigation */}
+                <div className="flex justify-between items-center mb-3">
+                  <button type="button" onClick={goToPreviousMonth} className="p-1 hover:bg-gray-100 rounded-lg">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <div className="font-semibold text-sm">
+                    {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                   </div>
-                  <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
+                  <button type="button" onClick={goToNextMonth} className="p-1 hover:bg-gray-100 rounded-lg">
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {/* Legend */}
+                <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-[#52B2AD]/20 inline-block" /> Available
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-[#52B2AD] inline-block" /> Selected
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-gray-100 inline-block" /> Unavailable
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1">{renderCalendarCells()}</div>
+              </div>
+            )}
           </div>
 
           {/* TIME SLOTS */}
@@ -336,7 +332,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                 <div className="text-sm text-gray-500">No slots available for this date.</div>
               )}
               {!slotsLoading && !slotsError && availableSlots.length > 0 && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {availableSlots.map((slot) => (
                     <button
                       type="button"
@@ -370,12 +366,9 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
             />
           </div>
 
-
           {bookingError && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{bookingError}</div>
           )}
-
-         
 
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -407,7 +400,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
               ) : (
                 <>
                   <Plus size={16} />
-                  Book Session
+                  Pay Now and Book
                 </>
               )}
             </button>
