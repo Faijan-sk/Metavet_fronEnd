@@ -79,7 +79,7 @@ const Appointment = () => {
     async function fetchAppointments() {
       try {
         setLoading(true);
-        console.log('Fetching user appointments...');
+        // console.log('Fetching user appointments...');
 
         if (!userInfo) {
           console.warn("No userInfo found in localStorage. Redirecting to Signin.");
@@ -104,7 +104,7 @@ const Appointment = () => {
           }
         }
 
-        console.log('Appointments response:', response?.data ?? response);
+        // console.log('Appointments response:', response?.data ?? response);
         if (cancelled) return;
 
         const data = response?.data ?? response;
@@ -186,11 +186,11 @@ const Appointment = () => {
     if (!deleteConfirmModal) return;
     setIsDeleting(true);
     try {
-      console.log('Cancelling appointment:', deleteConfirmModal.id);
+      // console.log('Cancelling appointment:', deleteConfirmModal.id);
       await useJwt.cancelAppointment(deleteConfirmModal.id);
       setAppointments((prev) => prev.filter((a) => a.id !== deleteConfirmModal.id));
       setDeleteConfirmModal(null);
-      console.log('Appointment cancelled successfully');
+      // console.log('Appointment cancelled successfully');
     } catch (error) {
       console.error("Error cancelling appointment:", error);
     } finally {

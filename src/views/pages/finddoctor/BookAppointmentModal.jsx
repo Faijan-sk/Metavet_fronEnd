@@ -161,11 +161,12 @@ function BookAppointmentModal({ doctor, onClose, initialValues }) {
         reason: reason || undefined
       }
 
+      debugger
       console.log('Booking appointment with payload:', payload)
 
       const response = await useJwt.bookAppointment(payload)
 
-      console.log('Booking response:', response)
+      // console.log('Booking response:', response)
 
       setBookingSuccess(true)
       

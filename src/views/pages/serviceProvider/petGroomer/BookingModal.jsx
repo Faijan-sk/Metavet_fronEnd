@@ -229,8 +229,10 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
         ].join("-"),
         startTime:          selectedStartTime + ":00",
         serviceUid:         selectedService,
-        notes:              ""
+        notes:              "",
+        platForm : "IOS"
       }
+      debugger
 
       console.log("Booking payload:", payload)
 

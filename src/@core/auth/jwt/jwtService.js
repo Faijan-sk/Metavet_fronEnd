@@ -18,14 +18,14 @@
 
     // ** For Refreshing Token
     subscribers = []
-
+    
     constructor(jwtOverrideConfig) {
       this.jwtConfig = { ...this.jwtConfig, ...jwtOverrideConfig }
 
       // ** Request Interceptor
       axios.interceptors.request.use(
         (config) => {
-          console.log('Making request to:', config.url);
+          // console.log('Making request to:', config.url);
 
           // ** Get token from localStorage
           const accessToken = this.getToken()
@@ -35,9 +35,9 @@
             // ** eslint-disable-next-line no-param-reassign
             config.headers = config.headers || {}
             config.headers.Authorization = `${this.jwtConfig.tokenType} ${accessToken}`
-            console.log('Added Authorization header');
+            // console.log('Added Authorization header');
           } else {
-            console.log('No access token found');
+            // console.log('No access token found');
           }
 
           // IMPORTANT:
@@ -69,7 +69,7 @@
       // ** Response Interceptor
       axios.interceptors.response.use(
         (response) => {
-          console.log('Response received:', response.status);
+          // console.log('Response received:', response.status);
           return response;
         },
         (error) => {
@@ -80,7 +80,7 @@
 
           // Handle 401 Unauthorized responses (example)
          if (response && response.status === 401) {
-  console.log('Unauthorized access - redirecting to login');
+  // console.log('Unauthorized access - redirecting to login');
 
   // clear auth data
   localStorage.removeItem(this.jwtConfig.storageTokenKeyName);
@@ -139,19 +139,19 @@
     *     User Services
     */
     register(...args) {
-      console.log('Calling register API');
+      // console.log('Calling register API');
       return axios.post(this.jwtConfig.registerEndpoint, ...args)
     }
 
 
 
     verifyOtp(otpData, token) {
-      console.log('Calling verify OTP API');
+      // console.log('Calling verify OTP API');
       return axios.post(`${this.jwtConfig.otpVerifyEndPoint}/${token}`, otpData);
     }
 
     login(...args) {
-      console.log('Calling login API');
+      // console.log('Calling login API');
       return axios.post(this.jwtConfig.loginEndpoint, ...args)
     }
 
@@ -159,7 +159,7 @@
     *   Doctor Services
     */
     createDoctor(payload) {
-      console.log('Calling create doctor API');
+      // console.log('Calling create doctor API');
       return axios.post(this.jwtConfig.updateDpctorEndPoint, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
@@ -177,22 +177,22 @@
     }
 
     getDoctorById(doctorId) {
-      console.log('Calling get doctor by ID API');
+      // console.log('Calling get doctor by ID API');
       return axios.get(`${this.jwtConfig.getDoctorByIdEndPoint}/${doctorId}`)
     }
 
     createPets(...args) {
-      console.log('Calling create pets API');
+      // console.log('Calling create pets API');
       return axios.post(this.jwtConfig.createPets, ...args)
     }
     
     getAllPets(userId) {
-      console.log('Calling get all pets API');
+      // console.log('Calling get all pets API');
       return axios.get(`${this.jwtConfig.getAllPets}${userId}`)
     }
 
     getUserByMobile(mobileNumber) {
-      console.log('Calling get user by mobile API');
+      // console.log('Calling get user by mobile API');
       return axios.get(`${this.jwtConfig.getUserByMobileEndPoint}`, {
         params: { phoneNumber: mobileNumber },
       });
@@ -218,7 +218,7 @@
     }
 
     updatePet(petId, ...payload) {
-      console.log('Calling update pet API');
+      // console.log('Calling update pet API');
       return axios.put(`${this.jwtConfig.updatePetEndPoint}${petId}`, ...payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
@@ -228,7 +228,7 @@
     }
 
     deletePet(petId) {
-      console.log('Calling delete pet API');
+      // console.log('Calling delete pet API');
       return axios.delete(`${this.jwtConfig.deletePetEndPoint}${petId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
@@ -244,7 +244,7 @@
     }
 
     getAvailableSlots(doctorId, doctorDayId, date) {
-      console.log('Calling get available slots API');
+      // console.log('Calling get available slots API');
       return axios.get(this.jwtConfig.fetchAvailableSlotByDoctorEndpoint, {
         params: {
           doctorId: doctorId,
@@ -255,22 +255,21 @@
     }
 
     getDoctorDayId(doctorId, day) {
-      console.log('Calling get doctor day ID API');
+      // console.log('Calling get doctor day ID API');
       return axios.get(`${this.jwtConfig.fetDoctorDayIdByDoctorAndDay}/${doctorId}/day/${day}/id`);
     }
 
-    bookAppointment(...payload) {
-      console.log('Calling book appointment API with payload:', payload);
-      return axios.post(this.jwtConfig.bookAppointmentEndPoint, ...payload);
+    bookAppointment(payload) {
+      return axios.post(this.jwtConfig.bookAppointmentEndPoint, payload);
     }
 
     getMyAppointments() {
-      console.log('Calling get my appointments API');
+      // console.log('Calling get my appointments API');
       return axios.get(this.jwtConfig.getAppointmentEndpoint);
     }
 
     cancelAppointment(id) {
-      console.log('Calling cancel appointment API');
+      // console.log('Calling cancel appointment API');
       return axios.delete(`${this.jwtConfig.cancelAppointmentEndpoint}/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem(this.jwtConfig.storageTokenKeyName)}`,
@@ -285,7 +284,7 @@ createAppintment(payload){
 
 
     getBookedAppointment(){
-      console.log('Calling get my appointments API');
+      // console.log('Calling get my appointments API');
       return axios.get(this.jwtConfig.getBookedAppoinmentEndpoint);
     }
 
@@ -537,6 +536,11 @@ BookGroomerAppointment(payload) {
 
 getGroomerBookedAppointmentForClient(){
   return axios.get(this.jwtConfig.getGroomerBookedAppointmnetforClient)
+}
+
+
+getMetavetCharges(userType){
+  return axios.get(this.jwtConfig.getMetavetChargesEndpoint.replace('{userType}', userType) )
 }
 
 }

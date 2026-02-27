@@ -70,12 +70,12 @@ export default function BookAppointmentForm({
           (item) => item.dayOfWeek
         );
 
-        console.log("ONLY DAYS", daysOnly);
+        // console.log("ONLY DAYS", daysOnly);
         setAvailableDays(daysOnly);
 
         if (response.data.doctorId) {
           setDoctorId(response.data.doctorId);
-          console.log("Doctor ID:", response.data.doctorId);
+          // console.log("Doctor ID:", response.data.doctorId);
         }
       } catch (err) {
         console.error("Error fetching days:", err);
@@ -100,14 +100,14 @@ export default function BookAppointmentForm({
         setSelectedSlot(null);
 
         const formattedDate = formatDateToYYYYMMDD(selectedDate);
-        console.log("Fetching slots for date:", formattedDate);
+        // console.log("Fetching slots for date:", formattedDate);
 
         const response =
           await useJwt.getAvailableSlotByDoctortoDate(formattedDate);
 
         if (response?.data?.slots) {
           setAvailableSlots(response.data.slots);
-          console.log("Slots fetched:", response.data.slots);
+          // console.log("Slots fetched:", response.data.slots);
         } else {
           setAvailableSlots([]);
           setSlotsError("No slots available for this date");
@@ -173,13 +173,13 @@ export default function BookAppointmentForm({
       appointmentDate: formatDateToYYYYMMDD(selectedDate),
     };
 
-    console.log("FINAL PAYLOAD (OBJECT):", payload);
-    console.log("Selected Date:", selectedDate);
-    console.log("Formatted Date:", formatDateToYYYYMMDD(selectedDate));
+    // console.log("FINAL PAYLOAD (OBJECT):", payload);
+    // console.log("Selected Date:", selectedDate);
+    // console.log("Formatted Date:", formatDateToYYYYMMDD(selectedDate));
 
     try {
       const response = await useJwt.bookOfflineAppointment(payload);
-      console.log("Appointment created successfully:", response.data);
+      // console.log("Appointment created successfully:", response.data);
 
       onCreated && onCreated(response.data);
       onClose && onClose();

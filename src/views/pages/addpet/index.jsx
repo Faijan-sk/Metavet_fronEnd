@@ -36,7 +36,7 @@ const AddPet = () => {
       return;
     }
 
-    console.log("Uploading file:", file);
+    // console.log("Uploading file:", file);
     setUploadMessage(`Uploaded: ${file.name}`);
 
     setFile(null);

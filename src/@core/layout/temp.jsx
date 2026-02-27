@@ -8,7 +8,7 @@ import Logo from "./../../assets/MetavetImages/logo/navLogo.png"
 const getUserInfo = () => {
   try {
     const userInfo = localStorage.getItem("userInfo");
-    console.log(userInfo)
+    // console.log(userInfo)
     return userInfo ? JSON.parse(userInfo) : null;
 
   } catch (error) {
@@ -40,7 +40,7 @@ const Header = () => {
 
   const userInfo = getUserInfo();
   const serviceType = userInfo?.ServiceType;
-  console.log("USER SERVICE TYPE FROM NAVABR " ,  serviceType)
+  // console.log("USER SERVICE TYPE FROM NAVABR " ,  serviceType)
 
 
   // Memoized navigation items

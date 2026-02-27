@@ -45,7 +45,6 @@ const LoginForm = ({ onSubmit }) => {
 
       reset()
 
-        console.log('TTTTTTTTTTTTTTTTTTTTt' , token)
       // Navigate to OTP Verification with dynamic OTP and phone
       navigate(`/otp-verification/${token}`, {
         state: {

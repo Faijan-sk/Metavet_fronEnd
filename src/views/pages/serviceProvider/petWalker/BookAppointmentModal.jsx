@@ -151,7 +151,10 @@ function BookWalkModal({ walker, onClose }) {
         slotUid: selectedSlot.slotUid,
         appointmentDate: selectedDate.toISOString().split("T")[0],
         petUid: selectedPet.uid,
+        // platForm : 'IOS'
       }
+      debugger
+      console.log('PPPPPPPPPPPAyload to walekr' ,payload);
 
       const response = await useJwt.BookWalkerAppointment(payload)
 

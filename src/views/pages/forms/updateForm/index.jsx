@@ -16,8 +16,8 @@ const DoctorProfileForm = () => {
   const { state } = useLocation();
   const [token, setToken] = useState();
   const [metavetFess , setMetavetFees] = useState(false)
-  
-  console.log('the state in the update doctor: ', state?.phone);
+  const [metavetChargesDetail, setMetavetChargesDetail] = useState({})
+
   
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const locationRef = useRef(null);
@@ -131,7 +131,7 @@ const DoctorProfileForm = () => {
 
   // ✅ Form Submit Handler
   const handleFormSubmit = async (data) => {
-    console.log("Form data:", data);
+    // console.log("Form data:", data);
     
    
     setIsSubmitting(true);
@@ -167,12 +167,12 @@ const DoctorProfileForm = () => {
         longitude: data.longitude || "",
       };
 
-      console.log("Payload being sent:", payload);
+      // console.log("Payload being sent:", payload);
 
       // Call create doctor API
       const res = await useJwt.createDoctor(payload);
       
-      console.log("✅ Doctor created successfully:", res.data);
+      // console.log("✅ Doctor created successfully:", res.data);
 
 // ✅ strict success check
     if (res?.data) {
@@ -243,14 +243,25 @@ const DoctorProfileForm = () => {
       </p>
     ) : null;
 
+  useEffect(()=>{
   
+  const fetchCharges = async ()=>{
+    
+    const response =await useJwt.getMetavetCharges("Doctor");
+    
+    // console.log('mmmmmmmmmmmmmmmmmmmmm',response.data);
+setMetavetChargesDetail(response.data.data);
+  }
+
+  fetchCharges()
+},[metavetFess])
 
   return (
     <div className="my-20 bg-white shadow-lg border border-gray-100 px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:px-12 xl:px-16 2xl:px-40 max-w-full mx-auto">
       {/* Header */}
       <div className="text-center mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-          Doctor Profile Registration
+          Doctor Profile 
         </h2>
         <p className="text-gray-600 text-sm">
           Complete your professional details to create your profile
@@ -677,7 +688,7 @@ const DoctorProfileForm = () => {
   </p>
 ) : (
   <p className="text-sm">
-    Please note: Metavet will charge the client an additional 20% on the fee you
+    Please note: Metavet will charge the client an additional <span className="text-primary font-bold">{metavetChargesDetail.feesValue} {metavetChargesDetail.feesType}</span> on the fee you
     enter.
     <span
       className="text-yellow-600 font-medium cursor-pointer ml-1"

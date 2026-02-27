@@ -317,7 +317,7 @@ const PetBehaviorForm = () => {
         consentAccuracy: formData.consentAccuracy
       }
 
-      console.log('Submitting behavior form payload (JSON):', payload)
+      // console.log('Submitting behavior form payload (JSON):', payload)
 
       // 🔥 yahi line se API hit hogi:
       const apiResponse = await useJwt.behaviouristToClientKyc(payload)

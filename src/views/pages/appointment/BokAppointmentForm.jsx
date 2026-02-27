@@ -257,11 +257,11 @@ const [bookingResponse, setBookingResponse] = useState(null);
       doctorDayId: doctorDayId 
     });
 
-    console.log("Selected Doctor:", {
-      doctorId: selectedDoctorId,
-      doctorDayId: doctorDayId,
-      appointmentDate: form.appointmentDate
-    });
+    // console.log("Selected Doctor:", {
+    //   doctorId: selectedDoctorId,
+    //   doctorDayId: doctorDayId,
+    //   appointmentDate: form.appointmentDate
+    // });
 
     // Fetch available slots if we have all required data
     if (selectedDoctorId && doctorDayId && form.appointmentDate) {
@@ -274,7 +274,7 @@ const [bookingResponse, setBookingResponse] = useState(null);
           form.appointmentDate
         );
         
-        console.log("Available Slots Response:", response.data);
+        // console.log("Available Slots Response:", response.data);
         
         // Handle different response structures
         const slots = Array.isArray(response?.data) 
@@ -303,7 +303,7 @@ const [bookingResponse, setBookingResponse] = useState(null);
   const handleSlotSelect = (slot) => {
     const slotId = slot.slotId || slot.id;
     upd({ slotId: slotId });
-    console.log("Selected Slot ID:", slotId);
+    // console.log("Selected Slot ID:", slotId);
   };
 
   const resetForm = () => {
@@ -338,19 +338,20 @@ const [bookingResponse, setBookingResponse] = useState(null);
   try {
     // Prepare payload for backend
     const payload = {
-      petId: Number(form.petId),
-      doctorId: Number(form.doctorId),
-      doctorDayId: Number(form.doctorDayId),
-      slotId: Number(form.slotId),
-      appointmentDate: form.appointmentDate,
-    };
+  petId: Number(form.petId),
+  doctorId: Number(form.doctorId),
+  doctorDayId: Number(form.doctorDayId),
+  slotId: Number(form.slotId),
+  appointmentDate: form.appointmentDate,
+  platForm: 'IOS'   // ✅ Change to 'WEB' for browser, or pass dynamically
+};
+    // console.log("Booking Appointment with payload:", payload);
 
-    console.log("Booking Appointment with payload:", payload);
-
+    alert(payload.platForm)
     // Call backend API to create Stripe checkout session
     const response = await useJwt.bookAppointment(payload);
     
-    console.log("Payment Session Created:", response.data);
+    // console.log("Payment Session Created:", response.data);
 
     // Check if checkout URL exists in response
     

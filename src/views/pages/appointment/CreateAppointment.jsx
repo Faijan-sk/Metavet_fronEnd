@@ -118,13 +118,14 @@ export default function BookAppointmentForm({
       startTime: day.startTime + ":00",
       endTime: day.endTime + ":00",
       slotDurationMinutes: duration,
+      // platForm : 'WEB'
     }));
 
     try {
       // const response = await useJwt.createAppintment(userInfo.userId, payload);
             const response = await useJwt.createAppintment( payload);
 
-      console.log("Appointment created:", response.data);
+      // console.log("Appointment created:", response.data);
 
       onCreated && onCreated(payload);
       onClose && onClose();

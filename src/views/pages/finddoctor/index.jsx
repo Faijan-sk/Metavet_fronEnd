@@ -294,8 +294,8 @@ const FindDoctor = () => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
-        console.log("User Latitude:", lat);
-        console.log("User Longitude:", lng);
+        // console.log("User Latitude:", lat);
+        // console.log("User Longitude:", lng);
 
         setLatitude(lat);
         setLongitude(lng);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import useJwt from "./../../../../enpoints/jwt/useJwt"
 import { useNavigate } from "react-router-dom";
 
@@ -58,6 +58,9 @@ const PetWalkerProviderKYC = () => {
 const [locationSuggestions, setLocationSuggestions] = useState([])
 const [isGettingLocation, setIsGettingLocation] = useState(false)
 const navigate = useNavigate();
+  const[metavetFess, setMetavetFees] = useState(false)
+    const [metavetChargesDetail, setMetavetChargesDetail] = useState({})
+
 
   // Generic setter that validates input against a provided regex.
   const setIfValid = (field, value, regex) => {
@@ -365,6 +368,19 @@ const getCurrentLocation = () => {
   )
 }
 
+
+useEffect(()=>{
+  
+  const fetchCharges = async ()=>{
+    
+    const response =await useJwt.getMetavetCharges("Pet_Walker");
+    
+    console.log('mmmmmmmmmmmmmmmmmmmmm',response.data);
+setMetavetChargesDetail(response.data.data);
+  }
+
+  fetchCharges()
+},[metavetFess])
 
 
   return (
@@ -875,6 +891,29 @@ const getCurrentLocation = () => {
     required
   />
 </div>
+
+{metavetFess === false ? (
+  <p className="text-sm">
+    View Metavet fee structure{" "}
+    <span
+      className="text-yellow-600 font-medium cursor-pointer"
+      onClick={() => setMetavetFees(true)}
+    >
+      view
+    </span>
+  </p>
+) : (
+  <p className="text-sm">
+    Please note: Metavet will charge the client an additional <span className="text-primary font-bold">{metavetChargesDetail.feesValue} {metavetChargesDetail.feesType}</span> on the fee you
+    enter.
+    <span
+      className="text-yellow-600 font-medium cursor-pointer ml-1"
+      onClick={() => setMetavetFees(false)}
+    >
+      hide
+    </span>
+  </p>
+)}
           </section>
 
           {/* Declarations & Signature */}

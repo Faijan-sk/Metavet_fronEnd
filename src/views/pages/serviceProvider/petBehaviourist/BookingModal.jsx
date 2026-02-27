@@ -139,7 +139,11 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         slotUid: selectedSlot?.uid,
         appointmentDate: selectedDate.toISOString().split("T")[0],
         notes: notes || undefined,
+      
       }
+debugger
+  
+      console.log('PPPPPPPPPPPPPPPPPPPP for behaviourist',payload)
 
       const response = await useJwt.bookBehaviouristAppointment(payload)
       const { checkoutUrl } = response.data
@@ -147,6 +151,26 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       if (checkoutUrl) {
         window.location.href = checkoutUrl
       }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
 
       setBookingSuccess(true)
 

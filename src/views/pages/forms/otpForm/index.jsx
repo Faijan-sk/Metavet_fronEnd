@@ -27,7 +27,7 @@ const OTPVerification = ({ onSubmit, onBack, userInfo, formType }) => {
   const navigate = useNavigate();
   const {state} = useLocation();
   const otpDr = state?.otp;
-  console.log( 'otpDrotpDrotpDr' ,otpDr)
+  // console.log( 'otpDrotpDrotpDr' ,otpDr)
   const {
     control,
     handleSubmit,
@@ -66,7 +66,7 @@ const OTPVerification = ({ onSubmit, onBack, userInfo, formType }) => {
         otp3: otpString[3] || "",
       });
     } 
-    console.log('the token inside the otp verification from url :', token)
+    // console.log('the token inside the otp verification from url :', token)
   }, [otpDr, reset]);
 
   // Timer for resend OTP
@@ -171,11 +171,11 @@ const handleOtpSubmit = async (data) => {
 
     const { data: apiResponse } = await jwt.verifyOtp(apiPayload, token);
 
-    console.log('this otp response', apiResponse.data)
+    // console.log('this otp response', apiResponse.data)
 
     localStorage.setItem("userInfo", JSON.stringify(apiResponse.data));
     if(apiResponse.data.userType == 3){
-      console.log( ' service provider loged in ...................')
+      // console.log( ' service provider loged in ...................')
       
     }
 
@@ -185,10 +185,10 @@ const handleOtpSubmit = async (data) => {
 
     // Check backend success
     if (success) {
-      console.log("✅ OTP Verified Successfully:", otpValue);
+      // console.log("✅ OTP Verified Successfully:", otpValue);
       
       // Show success toast
-      console.log('Setting success alert to open');
+      // console.log('Setting success alert to open');
       setAlertType('success');
       setAlertMessage('User Registration Successfully!');
       setOpen(true);
@@ -231,7 +231,7 @@ const handleOtpSubmit = async (data) => {
     });
     
     // Show error alert as well
-    console.log('Setting error alert to open');
+    // console.log('Setting error alert to open');
     setAlertType('error');
     setAlertMessage(errorMessage);
     setOpen(true);
@@ -252,7 +252,7 @@ const handleOtpSubmit = async (data) => {
 
     const phoneNumber =
       response?.data?.phoneNumber || response?.data?.phone_number;
-    console.log("Resending OTP to:", formatPhoneNumber());
+    // console.log("Resending OTP to:", formatPhoneNumber());
     const loginPayload = {
       phone_number: response?.data?.phoneNumber || response?.data?.phone_number,
       countryCode: response?.data?.countryCode
@@ -261,10 +261,10 @@ const handleOtpSubmit = async (data) => {
     try {
       
       const res = await jwt.login(loginPayload);
-      console.log("resend otp", res);
+      // console.log("resend otp", res);
       
       await new Promise((resolve) => setTimeout(resolve, 500));
-      console.log("OTP resent successfully");
+      // console.log("OTP resent successfully");
       
       // Show success message for resend
       setAlertType('info');

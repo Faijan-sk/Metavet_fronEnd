@@ -16,7 +16,7 @@ const [uid , setUid] =useState()
 const [phoneNumber , setPhoneNumber] = useState();
  const {state}=useLocation();
  const[token, setToken] = useState()
-console.log('the state in the update doctor : ' ,state?.phone)
+// console.log('the state in the update doctor : ' ,state?.phone)
 const [locationSuggestions, setLocationSuggestions] = useState([]);
 const locationRef = useRef(null);
   const [locationQuery, setLocationQuery] = useState("");
@@ -110,7 +110,7 @@ const {
 
   
   const handleFormSubmit = async (data) => {
-    console.log(data)
+    // console.log(data)
     try {
       // Transform form data into API payload
       const payload = {
@@ -148,7 +148,7 @@ const {
  };
     
 
-console.log('Login Payload' , loginPyaload)
+// console.log('Login Payload' , loginPyaload)
        let loginRes = await useJwt.login(loginPyaload);
        const {data:loginData}=loginRes
 
@@ -178,7 +178,7 @@ console.log('Login Payload' , loginPyaload)
       );
       setErrorMsg(error.response?.data?.message || "Profile update failed");
     }
-                console.log('this is token we are sendinto the otp page' ,token)
+                // console.log('this is token we are sendinto the otp page' ,token)
 
   };
   
@@ -218,7 +218,7 @@ console.log('Login Payload' , loginPyaload)
       try {
         if (state?.phone) {
           const res = await useJwt.getUserByMobile(state.phone);
-          console.log("✅ User fetched by mobile:", res.data?.uid);
+          // console.log("✅ User fetched by mobile:", res.data?.uid);
 
           setUid(res.data?.uid); // store UID if needed
           setPhoneNumber(res.data?.phone)

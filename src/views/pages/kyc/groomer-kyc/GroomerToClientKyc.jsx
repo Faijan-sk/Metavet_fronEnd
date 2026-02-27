@@ -208,7 +208,7 @@ const Index = () => {
       setApiSuccess(successMsg)
       setErrors({})
       setFormData(initialFormState)
-      console.log('Submission response:', respData)
+      // console.log('Submission response:', respData)
     } catch (error) {
       console.error('Submission error:', error)
       const apiRes = error?.response?.data

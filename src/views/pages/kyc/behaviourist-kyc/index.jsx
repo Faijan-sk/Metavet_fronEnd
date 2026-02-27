@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import userJwt from "./../../../../enpoints/jwt/useJwt"
 import { useNavigate } from "react-router-dom";
 
@@ -58,6 +58,8 @@ const BehaviourSpecialistKYC = () => {
   const [locationQuery, setLocationQuery] = useState('')
 const [locationSuggestions, setLocationSuggestions] = useState([])
 const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const[metavetFess, setMetavetFees] = useState(false)
+    const [metavetChargesDetail, setMetavetChargesDetail] = useState({})
 
   // --- helper maps to match backend enum names ---
   const servicesMap = {
@@ -301,6 +303,22 @@ const getCurrentLocation = () => {
     }
   )
 }
+
+useEffect(()=>{
+  
+  const fetchCharges = async ()=>{
+    
+    const response =await userJwt.getMetavetCharges("Pet_Behaviourist");
+    
+setMetavetChargesDetail(response.data.data);
+  }
+
+  fetchCharges()
+},[metavetFess])
+
+
+
+
 
 
 
@@ -775,6 +793,44 @@ const getCurrentLocation = () => {
     required
   />
 </div>
+
+
+
+
+{metavetFess === false ? (
+  <p className="text-sm">
+    View Metavet fee structure{" "}
+    <span
+      className="text-yellow-600 font-medium cursor-pointer"
+      onClick={() => setMetavetFees(true)}
+    >
+      view
+    </span>
+  </p>
+) : (
+  <p className="text-sm">
+    Please note: Metavet will charge the client an additional <span className="text-primary font-bold">{metavetChargesDetail.feesValue} {metavetChargesDetail.feesType}</span> on the fee you
+    enter.
+    <span
+      className="text-yellow-600 font-medium cursor-pointer ml-1"
+      onClick={() => setMetavetFees(false)}
+    >
+      hide
+    </span>
+  </p>
+)}
+
+
+
+
+
+
+
+
+
+
+
+
 
               <div>
                 <label className="block font-medium text-gray-700 mb-2">Service Radius / Availability</label>

@@ -159,8 +159,8 @@ const RegistrationComponent = ({ onSubmit, onSwitchToLogin, onClose }) => {
 
 
 
-    console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh',response)
-    console.log(receivedToken)
+    // console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh',response)
+    // console.log(receivedToken)
 
     
      

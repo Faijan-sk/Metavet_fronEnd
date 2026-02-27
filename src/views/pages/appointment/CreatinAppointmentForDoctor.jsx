@@ -45,7 +45,7 @@ const Appointment = () => {
     async function fetchAppointments() {
       try {
         setLoading(true);
-        console.log('Fetching user appointments...');
+        // console.log('Fetching user appointments...');
 
         // Ensure we have userInfo; if not, redirect to signin (or handle gracefully)
         if (!userInfo) {
@@ -76,7 +76,7 @@ const Appointment = () => {
           }
         }
 
-        console.log('Appointments response:', response?.data ?? response);
+        // console.log('Appointments response:', response?.data ?? response);
 
         if (cancelled) return;
 
@@ -180,7 +180,7 @@ const Appointment = () => {
     
     setIsDeleting(true);
     try {
-      console.log('Cancelling appointment:', deleteConfirmModal.id);
+      // console.log('Cancelling appointment:', deleteConfirmModal.id);
       await useJwt.cancelAppointment(deleteConfirmModal.id);
       
       // Remove from state
@@ -189,7 +189,7 @@ const Appointment = () => {
       // Close modal
       setDeleteConfirmModal(null);
       
-      console.log('Appointment cancelled successfully');
+      // console.log('Appointment cancelled successfully');
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       // you may want to show toast here
