@@ -230,14 +230,11 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
         startTime:          selectedStartTime + ":00",
         serviceUid:         selectedService,
         notes:              "",
-        platForm : "IOS"
+        platForm : "WEB"
       }
-      debugger
 
       console.log("Booking payload:", payload)
-
       const response = await useJwt.BookGroomerAppointment(payload)
-
       console.log("Booking response:", response)
 
       if (response.data?.checkoutUrl) {

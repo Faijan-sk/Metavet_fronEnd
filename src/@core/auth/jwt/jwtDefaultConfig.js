@@ -114,6 +114,8 @@ getGroomerBookedAppointment : '/groomer/appointment/my-appointments',
 bookGroomerAppointment : '/groomer/appointment/book',
 
 getGroomerBookedAppointmnetforClient:'/groomer/appointment/user/appointments',
-getMetavetChargesEndpoint : '/metavet-charge/{userType}'
+getMetavetChargesEndpoint : '/metavet-charge/{userType}',
 
+
+verifyPaymentCommonEndpoint :'/clients/verify/{sessionId}'
 }

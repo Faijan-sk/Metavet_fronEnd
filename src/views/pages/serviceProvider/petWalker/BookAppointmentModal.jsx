@@ -149,9 +149,13 @@ function BookWalkModal({ walker, onClose }) {
         petWalkerUid: selectedSlot.petWalker.uid,
         petWalkerDayUid: selectedSlot.petWalkerDayUid,
         slotUid: selectedSlot.slotUid,
-        appointmentDate: selectedDate.toISOString().split("T")[0],
+        appointmentDate: [
+          selectedDate.getFullYear(),
+          String(selectedDate.getMonth() + 1).padStart(2, "0"),
+          String(selectedDate.getDate()).padStart(2, "0")
+        ].join("-"),
         petUid: selectedPet.uid,
-        // platForm : 'IOS'
+        
       }
       debugger
       console.log('PPPPPPPPPPPAyload to walekr' ,payload);

@@ -25,15 +25,17 @@ export const PaymentSuccessV2 = () => {
 
   const verifyPayment = async (sessionId, type) => {
     try {
-      const userTypeEndpoint = type === 'behaviourist'
-        ? '/api/behaviourist-appointments'
-        : type === 'walker'
-        ? '/api/walker-appointments'
-        : type === 'groomer'
-        ? '/groomer/appointment'
-        : '/api/appointments';
+      // const userTypeEndpoint = type === 'behaviourist'
+      //   ? '/api/behaviourist-appointments'
+      //   : type === 'walker'
+      //   ? '/api/walker-appointments'
+      //   : type === 'groomer'
+      //   ? '/groomer/appointment'  
+      //   : '/api/appointments';
+debugger
+      // const response = await useJwt.veriFyAppointmentPayment(sessionId, userTypeEndpoint);
+      const response = await useJwt.verifyPaymentforAll(sessionId);
 
-      const response = await useJwt.veriFyAppointmentPayment(sessionId, userTypeEndpoint);
       setPaymentData(response.data);
 
     } catch (error) {

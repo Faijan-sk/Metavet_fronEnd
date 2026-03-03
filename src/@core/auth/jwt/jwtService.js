@@ -5,7 +5,7 @@
   // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
   // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
   axios.defaults.baseURL = 'http://34.170.68.167:8080/'
-  // axios.defaults.baseURL = 'http://192.168.1.10:8080/'
+  // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 
   export default class JwtService {
     //service file
@@ -423,7 +423,19 @@ veriFyAppointmentPayment(SessionId,UserTypeEndpoint){
   return axios.get(this.jwtConfig.verifyAppointmentPaymentEndpoint.replace('{UserTypeEndpoint}', UserTypeEndpoint)
     .replace('{SessionId}',SessionId));
 }
+
+
+verifyPaymentforAll(SessionId){
+  return axios.get(this.jwtConfig.verifyPaymentCommonEndpoint
+    .replace('{sessionId}',SessionId));
+}
  
+
+
+
+
+
+
 
 dummyAppointmentBook(...args){
   return axios.post(this.jwtConfig.dummyBook, ...args)

@@ -343,7 +343,7 @@ const [bookingResponse, setBookingResponse] = useState(null);
   doctorDayId: Number(form.doctorDayId),
   slotId: Number(form.slotId),
   appointmentDate: form.appointmentDate,
-  platForm: 'IOS'   // ✅ Change to 'WEB' for browser, or pass dynamically
+  platForm: "WEB"  // ✅ Change to 'WEB' for browser, or pass dynamically
 };
     // console.log("Booking Appointment with payload:", payload);
 
