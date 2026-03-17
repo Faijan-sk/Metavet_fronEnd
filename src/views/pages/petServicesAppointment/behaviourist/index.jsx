@@ -42,7 +42,7 @@ function Index() {
   }
 
   // ❌ KYC not submitted
-  if (kycStatus === "NOT_SUBMITTED") {
+  if (kycStatus === "NOT_SUBMITTED" || kycStatus === 'REJECTED') {
     return <KycNotFound redirectTo="/behaviourist-kyc" />;
   }
 

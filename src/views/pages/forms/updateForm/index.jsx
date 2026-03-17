@@ -80,18 +80,18 @@ const DoctorProfileForm = () => {
           } catch (error) {
             console.error("Error getting address:", error);
             setIsGettingLocation(false);
-            alert("Failed to get address from location");
+            // alert("Failed to get address from location");
           }
         },
         (error) => {
           console.error("Geolocation error:", error);
           setIsGettingLocation(false);
-          alert("Unable to get your location. Please enable location access.");
+          // alert("Unable to get your location. Please enable location access.");
         }
       );
     } else {
       setIsGettingLocation(false);
-      alert("Geolocation is not supported by your browser");
+      // alert("Geolocation is not supported by your browser");
     }
   };
 

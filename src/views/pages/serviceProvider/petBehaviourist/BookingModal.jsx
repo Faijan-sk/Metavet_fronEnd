@@ -141,7 +141,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         notes: notes || undefined,
       
       }
-debugger
   
       console.log('PPPPPPPPPPPPPPPPPPPP for behaviourist',payload)
 

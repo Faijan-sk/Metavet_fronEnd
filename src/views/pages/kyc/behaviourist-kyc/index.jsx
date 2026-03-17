@@ -60,6 +60,8 @@ const [locationSuggestions, setLocationSuggestions] = useState([])
 const [isGettingLocation, setIsGettingLocation] = useState(false)
   const[metavetFess, setMetavetFees] = useState(false)
     const [metavetChargesDetail, setMetavetChargesDetail] = useState({})
+  const [apiError, setApiError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
 
   // --- helper maps to match backend enum names ---
   const servicesMap = {
@@ -269,7 +271,7 @@ const getCurrentLocation = () => {
   setIsGettingLocation(true)
 
   if (!navigator.geolocation) {
-    alert('Geolocation not supported')
+    // alert('Geolocation not supported')
     setIsGettingLocation(false)
     return
   }
@@ -292,13 +294,13 @@ const getCurrentLocation = () => {
           longitude: longitude.toString()
         }))
       } catch (err) {
-        alert('Failed to fetch address')
+        // alert('Failed to fetch address')
       } finally {
         setIsGettingLocation(false)
       }
     },
     () => {
-      alert('Location access denied')
+      // alert('Location access denied')
       setIsGettingLocation(false)
     }
   )
@@ -327,7 +329,17 @@ setMetavetChargesDetail(response.data.data);
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🧠 Metavet → Behaviour Specialist KYC</h1>
         <p className="text-center text-gray-600 mb-6">Provider Onboarding — Behaviour & Training Specialists</p>
+{successMessage && (
+          <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
+            {successMessage}
+          </div>
+        )}
 
+        {apiError && (
+          <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
+            {apiError}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
           {/* Personal & Business Information */}
           <section>
@@ -902,6 +914,17 @@ setMetavetChargesDetail(response.data.data);
               </div>
             </div>
           </section>
+          {successMessage && (
+          <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
+            {successMessage}
+          </div>
+        )}
+
+        {apiError && (
+          <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
+            {apiError}
+          </div>
+        )}
 
           <div className="pt-4">
             <button

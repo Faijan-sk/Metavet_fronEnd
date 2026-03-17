@@ -157,7 +157,6 @@ function BookWalkModal({ walker, onClose }) {
         petUid: selectedPet.uid,
         
       }
-      debugger
       console.log('PPPPPPPPPPPAyload to walekr' ,payload);
 
       const response = await useJwt.BookWalkerAppointment(payload)

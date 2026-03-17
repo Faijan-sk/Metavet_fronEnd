@@ -32,7 +32,6 @@ export const PaymentSuccessV2 = () => {
       //   : type === 'groomer'
       //   ? '/groomer/appointment'  
       //   : '/api/appointments';
-debugger
       // const response = await useJwt.veriFyAppointmentPayment(sessionId, userTypeEndpoint);
       const response = await useJwt.verifyPaymentforAll(sessionId);
 

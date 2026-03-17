@@ -229,7 +229,7 @@ function Index({ location }) {
       walker.specialization.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  if (kycStatus === 'CANCELLED' || kycStatus === 'NOT_FOUND') {
+  if (kycStatus === 'REJECTED' || kycStatus === 'NOT_FOUND') {
     return <><KycWarning kycUrl={kycUrl} /><MainPage /></>;
   }
 

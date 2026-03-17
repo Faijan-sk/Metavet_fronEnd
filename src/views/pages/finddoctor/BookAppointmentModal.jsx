@@ -151,36 +151,40 @@ function BookAppointmentModal({ doctor, onClose, initialValues }) {
     setLoading(true)
     setBookingError("")
 
-    try {
-      const payload = {
-        petId: parseInt(selectedPet),
-        doctorId: doctor.doctorId,
-        doctorDayId: doctorDayId,
-        slotId: selectedSlot.slotId,
-        appointmentDate: selectedDate.toISOString().split("T")[0],
-        reason: reason || undefined
-      }
+   try {
+  const payload = {
+    petId: parseInt(selectedPet),
+    doctorId: doctor.doctorId,
+    doctorDayId: doctorDayId,
+    slotId: selectedSlot.slotId,
+    appointmentDate: selectedDate.toISOString().split("T")[0],
+    reason: reason || undefined
+  }
 
-      debugger
-      console.log('Booking appointment with payload:', payload)
+  const response = await useJwt.bookAppointment(payload)
 
-      const response = await useJwt.bookAppointment(payload)
+  const redirectUrl = response.data.checkoutUrl
 
-      // console.log('Booking response:', response)
+  if (redirectUrl) {
+    window.location.href = redirectUrl
+  }
 
-      setBookingSuccess(true)
-      
-      setTimeout(() => {
-        resetForm()
-        if (onClose) onClose()
-      }, 1500)
+  setBookingSuccess(true)
 
-    } catch (error) {
-      console.error("Error booking appointment:", error)
-      setBookingError(error.response?.data?.message || "Failed to book appointment. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+  setTimeout(() => {
+    resetForm()
+    if (onClose) onClose()
+  }, 1500)
+
+} catch (error) {
+  console.error("Error booking appointment:", error)
+  setBookingError(
+    error.response?.data?.message || 
+    "Failed to book appointment. Please try again."
+  )
+} finally {
+  setLoading(false)
+}
   }
 
   // ================= CALENDAR =================

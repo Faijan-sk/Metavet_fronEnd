@@ -333,7 +333,7 @@ const getCurrentLocation = () => {
   setIsGettingLocation(true)
 
   if (!navigator.geolocation) {
-    alert('Geolocation not supported')
+    // alert('Geolocation not supported')
     setIsGettingLocation(false)
     return
   }
@@ -356,13 +356,13 @@ const getCurrentLocation = () => {
           longitude: longitude.toString()
         }))
       } catch (err) {
-        alert('Failed to fetch address')
+        // alert('Failed to fetch address')
       } finally {
         setIsGettingLocation(false)
       }
     },
     () => {
-      alert('Location access denied')
+      // alert('Location access denied')
       setIsGettingLocation(false)
     }
   )
@@ -384,7 +384,7 @@ setMetavetChargesDetail(response.data.data);
 
 
   return (
-    <div className="min-h-screen px-4 py-8 bg-gray-50">
+    <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">🚶 Metavet → Pet Walker KYC</h1>
         <p className="text-center text-gray-600 mb-8">Provider onboarding — walking services</p>
@@ -975,6 +975,19 @@ setMetavetChargesDetail(response.data.data);
               </div>
             </div>
           </section>
+
+          {success && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+            ✅ Walker KYC submitted successfully! Redirecting...
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            ❌ {typeof error === 'string' ? error : JSON.stringify(error)}
+          </div>
+        )}
 
           <div className="pt-6">
             <button

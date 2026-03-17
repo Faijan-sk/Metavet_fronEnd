@@ -41,7 +41,7 @@ function Index() {
   }
 
   // ❌ Not submitted
-  if (kycStatus === "NOT_SUBMITTED") {
+  if (kycStatus === "NOT_SUBMITTED" || kycStatus === "REJECTED") {
     return <KycNotFound redirectTo="/walker-kyc" />;
   }
 

@@ -291,7 +291,7 @@ const getCurrentLocation = () => {
   setIsGettingLocation(true)
 
   if (!navigator.geolocation) {
-    alert('Geolocation not supported')
+    // alert('Geolocation not supported')
     setIsGettingLocation(false)
     return
   }
@@ -314,13 +314,13 @@ const getCurrentLocation = () => {
           longitude: longitude.toString()
         }))
       } catch (err) {
-        alert('Failed to fetch address')
+        // alert('Failed to fetch address')
       } finally {
         setIsGettingLocation(false)
       }
     },
     () => {
-      alert('Location access denied')
+      // alertalert('Location access denied')
       setIsGettingLocation(false)
     }
   )

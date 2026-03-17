@@ -965,6 +965,17 @@ const PetWalkerKYC = () => {
               </div>
             </div>
           </section>
+{successMessage && (
+          <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
+            {successMessage}
+          </div>
+        )}
+
+        {apiError && (
+          <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
+            {apiError}
+          </div>
+        )}
 
           <div className="pt-6">
             <button

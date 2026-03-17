@@ -347,7 +347,7 @@ const [bookingResponse, setBookingResponse] = useState(null);
 };
     // console.log("Booking Appointment with payload:", payload);
 
-    alert(payload.platForm)
+    // alert(payload.platForm)
     // Call backend API to create Stripe checkout session
     const response = await useJwt.bookAppointment(payload);
     

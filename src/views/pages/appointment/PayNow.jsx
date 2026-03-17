@@ -17,7 +17,7 @@ export default function PaymentForm() {
   // Redirect if no booking data
   React.useEffect(() => {
     if (!bookingData) {
-      alert('No booking data found. Please start from the appointment booking page.');
+      // alert('No booking data found. Please start from the appointment booking page.');
       navigate('/appointments');
     }
   }, [bookingData, navigate]);
