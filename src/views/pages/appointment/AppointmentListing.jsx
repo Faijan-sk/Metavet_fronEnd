@@ -11,6 +11,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -362,6 +363,25 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                           </div>
                         )}
                       </div>
+
+                      {/* Action Buttons */}
+                      {/* <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
+                        <button
+                          onClick={() => handleViewMedicalHistory(appointment)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#52B2AD] border border-[#52B2AD] rounded-lg hover:bg-[#52B2AD] hover:text-white transition-colors"
+                        >
+                          <FileText size={15} />
+                          View Medical History
+                        </button>
+
+                        <button
+                          onClick={() => handleAddPrescription(appointment)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#52B2AD] rounded-lg hover:bg-[#3d9a95] transition-colors"
+                        >
+                          <Plus size={15} />
+                          Add Prescription
+                        </button>
+                      </div> */}
                     </div>
                   )}
               </div>

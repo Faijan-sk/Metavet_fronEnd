@@ -1,8 +1,8 @@
-import { useEffect, useState, memo, useCallback, useMemo } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useState, memo, useCallback, useMemo } from "react";
+import { Link, NavLink } from "react-router-dom";
 
-//import images 
-import Logo from "./../../assets/MetavetImages/logo/navLogo.png"
+//import images
+import Logo from "./../../assets/MetavetImages/logo/navLogo.png";
 
 // Get user info - component ke bahar
 const getUserInfo = () => {
@@ -10,9 +10,8 @@ const getUserInfo = () => {
     const userInfo = localStorage.getItem("userInfo");
     // console.log(userInfo)
     return userInfo ? JSON.parse(userInfo) : null;
-
   } catch (error) {
-    console.error('Error parsing userInfo:', error);
+    console.error("Error parsing userInfo:", error);
     return null;
   }
 };
@@ -30,161 +29,176 @@ const DropdownMenu = memo(({ items }) => (
       </Link>
     ))}
   </div>
-))
+));
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [hoveredItem, setHoveredItem] = useState(null)
-  const [openMobileDropdown, setOpenMobileDropdown] = useState(null)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [openMobileDropdown, setOpenMobileDropdown] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const userInfo = getUserInfo();
   const serviceType = userInfo?.ServiceType;
   // console.log("USER SERVICE TYPE FROM NAVABR " ,  serviceType)
 
-
   // Memoized navigation items
-const baseNavItems = useMemo(() => {
-  const shouldShowPets = !userInfo || userInfo.userType === 1; // Pet Owner / Guest
-  const itsDoctor = userInfo && userInfo.userType === 2;      // Doctor
-  const serviceProvider = userInfo && userInfo.userType === 3; // Service Provider
+  const baseNavItems = useMemo(() => {
+    const shouldShowPets = !userInfo || userInfo.userType === 1; // Pet Owner / Guest
+    const itsDoctor = userInfo && userInfo.userType === 2; // Doctor
+    const serviceProvider = userInfo && userInfo.userType === 3; // Service Provider
 
-  return [
-    ...(shouldShowPets
-      ? [{ name: 'Find a Doctor', path: '/finddoctor', active: true }]
-      : []),
+    return [
+      ...(shouldShowPets
+        ? [{ name: "Find a Doctor", path: "/finddoctor", active: true }]
+        : []),
 
-    ...(shouldShowPets
-      ? [{ name: 'Appointment', path: '/appointment', active: true }]
-      : []),
+      ...(shouldShowPets
+        ? [{ name: "Appointment", path: "/appointment", active: true }]
+        : []),
 
-    ...(itsDoctor
-      ? [{ name: 'Appointment', path: '/doctor-profile', active: true }]
-      : []),
+      ...(itsDoctor
+        ? [{ name: "Appointment", path: "/doctor-profile", active: true }]
+        : []),
 
-    ...(serviceProvider
-      ? [{ name: 'Appointments', path: '/service-appointment', active: true }]
-      : []),
+      ...(serviceProvider
+        ? [{ name: "Appointments", path: "/service-appointment", active: true }]
+        : []),
 
-    ...(shouldShowPets
-      ? [{ name: 'Pets', path: '/about-pet', active: true }]
-      : []),
+      ...(shouldShowPets
+        ? [{ name: "Pets", path: "/about-pet", active: true }]
+        : []),
 
-    ...(shouldShowPets
-      ? [{
-          name: 'Pet Services',
-          hasDropdown: true,
-          dropdownItems: [
-            { label: 'Pet Behaviourist', path: '/service-provider/petBehaviourist' },
-            { label: 'Pet Walker', path: '/service-provider/petWalker' },
-            { label: 'Pet Groomer', path: '/service-provider/petGroomer' },
-          ],
-        }]
-      : []),
-  ];
-}, [userInfo]);
+      ...(shouldShowPets
+        ? [
+            {
+              name: "Pet Services",
+              hasDropdown: true,
+              dropdownItems: [
+                {
+                  label: "Pet Behaviourist",
+                  path: "/service-provider/petBehaviourist",
+                },
+                { label: "Pet Walker", path: "/service-provider/petWalker" },
+                { label: "Pet Groomer", path: "/service-provider/petGroomer" },
+              ],
+            },
+          ]
+        : []),
+    ];
+  }, [userInfo]);
 
-
-
-  const navItems2 = useMemo(() => [
-    ...(isMobile ? baseNavItems : []),
-    {
-      name: 'Patient Center', 
-      hasDropdown: true,
-      dropdownItems: [
-        { label: 'What to Expect', path: '/what-to-expect' },
-        // { label: 'Behavioural Concern ', path: '/behavioural-concern' },
-        { label: 'Payment Options', path: '/payment-options' },
-      ],
-    },
-    {
-      name: 'About Us',
-      hasDropdown: true,
-      dropdownItems: [
-        { label: 'Our Team', path: '/our-team' },
-        { label: 'Meet the Team', path: '/meet-the-team' },
-        { label: 'About Us', path: '/about-us' },
-      ],
-    },
-    {
-      name: 'Resources',
-      hasDropdown: true,
-      dropdownItems: [
-        { label: 'Teleconsultation', path: '/teleconsultation' },
-        { label: 'Treatment Plans/Rx', path: '/treatment-plans-rx' },
-        { label: 'Blood Work', path: '/blood-work' },
-        { label: 'Grooming', path: '/grooming' },
-        { label: 'Kennels/Boarding', path: '/kennels-boarding' },
-        { label: 'Training', path: '/dog-training' },
-        { label: 'Dental', path: '/dental' },
-        { label: 'Vaccines', path: '/vaccines' },
-        { label: 'Parasite Prevention', path: '/parasite-prevention' },
-        { label: 'Spaying or Neutering Your Pet', path: '/spaying-neutering' },
-        { label: 'Nutrition', path: '/nutrition' },
-        { label: 'Behaviour', path: '/behaviour' },
-        { label: 'Blogs', path: '/blogs' },
-        { label: 'Pet Health', path: '/pet-health' },
-        { label: 'Choosing Your Pet', path: '/choosing-pet' },
-        { label: 'Living With Your Pet', path: '/livingpet' },
-        { label: 'Video Newsroom', path: '/videonewsroom' },
-        { label: "Today's Veterinarian", path: '/todayveterinarian' },
-        { label: 'Newsletter Archive', path: '/newsletter' },
-        { label: 'Surgery', path: '/surgery' },
-        { label: 'Radiology', path: '/radiology' },
-        { label: 'FAQ', path: '/faq' },
-      ],
-    },
-    { name: 'Contact Us', path: '/contactus' },
-  ], [isMobile, baseNavItems])
+  const navItems2 = useMemo(
+    () => [
+      ...(isMobile ? baseNavItems : []),
+      {
+        name: "Patient Center",
+        hasDropdown: true,
+        dropdownItems: [
+          { label: "What to Expect", path: "/what-to-expect" },
+          // { label: 'Behavioural Concern ', path: '/behavioural-concern' },
+          { label: "Payment Options", path: "/payment-options" },
+        ],
+      },
+      {
+        name: "About Us",
+        hasDropdown: true,
+        dropdownItems: [
+          { label: "Our Team", path: "/our-team" },
+          { label: "Meet the Team", path: "/meet-the-team" },
+          { label: "About Us", path: "/about-us" },
+        ],
+      },
+      {
+        name: "Resources",
+        hasDropdown: true,
+        dropdownItems: [
+          { label: "Teleconsultation", path: "/teleconsultation" },
+          { label: "Treatment Plans/Rx", path: "/treatment-plans-rx" },
+          { label: "Blood Work", path: "/blood-work" },
+          { label: "Grooming", path: "/grooming" },
+          { label: "Kennels/Boarding", path: "/kennels-boarding" },
+          { label: "Training", path: "/dog-training" },
+          { label: "Dental", path: "/dental" },
+          { label: "Vaccines", path: "/vaccines" },
+          { label: "Parasite Prevention", path: "/parasite-prevention" },
+          {
+            label: "Spaying or Neutering Your Pet",
+            path: "/spaying-neutering",
+          },
+          { label: "Nutrition", path: "/nutrition" },
+          { label: "Behaviour", path: "/behaviour" },
+          { label: "Blogs", path: "/blogs" },
+          { label: "Pet Health", path: "/pet-health" },
+          { label: "Choosing Your Pet", path: "/choosing-pet" },
+          { label: "Living With Your Pet", path: "/livingpet" },
+          { label: "Video Newsroom", path: "/videonewsroom" },
+          { label: "Today's Veterinarian", path: "/todayveterinarian" },
+          { label: "Newsletter Archive", path: "/newsletter" },
+          { label: "Surgery", path: "/surgery" },
+          { label: "Radiology", path: "/radiology" },
+          { label: "FAQ", path: "/faq" },
+        ],
+      },
+      { name: "Contact Us", path: "/contactus" },
+    ],
+    [isMobile, baseNavItems],
+  );
 
   // Combined effect for screen size and click outside
   useEffect(() => {
-    const checkScreenSize = () => setIsMobile(window.innerWidth < 991)
+    const checkScreenSize = () => setIsMobile(window.innerWidth < 991);
     const handleClickOutside = (event) => {
-      if (isMenuOpen && !event.target.closest('.mobile-menu') && !event.target.closest('.menu-toggle')) {
-        setIsMenuOpen(false)
+      if (
+        isMenuOpen &&
+        !event.target.closest(".mobile-menu") &&
+        !event.target.closest(".menu-toggle")
+      ) {
+        setIsMenuOpen(false);
       }
-    }
+    };
 
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    document.addEventListener('click', handleClickOutside)
-    
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    document.addEventListener("click", handleClickOutside);
+
     return () => {
-      window.removeEventListener('resize', checkScreenSize)
-      document.removeEventListener('click', handleClickOutside)
-    }
-  }, [isMenuOpen])
+      window.removeEventListener("resize", checkScreenSize);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   // Body overflow effect
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen && isMobile ? 'hidden' : 'unset'
+    document.body.style.overflow = isMenuOpen && isMobile ? "hidden" : "unset";
     return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isMenuOpen, isMobile])
+      document.body.style.overflow = "unset";
+    };
+  }, [isMenuOpen, isMobile]);
 
   // Memoized callbacks
-  const handleDropdownHover = useCallback((index) => {
-    if (!isMobile) setHoveredItem(index)
-  }, [isMobile])
+  const handleDropdownHover = useCallback(
+    (index) => {
+      if (!isMobile) setHoveredItem(index);
+    },
+    [isMobile],
+  );
 
   const handleDropdownLeave = useCallback(() => {
-    if (!isMobile) setHoveredItem(null)
-  }, [isMobile])
+    if (!isMobile) setHoveredItem(null);
+  }, [isMobile]);
 
   const toggleMobileDropdown = useCallback((index) => {
-    setOpenMobileDropdown(prev => prev === index ? null : index)
-  }, [])
+    setOpenMobileDropdown((prev) => (prev === index ? null : index));
+  }, []);
 
   const closeMenu = useCallback(() => {
-    setIsMenuOpen(false)
-    setOpenMobileDropdown(null)
-  }, [])
+    setIsMenuOpen(false);
+    setOpenMobileDropdown(null);
+  }, []);
 
   // Logout handler - clears entire localStorage and redirects to signin
   const handleLogout = useCallback((e) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
 
     try {
       // Clear everything from localStorage (accessToken, refreshToken, userInfo, etc.)
@@ -192,8 +206,8 @@ const baseNavItems = useMemo(() => {
       // Also remove axios default Authorization header if set globally
       try {
         // eslint-disable-next-line no-undef
-        if (typeof window !== 'undefined' && window.axios?.defaults?.headers) {
-          delete window.axios.defaults.headers.common['Authorization'];
+        if (typeof window !== "undefined" && window.axios?.defaults?.headers) {
+          delete window.axios.defaults.headers.common["Authorization"];
         }
       } catch (err) {
         // ignore - only best-effort cleanup
@@ -227,7 +241,7 @@ const baseNavItems = useMemo(() => {
         </div>
 
         <nav
-          className={`${isMobile ? 'hidden' : 'flex'} items-center space-x-1`}
+          className={`${isMobile ? "hidden" : "flex"} items-center space-x-1`}
         >
           {baseNavItems.map((item, index) => (
             <div
@@ -237,12 +251,12 @@ const baseNavItems = useMemo(() => {
               onMouseLeave={handleDropdownLeave}
             >
               <NavLink
-                to={item.path || '#'}
+                to={item.path || "#"}
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     isActive
-                      ? 'text-white bg-white bg-opacity-20'
-                      : 'text-white hover:text-gray-200 hover:bg-white hover:bg-opacity-10'
+                      ? "text-white bg-white bg-opacity-20"
+                      : "text-white hover:text-gray-200 hover:bg-white hover:bg-opacity-10"
                   }`
                 }
               >
@@ -277,7 +291,7 @@ const baseNavItems = useMemo(() => {
               to="/Signin"
               onClick={handleLogout}
               className={`${
-                isMobile ? 'hidden' : 'flex'
+                isMobile ? "hidden" : "flex"
               } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
             >
               <svg
@@ -297,7 +311,7 @@ const baseNavItems = useMemo(() => {
             <Link
               to="/Signin"
               className={`${
-                isMobile ? 'hidden' : 'flex'
+                isMobile ? "hidden" : "flex"
               } items-center px-3 py-2 text-sm font-medium text-white border border-white border-opacity-50 rounded-md hover:bg-white hover:bg-opacity-10 transition-colors duration-200`}
             >
               <svg
@@ -322,7 +336,7 @@ const baseNavItems = useMemo(() => {
           >
             <svg
               className={`w-6 h-6 transition-transform duration-300 ${
-                isMenuOpen ? 'rotate-90' : ''
+                isMenuOpen ? "rotate-90" : ""
               }`}
               fill="none"
               stroke="currentColor"
@@ -354,7 +368,7 @@ const baseNavItems = useMemo(() => {
 
       <div
         className={`mobile-menu fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 ${
-          isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          isMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -395,7 +409,7 @@ const baseNavItems = useMemo(() => {
                       <span>{item.name}</span>
                       <svg
                         className={`w-4 h-4 transition-transform duration-200 ${
-                          openMobileDropdown === index ? 'rotate-180' : ''
+                          openMobileDropdown === index ? "rotate-180" : ""
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -412,8 +426,8 @@ const baseNavItems = useMemo(() => {
                     <div
                       className={`transition-all duration-300 ease-in-out ${
                         openMobileDropdown === index
-                          ? 'max-h-screen opacity-100 pb-2'
-                          : 'max-h-0 opacity-0 overflow-hidden'
+                          ? "max-h-screen opacity-100 pb-2"
+                          : "max-h-0 opacity-0 overflow-hidden"
                       }`}
                     >
                       <div className="pl-4 space-y-1">
@@ -437,8 +451,8 @@ const baseNavItems = useMemo(() => {
                     className={({ isActive }) =>
                       `block px-3 py-3 font-medium rounded-md transition-colors duration-200 ${
                         isActive
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                       }`
                     }
                   >
@@ -482,7 +496,7 @@ const baseNavItems = useMemo(() => {
         </div>
       </div>
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

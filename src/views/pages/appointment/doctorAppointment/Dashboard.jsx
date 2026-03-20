@@ -1,10 +1,10 @@
 import { Plus, Calendar, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
-import BookAppointmentForm from "./BokAppointmentForm";
-import CreateAppointment from "./CreateAppointment";
-import AppointmentListing from "./AppointmentListing";
-import useJwt from "../../../enpoints/jwt/useJwt";
-import CreateDoctorAppointment from "./CreateAppointmentFormDoctor";
+import BookAppointmentForm from "./../BokAppointmentForm";
+import CreateAppointment from "./../CreateAppointment";
+import AppointmentListing from "./AppointmentListingForDoctor";
+import useJwt from "../../../../enpoints/jwt/useJwt";
+import CreateDoctorAppointment from "./../CreateAppointmentFormDoctor";
 
 const getUserInfo = () => {
   try {

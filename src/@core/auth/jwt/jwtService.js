@@ -5,7 +5,7 @@ import jwtDefaultConfig from "./jwtDefaultConfig";
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
 // axios.defaults.baseURL = 'http://192.168.29.199:8080/'
 axios.defaults.baseURL = "http://34.170.68.167:8080/";
-// axios.defaults.baseURL = 'http://192.168.1.8:8080/'
+// axios.defaults.baseURL = "http://192.168.29.199:8080/";
 
 export default class JwtService {
   //service file
@@ -568,6 +568,25 @@ export default class JwtService {
   getMetavetCharges(userType) {
     return axios.get(
       this.jwtConfig.getMetavetChargesEndpoint.replace("{userType}", userType),
+    );
+  }
+
+  getSignlePrisription(appointmentId) {
+    return axios.get(
+      this.jwtConfig.getAppointmentPriscriptionEndpoint.replace(
+        "{AppointmentId}",
+        appointmentId,
+      ),
+    );
+  }
+
+  addPriscription(payload) {
+    return axios.post(this.jwtConfig.AddPriscriptionEndpoint, payload);
+  }
+
+  getMedicalHistoryOfPet(petUid) {
+    return axios.get(
+      this.jwtConfig.getMedicalHistoryEndpoint.replace("{PetUid}", petUid),
     );
   }
 }

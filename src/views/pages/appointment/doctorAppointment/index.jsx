@@ -20,7 +20,7 @@ function DoctorStatusPage() {
 
         // ✅ Redirect only if APPROVED
         if (status === "APPROVED") {
-          navigate("/appointment", { replace: true });
+          navigate("/doctor-appointment", { replace: true });
         }
       } catch (error) {
         console.error("Failed to fetch doctor status", error);

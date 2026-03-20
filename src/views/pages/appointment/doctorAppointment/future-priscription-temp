@@ -1,0 +1,333 @@
+import { X, FileText, Plus, Trash2, PawPrint, Pill } from "lucide-react";
+import { useState } from "react";
+
+function AddPrescriptionForm({ appointment, onClose }) {
+  const [medicines, setMedicines] = useState([
+    { id: 1, name: "", dosage: "", frequency: "", duration: "", notes: "" },
+  ]);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [doctorNotes, setDoctorNotes] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const addMedicine = () => {
+    setMedicines((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name: "",
+        dosage: "",
+        frequency: "",
+        duration: "",
+        notes: "",
+      },
+    ]);
+  };
+
+  const removeMedicine = (id) => {
+    if (medicines.length === 1) return;
+    setMedicines((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const updateMedicine = (id, field, value) => {
+    setMedicines((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
+    );
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    // Simulate API call
+    await new Promise((r) => setTimeout(r, 1200));
+    setSubmitting(false);
+    setSubmitted(true);
+  };
+
+  const inputClass =
+    "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#52B2AD]/40 focus:border-[#52B2AD] transition-all placeholder:text-gray-300";
+
+  const labelClass = "block text-xs font-semibold text-gray-500 mb-1";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-[#52B2AD]/15">
+              <FileText size={20} className="text-[#52B2AD]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                Add Prescription
+              </h2>
+              {appointment && (
+                <p className="text-xs text-gray-400">
+                  {appointment.petName} &bull; {appointment.userName} &bull;{" "}
+                  {appointment.date}
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
+          {submitted ? (
+            /* ── Success State ── */
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#52B2AD]/10 flex items-center justify-center mb-4">
+                <PawPrint size={32} className="text-[#52B2AD]" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-1">
+                Prescription Saved!
+              </h3>
+              <p className="text-sm text-gray-400">
+                The prescription for{" "}
+                <span className="font-semibold text-[#52B2AD]">
+                  {appointment?.petName || "the pet"}
+                </span>{" "}
+                has been recorded.
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-6 px-6 py-2 rounded-lg bg-[#52B2AD] text-white text-sm font-semibold hover:bg-[#3d9a95] transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* ── Diagnosis ── */}
+              <div>
+                <label className={labelClass}>
+                  Diagnosis / Chief Complaint
+                </label>
+                <textarea
+                  rows={2}
+                  className={inputClass}
+                  placeholder="e.g. Bacterial skin infection, mild dehydration…"
+                  value={diagnosis}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                />
+              </div>
+
+              {/* ── Medicines ── */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                    <Pill size={13} className="text-[#52B2AD]" />
+                    Medicines
+                  </label>
+                  <button
+                    onClick={addMedicine}
+                    className="flex items-center gap-1 text-xs font-semibold text-[#52B2AD] hover:text-[#3d9a95] transition-colors"
+                  >
+                    <Plus size={14} />
+                    Add Medicine
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {medicines.map((med, idx) => (
+                    <div
+                      key={med.id}
+                      className="p-4 rounded-xl border border-gray-100 bg-gray-50 relative"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-gray-400">
+                          Medicine #{idx + 1}
+                        </span>
+                        {medicines.length > 1 && (
+                          <button
+                            onClick={() => removeMedicine(med.id)}
+                            className="p-1 rounded-full hover:bg-red-50 text-gray-300 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Name */}
+                        <div className="col-span-2">
+                          <label className={labelClass}>Medicine Name *</label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            placeholder="e.g. Amoxicillin"
+                            value={med.name}
+                            onChange={(e) =>
+                              updateMedicine(med.id, "name", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        {/* Dosage */}
+                        <div>
+                          <label className={labelClass}>Dosage</label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            placeholder="e.g. 250mg"
+                            value={med.dosage}
+                            onChange={(e) =>
+                              updateMedicine(med.id, "dosage", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        {/* Frequency */}
+                        <div>
+                          <label className={labelClass}>Frequency</label>
+                          <select
+                            className={inputClass}
+                            value={med.frequency}
+                            onChange={(e) =>
+                              updateMedicine(
+                                med.id,
+                                "frequency",
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value="">Select…</option>
+                            <option>Once daily</option>
+                            <option>Twice daily</option>
+                            <option>Three times daily</option>
+                            <option>Every 8 hours</option>
+                            <option>Every 12 hours</option>
+                            <option>As needed</option>
+                          </select>
+                        </div>
+
+                        {/* Duration */}
+                        <div>
+                          <label className={labelClass}>Duration</label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            placeholder="e.g. 7 days"
+                            value={med.duration}
+                            onChange={(e) =>
+                              updateMedicine(med.id, "duration", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        {/* Notes */}
+                        <div>
+                          <label className={labelClass}>Instructions</label>
+                          <input
+                            type="text"
+                            className={inputClass}
+                            placeholder="e.g. After meals"
+                            value={med.notes}
+                            onChange={(e) =>
+                              updateMedicine(med.id, "notes", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Doctor Notes ── */}
+              <div>
+                <label className={labelClass}>Doctor's Notes</label>
+                <textarea
+                  rows={3}
+                  className={inputClass}
+                  placeholder="Additional observations, care instructions, diet recommendations…"
+                  value={doctorNotes}
+                  onChange={(e) => setDoctorNotes(e.target.value)}
+                />
+              </div>
+
+              {/* ── Follow-up ── */}
+              <div>
+                <label className={labelClass}>Follow-up Date (optional)</label>
+                <input
+                  type="date"
+                  className={inputClass}
+                  value={followUpDate}
+                  onChange={(e) => setFollowUpDate(e.target.value)}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!submitted && (
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#52B2AD] text-white text-sm font-semibold hover:bg-[#3d9a95] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Plus size={15} />
+                  Save Prescription
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default AddPrescriptionForm;

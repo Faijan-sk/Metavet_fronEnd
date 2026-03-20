@@ -4,7 +4,15 @@ import { useState } from "react";
 import { CheckCircle, Star } from "react-feather";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { Badge, Card, CardBody, CardHeader, CardText, CardTitle, Spinner } from "reactstrap";
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardText,
+  CardTitle,
+  Spinner,
+} from "reactstrap";
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const _successUrl = process.env.REACT_APP_STRIPE_SUCCESS_URL_SUBSCRIPTION;
@@ -28,10 +36,10 @@ export const handleCheckout = async (details, setLoader) => {
       });
 
       if (result.error) {
-        alert(result.error.message);
+        // alert(result.error.message);
       }
     } else {
-      alert("Failed to initiate checkout.");
+      // alert("Failed to initiate checkout.");
     }
   } catch (error) {
     console.error("Checkout error:", error);
@@ -60,7 +68,8 @@ export const handleCheckout = async (details, setLoader) => {
  * @returns {JSX.Element} Rendered PriceCard component
  */
 const PriceCard = ({ planDetails, activeSubsciption }) => {
-  const { homeName, loginName, price, tagline, features, color, btnLable } = planDetails;
+  const { homeName, loginName, price, tagline, features, color, btnLable } =
+    planDetails;
   // ** State
   const [loader, setLoader] = useState(false);
 
@@ -86,7 +95,10 @@ const PriceCard = ({ planDetails, activeSubsciption }) => {
   };
 
   return (
-    <Card className="price-card-container h-100" style={{ "--btn-color": color }}>
+    <Card
+      className="price-card-container h-100"
+      style={{ "--btn-color": color }}
+    >
       <CardHeader>
         <div>
           <CardTitle tag={"h4"}>{loginName}</CardTitle>
@@ -105,7 +117,10 @@ const PriceCard = ({ planDetails, activeSubsciption }) => {
         <button
           className={`round mt-2 ${price === 0 ? "disabled" : ""}`}
           block
-          style={{ "--btn-color": `${color}`, cursor: price == "0" ? "not-allowed" : "pointer" }}
+          style={{
+            "--btn-color": `${color}`,
+            cursor: price == "0" ? "not-allowed" : "pointer",
+          }}
           onClick={handleCheckoutClick}
           disabled={getBtnLabel() == "Activated Plan"}
         >

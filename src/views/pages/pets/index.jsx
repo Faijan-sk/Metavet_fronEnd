@@ -1,15 +1,27 @@
-import { Calendar, Hash, PawPrint, User, Plus, Lock, ShieldAlert, Search, X } from "lucide-react";
+import {
+  Calendar,
+  Hash,
+  PawPrint,
+  User,
+  Plus,
+  Lock,
+  ShieldAlert,
+  Search,
+  X,
+  FileText,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import AddPetForm from "./AddPetForm";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import PetProfileOne from "./PetProfile";
+import MedicalHistoryTable from "../appointment/doctorAppointment/MedicalHistoryTable";
 
 const getUserInfo = () => {
   try {
     const userInfo = localStorage.getItem("userInfo");
     return userInfo ? JSON.parse(userInfo) : null;
   } catch (error) {
-    console.error('Error parsing userInfo:', error);
+    console.error("Error parsing userInfo:", error);
     return null;
   }
 };
@@ -19,7 +31,7 @@ const AddPets = ({ setIsAddOpen, isAddOpen }) => {
   if (!userInfo) return null;
 
   return (
-    <button 
+    <button
       onClick={() => setIsAddOpen(true)}
       className="bg-[#52B2AD] hover:bg-[#42948f] text-white px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2"
     >
@@ -29,11 +41,24 @@ const AddPets = ({ setIsAddOpen, isAddOpen }) => {
   );
 };
 
-const PetProfile = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
+const getPetImageSrc = (pet) => {
+  if (!pet.petImage) return null;
+  const base64 = pet.petImage;
+  let mime = "image/jpeg";
+  if (base64.startsWith("UklG")) mime = "image/webp";
+  else if (base64.startsWith("iVBO")) mime = "image/png";
+  else if (base64.startsWith("/9j/")) mime = "image/jpeg";
+  return `data:${mime};base64,${base64}`;
+};
 
-const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet, editPetData, onUpdatePet }) => {
+const AddPetModal = ({
+  isAddOpen,
+  setIsAddOpen,
+  onAddPet,
+  editPetData,
+  onUpdatePet,
+}) => {
   if (!isAddOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative animate-fadeIn max-h-[90vh] overflow-y-auto">
@@ -43,11 +68,9 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet, editPetData, onUpdateP
         >
           <X size={22} />
         </button>
-
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
           {editPetData ? "Edit Pet" : "Add New Pet"}
         </h2>
-
         <AddPetForm
           onClose={() => setIsAddOpen(false)}
           onSubmit={editPetData ? onUpdatePet : onAddPet}
@@ -58,33 +81,87 @@ const AddPetModal = ({ isAddOpen, setIsAddOpen, onAddPet, editPetData, onUpdateP
   );
 };
 
-// Compact Profile Modal with proper height
 const ProfileModal = ({ open, onClose, pet, onEditClick, onDeleteSuccess }) => {
   if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl relative animate-fadeIn max-h-[85vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 transition bg-white rounded-full p-1.5 shadow-md"
-        >
-          <X size={20} />
-        </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <PetProfileOne
+          pet={pet}
+          onEditClick={onEditClick}
+          onDeleteSuccess={onDeleteSuccess}
+        />
+      </div>
+    </div>
+  );
+};
 
-        <div>
-          <PetProfileOne 
-            pet={pet} 
-            onEditClick={onEditClick}
-            onDeleteSuccess={onDeleteSuccess}
-          />
+// ─── Medical History Modal ────────────────────────────────────────────────────
+const MedicalHistoryModal = ({ pet, onClose }) => {
+  if (!pet) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal shell */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-[#52B2AD]/15">
+              <FileText size={20} className="text-[#52B2AD]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                Medical History
+              </h2>
+              <p className="text-sm text-gray-400">
+                {pet.petName} &bull; {pet.petSpecies}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Scrollable content — pass the full pet object */}
+        <div className="overflow-y-auto flex-1">
+          <MedicalHistoryTable pet={pet} />
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-// Error State Components
+// ─── Error States ─────────────────────────────────────────────────────────────
 const ErrorState400 = ({ setIsAddOpen }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
     <div className="relative mb-6">
@@ -95,12 +172,13 @@ const ErrorState400 = ({ setIsAddOpen }) => (
         <Plus size={24} className="text-white font-bold" />
       </div>
     </div>
-    
-    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">No Pets Yet!</h2>
+    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+      No Pets Yet!
+    </h2>
     <p className="text-gray-600 text-center mb-6 max-w-md">
-      Your pet family is waiting to be created. Start by adding your first furry friend!
+      Your pet family is waiting to be created. Start by adding your first furry
+      friend!
     </p>
-    
     <button
       onClick={() => setIsAddOpen(true)}
       className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
@@ -108,20 +186,18 @@ const ErrorState400 = ({ setIsAddOpen }) => (
       <Plus size={20} />
       Add Your First Pet
     </button>
-    
     <div className="mt-8 grid grid-cols-3 gap-4 max-w-md w-full">
-      <div className="text-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition">
-        <div className="text-3xl mb-2">🐕</div>
-        <p className="text-xs text-gray-600">Dogs</p>
-      </div>
-      <div className="text-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition">
-        <div className="text-3xl mb-2">🐈</div>
-        <p className="text-xs text-gray-600">Cats</p>
-      </div>
-      <div className="text-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition">
-        <div className="text-3xl mb-2">🐦</div>
-        <p className="text-xs text-gray-600">Birds</p>
-      </div>
+      {["🐕", "🐈", "🐦"].map((emoji, i) => (
+        <div
+          key={i}
+          className="text-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition"
+        >
+          <div className="text-3xl mb-2">{emoji}</div>
+          <p className="text-xs text-gray-600">
+            {["Dogs", "Cats", "Birds"][i]}
+          </p>
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -134,12 +210,13 @@ const ErrorState401 = () => (
       </div>
       <div className="absolute inset-0 w-32 h-32 bg-red-500 rounded-full animate-ping opacity-20"></div>
     </div>
-    
-    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Session Expired</h2>
+    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+      Session Expired
+    </h2>
     <p className="text-gray-600 text-center mb-6 max-w-md">
-      Your session has timed out for security reasons. Please log in again to access your pets.
+      Your session has timed out for security reasons. Please log in again to
+      access your pets.
     </p>
-    
     <a
       href="/signin"
       className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
@@ -147,12 +224,6 @@ const ErrorState401 = () => (
       <Lock size={20} />
       Login Again
     </a>
-    
-    <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
-      <p className="text-sm text-red-800 text-center">
-        <span className="font-semibold">Security Tip:</span> Always log out when using shared devices
-      </p>
-    </div>
   </div>
 );
 
@@ -162,33 +233,13 @@ const ErrorState403 = () => (
       <div className="w-32 h-32 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-xl">
         <ShieldAlert size={64} className="text-white" strokeWidth={1.5} />
       </div>
-      <div className="absolute top-0 right-0 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-        <span className="text-white text-xl font-bold">!</span>
-      </div>
     </div>
-    
-    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Access Denied</h2>
+    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+      Access Denied
+    </h2>
     <p className="text-gray-600 text-center mb-6 max-w-md">
-      You don't have permission to view this information. Please contact support if you believe this is an error.
+      You don't have permission to view this information.
     </p>
-    
-    <div className="flex gap-3">
-      <button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 font-semibold">
-        Contact Support
-      </button>
-      <button className="border-2 border-orange-500 text-orange-600 hover:bg-orange-50 px-6 py-3 rounded-full shadow-lg transition-all font-semibold">
-        Go Back
-      </button>
-    </div>
-    
-    <div className="mt-8 bg-orange-50 border border-orange-200 rounded-lg p-6 max-w-md">
-      <h3 className="font-semibold text-orange-800 mb-2 text-sm">Common reasons:</h3>
-      <ul className="text-sm text-orange-700 space-y-1">
-        <li>• Account verification pending</li>
-        <li>• Insufficient permissions</li>
-        <li>• Subscription expired</li>
-      </ul>
-    </div>
   </div>
 );
 
@@ -196,38 +247,30 @@ const ErrorState404 = ({ setIsAddOpen }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 animate-fadeIn">
     <div className="relative mb-6">
       <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl">
-        <Search size={64} className="text-white animate-search" strokeWidth={1.5} />
+        <Search
+          size={64}
+          className="text-white animate-search"
+          strokeWidth={1.5}
+        />
       </div>
     </div>
-    
-    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">No Pets Found</h2>
+    <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+      No Pets Found
+    </h2>
     <p className="text-gray-600 text-center mb-6 max-w-md">
-      We couldn't find any pets in your account. Start building your pet family today!
+      We couldn't find any pets in your account.
     </p>
-    
     <button
       onClick={() => setIsAddOpen(true)}
-      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
+      className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 font-semibold"
     >
       <Plus size={20} />
       Add New Pet
     </button>
-    
-    <div className="mt-8 grid grid-cols-2 gap-4 max-w-md w-full">
-      <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition text-center">
-        <div className="text-4xl mb-2">🏥</div>
-        <p className="text-xs font-semibold text-gray-700 mb-1">Health Records</p>
-        <p className="text-xs text-gray-500">Track vaccinations</p>
-      </div>
-      <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition text-center">
-        <div className="text-4xl mb-2">📅</div>
-        <p className="text-xs font-semibold text-gray-700 mb-1">Appointments</p>
-        <p className="text-xs text-gray-500">Schedule visits</p>
-      </div>
-    </div>
   </div>
 );
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function PetDetailsCard() {
   const [open, setOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -239,18 +282,19 @@ export default function PetDetailsCard() {
   const [selectedPet, setSelectedPet] = useState(null);
   const [editPetData, setEditPetData] = useState(null);
 
+  // ── Medical History modal state ──
+  const [medicalHistoryPet, setMedicalHistoryPet] = useState(null);
+
   const fetchPets = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await useJwt.getAllPetsByOwner();
       const data = response.data;
       setPetList(data.data || []);
     } catch (error) {
       console.error("Error fetching Pets:", error);
       const status = error?.response?.status || error?.status;
-
       if (status >= 400 && status < 500) {
         switch (status) {
           case 400:
@@ -268,14 +312,13 @@ export default function PetDetailsCard() {
           default:
             setMsg("A client error occurred. Please check your request.");
         }
-      } else if (status >= 500 && status < 600) {
+      } else if (status >= 500) {
         setMsg("Server error occurred. Please try again later.");
       } else if (error.message === "Network Error") {
         setMsg("Network error. Please check your internet connection.");
       } else {
         setMsg("Something went wrong while fetching pets.");
       }
-
       setUnAuthorisedError(status);
       setError(error.message || "Failed to fetch Pets");
     } finally {
@@ -291,34 +334,26 @@ export default function PetDetailsCard() {
     setSelectedPet(pet);
     setOpen(true);
   };
-
-  const handleAddPet = (newPet) => {
-    // Refresh pet list after adding
+  const handleAddPet = () => {
     fetchPets();
     setIsAddOpen(false);
     setEditPetData(null);
   };
-
   const handleEditClick = (pet) => {
     setEditPetData(pet);
     setOpen(false);
     setIsAddOpen(true);
   };
-
-  const handleUpdatePet = async (updatedPet) => {
-    // Refresh pet list after updating
+  const handleUpdatePet = async () => {
     await fetchPets();
     setIsAddOpen(false);
     setEditPetData(null);
   };
-
   const handleCloseModal = () => {
     setIsAddOpen(false);
     setEditPetData(null);
   };
-
   const handleDeleteSuccess = async () => {
-    console.log('Pet deleted successfully, refreshing list...');
     setOpen(false);
     setSelectedPet(null);
     await fetchPets();
@@ -327,23 +362,10 @@ export default function PetDetailsCard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-5deg); }
-          75% { transform: rotate(5deg); }
-        }
-        @keyframes search {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+        @keyframes search { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
         .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
@@ -353,8 +375,12 @@ export default function PetDetailsCard() {
       <div className="container mx-auto px-4 py-4">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">🐾 Pet Record</h1>
-            <p className="text-gray-600 text-sm">Manage and know more about your pets</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              🐾 Pet Record
+            </h1>
+            <p className="text-gray-600 text-sm">
+              Manage and know more about your pets
+            </p>
           </div>
           <AddPets setIsAddOpen={setIsAddOpen} isAddOpen={isAddOpen} />
         </div>
@@ -372,13 +398,6 @@ export default function PetDetailsCard() {
                   <div className="h-4 w-20 bg-gray-400 rounded"></div>
                 </div>
                 <div className="p-5 space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-                    <div className="w-10 h-10 rounded-full bg-gray-300"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
-                    </div>
-                  </div>
                   <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
                     <div className="w-10 h-10 rounded-full bg-gray-300"></div>
                     <div className="flex-1 space-y-2">
@@ -407,62 +426,115 @@ export default function PetDetailsCard() {
           <ErrorState400 setIsAddOpen={setIsAddOpen} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {petList.map((pet) => (
-              <div
-                key={pet.uid}
-                className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 animate-fadeIn"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
-                
-                {/* <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-md z-10 flex items-center gap-1">
-                  <Hash size={12} className="text-[#52B2AD]" />
-                  <span className="text-xs font-semibold text-gray-700">{pet.id}</span>
-                </div> */}
+            {petList.map((pet) => {
+              const imageSrc = getPetImageSrc(pet);
+              return (
+                <div
+                  key={pet.uid}
+                  className="group relative bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 animate-fadeIn"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#52B2AD]/20 to-transparent rounded-bl-full"></div>
 
-                <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
-                    <img
-                      src={PetProfile}
-                      alt={pet.petName}
-                      className="relative w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white transform group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
-                      <PawPrint size={20} className="text-[#52B2AD]" />
+                  {/* Card Header */}
+                  <div className="relative bg-gradient-to-br from-[#52B2AD] to-[#42948f] p-8 flex flex-col items-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={pet.petName}
+                          className="relative w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-white transform group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const fallback = e.currentTarget.nextElementSibling;
+                            if (fallback) fallback.style.display = "flex";
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="relative w-32 h-32 rounded-full border-4 border-white shadow-2xl bg-white items-center justify-center transform group-hover:scale-110 transition-transform duration-300"
+                        style={{ display: imageSrc ? "none" : "flex" }}
+                      >
+                        <PawPrint
+                          size={48}
+                          className="text-[#52B2AD]"
+                          strokeWidth={1.5}
+                        />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
+                        <PawPrint size={20} className="text-[#52B2AD]" />
+                      </div>
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mt-4 text-center">
+                      {pet.petName}
+                    </h2>
+                    <p className="text-white/90 text-sm font-medium mt-1">
+                      {pet.petSpecies}
+                    </p>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-5 space-y-3">
+                    {/* Age */}
+                    {/* <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <Calendar size={18} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 font-medium">Age</p>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {pet.petAge
+                            ? `${pet.petAge} yr${pet.petAge > 1 ? "s" : ""}`
+                            : "N/A"}
+                        </p>
+                      </div>
+                    </div> */}
+
+                    {/* Breed */}
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center flex-shrink-0">
+                        <Hash size={18} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Breed
+                        </p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {pet.petBreed || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ── Buttons ── */}
+                    <div className="flex flex-col gap-2 mt-4">
+                      {/* View Full Profile */}
+                      <button
+                        onClick={() => setMedicalHistoryPet(pet)}
+                        className="w-full border border-[#52B2AD] text-[#52B2AD] hover:bg-[#52B2AD] hover:text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <FileText size={18} />
+                        <span>View Medical History</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleViewProfile(pet)}
+                        className="w-full bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group"
+                      >
+                        <User
+                          size={18}
+                          className="group-hover:rotate-12 transition-transform"
+                        />
+                        <span>View Full Profile</span>
+                      </button>
+
+                      {/* View Medical History */}
                     </div>
                   </div>
-                  
-                  <h2 className="text-2xl font-bold text-white mt-4 text-center">{pet.petName}</h2>
-                  <p className="text-white/90 text-sm font-medium mt-1">{pet.petSpecies}</p>
+
+                  <div className="absolute inset-0 border-2 border-[#52B2AD] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </div>
-
-                <div className="p-5 space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#52B2AD] to-[#42948f] rounded-full flex items-center justify-center flex-shrink-0">
-                      <User size={18} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500 font-medium">Owner</p>
-                      <p className="text-sm font-semibold text-gray-800 truncate">
-                        {typeof pet.owner === "object"
-                          ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim() || pet.owner?.email || "N/A"
-                          : pet.owner || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleViewProfile(pet)}
-                    className="w-full bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:from-[#42948f] hover:to-[#52B2AD] text-white font-semibold py-3 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group mt-4"
-                  >
-                    <User size={18} className="group-hover:rotate-12 transition-transform" />
-                    <span>View Full Profile</span>
-                  </button>
-                </div>
-
-                <div className="absolute inset-0 border-2 border-[#52B2AD] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -482,7 +554,14 @@ export default function PetDetailsCard() {
         onEditClick={handleEditClick}
         onDeleteSuccess={handleDeleteSuccess}
       />
-      
+
+      {/* ── Medical History Modal ── */}
+      {medicalHistoryPet && (
+        <MedicalHistoryModal
+          pet={medicalHistoryPet}
+          onClose={() => setMedicalHistoryPet(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,12 +1,41 @@
-import React, { useState } from "react";
-import { User, Calendar, PawPrint, Phone, Edit, Heart, Award, Activity, Trash2, AlertTriangle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  User,
+  Calendar,
+  PawPrint,
+  Phone,
+  Edit,
+  Heart,
+  Award,
+  Activity,
+  Trash2,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 
+const getImageSrc = (pet) => {
+  if (!pet?.petImage) return null;
+  const base64 = pet.petImage;
+  let mime = "image/jpeg";
+  if (base64.startsWith("UklG")) mime = "image/webp";
+  else if (base64.startsWith("iVBO")) mime = "image/png";
+  else if (base64.startsWith("/9j/")) mime = "image/jpeg";
+  return `data:${mime};base64,${base64}`;
+};
+
 export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
-  const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [deleteError, setDeleteError] = useState(null); // ✅ NEW
+
+  useEffect(() => {
+    setImgError(false);
+    setDeleteError(null); // reset error when pet changes
+    console.log(pet);
+  }, [pet]);
 
   if (!pet) {
     return (
@@ -16,69 +45,78 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
     );
   }
 
+  const imageSrc = getImageSrc(pet);
+  const showImage = imageSrc && !imgError;
+
   const ownerName =
     typeof pet.owner === "object"
-      ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim()
+      ? `${pet.owner?.firstName || ""} ${pet.owner?.lastName || ""}`.trim() ||
+        "N/A"
       : pet.owner || "N/A";
 
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(JSON.stringify(pet, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleDeleteClick = () => {
+    setDeleteError(null); // reset previous error
     setShowDeleteModal(true);
   };
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
+    setDeleteError(null);
     try {
-      // Use UID for deletion
       console.log("Deleting pet with UID:", pet.uid);
       await useJwt.deletePet(pet.uid);
       console.log(`Pet ${pet.uid} deleted successfully`);
       setShowDeleteModal(false);
-      
-      // Call parent callback to refresh pet list
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
-      }
+      if (onDeleteSuccess) onDeleteSuccess();
     } catch (error) {
-      console.error('Error deleting pet:', error);
-      const errorMsg = error?.response?.data?.message || 'Failed to delete pet. Please try again.';
-      alert(errorMsg);
-      setShowDeleteModal(false);
+      console.error("Error deleting pet:", error);
+
+      // ✅ API ka message extract karo
+      const apiMessage =
+        error?.response?.data?.message ||
+        "An unexpected error occurred while deleting this pet. Please try again.";
+
+      setDeleteError(apiMessage); // modal mein dikhayenge, close nahi karenge
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handleDeleteCancel = () => {
+    setDeleteError(null);
     setShowDeleteModal(false);
   };
 
   return (
     <div className="max-w-3xl mx-auto p-4 mt-6">
-      <div 
+      <div
         className="bg-gradient-to-br from-white to-teal-50 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Header with gradient background */}
+        {/* ── Header ── */}
         <div className="bg-gradient-to-r from-[#52B2AD] to-[#3d8a86] p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-24 -mb-24"></div>
-          
+
           <div className="flex gap-6 items-center relative z-10">
-            <div 
-              className={`w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl flex items-center justify-center bg-white transition-transform duration-300 ${isHovered ? 'scale-110' : 'scale-100'}`}
+            <div
+              className={`w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl flex items-center justify-center bg-white transition-transform duration-300 ${isHovered ? "scale-110" : "scale-100"}`}
             >
-              <img
-                src={pet.photoUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E"}
-                alt={pet.petName || "Pet"}
-                className="w-full h-full object-cover"
-              />
+              {showImage ? (
+                <img
+                  src={imageSrc}
+                  alt={pet.petName || "Pet"}
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <PawPrint
+                  size={56}
+                  className="text-[#52B2AD]"
+                  strokeWidth={1.5}
+                />
+              )}
             </div>
 
             <div className="flex-1">
@@ -86,13 +124,20 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
                 <div>
                   <h2 className="text-3xl font-bold text-white mb-1 flex items-center gap-2">
                     {pet.petName || "Unnamed Pet"}
-                    <Heart size={24} className="text-red-300 fill-red-300 animate-pulse" />
+                    <Heart
+                      size={24}
+                      className="text-red-300 fill-red-300 animate-pulse"
+                    />
                   </h2>
-                  <p className="text-teal-100 text-sm">{pet.petInfo || `${pet.petSpecies || ""} ${pet.petBreed ? `• ${pet.petBreed}` : ""}`}</p>
+                  <p className="text-teal-100 text-sm">
+                    {pet.petSpecies || ""}
+                    {pet.petBreed ? ` • ${pet.petBreed}` : ""}
+                  </p>
                 </div>
-
                 <div className="text-right bg-white bg-opacity-20 rounded-lg px-3 py-2 backdrop-blur-sm">
-                  <div className="text-xs text-teal-100 uppercase tracking-wide">Pet ID</div>
+                  <div className="text-xs text-teal-100 uppercase tracking-wide">
+                    Pet ID
+                  </div>
                   <div className="font-bold text-white text-lg">{pet.id}</div>
                 </div>
               </div>
@@ -100,8 +145,8 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
           </div>
         </div>
 
-        {/* Quick Info Cards */}
-        <div className="p-6 -mt-4 relative z-20">
+        {/* ── Quick Info Cards ── */}
+        <div className="p-6 mt-4 relative z-20">
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-md p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-lg">
               <div className="flex items-center gap-3">
@@ -110,7 +155,9 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Species</div>
-                  <div className="font-semibold text-gray-800">{pet.petSpecies || "Unknown"}</div>
+                  <div className="font-semibold text-gray-800">
+                    {pet.petSpecies || "Unknown"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -123,52 +170,49 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
                 <div>
                   <div className="text-xs text-gray-500">Age</div>
                   <div className="font-semibold text-gray-800">
-                    {pet.birthDate ? new Date(pet.birthDate).toLocaleDateString() : (pet.petAge ? `${pet.petAge} yrs` : "Unknown")}
+                    {pet.petAge
+                      ? `${pet.petAge} yr${pet.petAge > 1 ? "s" : ""}`
+                      : "Unknown"}
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-md p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User size={20} className="text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Owner</div>
-                  <div className="font-semibold text-gray-800 truncate">{ownerName}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Details Section */}
+          {/* ── Details ── */}
           <div className="space-y-5">
             {/* Basic Info */}
             <div className="bg-white rounded-xl shadow-md p-5 transition-all duration-200 hover:shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <Activity size={18} className="text-[#52B2AD]" />
-                <h3 className="text-lg font-bold text-gray-800">Basic Information</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Basic Information
+                </h3>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-teal-50 to-white p-3 rounded-lg border border-teal-100">
                   <div className="text-xs text-gray-500 mb-1">Breed</div>
-                  <div className="font-semibold text-gray-800">{pet.petBreed || "Unknown"}</div>
+                  <div className="font-semibold text-gray-800">
+                    {pet.petBreed || "Unknown"}
+                  </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-blue-50 to-white p-3 rounded-lg border border-blue-100">
                   <div className="text-xs text-gray-500 mb-1">Gender</div>
-                  <div className="font-semibold text-gray-800">{pet.petGender || "Unknown"}</div>
+                  <div className="font-semibold text-gray-800">
+                    {pet.petGender || "Unknown"}
+                  </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-purple-50 to-white p-3 rounded-lg border border-purple-100">
                   <div className="text-xs text-gray-500 mb-1">Weight</div>
-                  <div className="font-semibold text-gray-800">{pet.petWeight ? `${pet.petWeight} kg` : "N/A"}</div>
+                  <div className="font-semibold text-gray-800">
+                    {pet.petWeight != null ? `${pet.petWeight} kg` : "N/A"}
+                  </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-pink-50 to-white p-3 rounded-lg border border-pink-100">
                   <div className="text-xs text-gray-500 mb-1">Height</div>
-                  <div className="font-semibold text-gray-800">{pet.petHeight ? `${pet.petHeight} cm` : "N/A"}</div>
+                  <div className="font-semibold text-gray-800">
+                    {pet.petHeight != null ? `${pet.petHeight} cm` : "N/A"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -177,36 +221,40 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
             <div className="bg-white rounded-xl shadow-md p-5 transition-all duration-200 hover:shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <Award size={18} className="text-[#52B2AD]" />
-                <h3 className="text-lg font-bold text-gray-800">Health Status</h3>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Health Status
+                </h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className={`p-4 rounded-xl border-2 transition-all ${pet.isVaccinated ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 transition-all ${pet.isVaccinated ? "bg-green-50 border-green-300" : "bg-gray-50 border-gray-300"}`}
+                >
                   <div className="text-xs text-gray-600 mb-1">Vaccinated</div>
-                  <div className={`font-bold ${pet.isVaccinated ? 'text-green-700' : 'text-gray-700'}`}>
+                  <div
+                    className={`font-bold ${pet.isVaccinated ? "text-green-700" : "text-gray-700"}`}
+                  >
                     {pet.isVaccinated ? "✓ Yes" : "✗ No"}
                   </div>
                 </div>
-
-                <div className={`p-4 rounded-xl border-2 transition-all ${pet.isNeutered ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 transition-all ${pet.isNeutered ? "bg-blue-50 border-blue-300" : "bg-gray-50 border-gray-300"}`}
+                >
                   <div className="text-xs text-gray-600 mb-1">Neutered</div>
-                  <div className={`font-bold ${pet.isNeutered ? 'text-blue-700' : 'text-gray-700'}`}>
+                  <div
+                    className={`font-bold ${pet.isNeutered ? "text-blue-700" : "text-gray-700"}`}
+                  >
                     {pet.isNeutered ? "✓ Yes" : "✗ No"}
                   </div>
                 </div>
-
                 <div className="p-4 rounded-xl border-2 bg-gradient-to-br from-teal-50 to-white border-teal-300">
-                  <div className="text-xs text-gray-600 mb-1">Overall Status</div>
-                  <div className="font-bold text-teal-700">{pet.healthStatus || "Good"}</div>
+                  <div className="text-xs text-gray-600 mb-1">
+                    Overall Status
+                  </div>
+                  <div className="font-bold text-teal-700">
+                    {pet.healthStatus || "Good"}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Medical Notes */}
-            <div className="bg-white rounded-xl shadow-md p-5 transition-all duration-200 hover:shadow-lg">
-              <h3 className="text-lg font-bold text-gray-800 mb-3">Medical Notes</h3>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-lg border border-gray-200">
-                {pet.medicalNotes || "No medical notes available."}
-              </p>
             </div>
 
             {/* Action Buttons */}
@@ -218,7 +266,6 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
                 <Phone size={18} />
                 Call Owner
               </a>
-
               <button
                 onClick={() => onEditClick && onEditClick(pet)}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-[#52B2AD] text-[#52B2AD] font-semibold shadow-md hover:shadow-lg hover:bg-teal-50 transform transition-all duration-200 hover:scale-105"
@@ -226,7 +273,6 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
                 <Edit size={18} />
                 Edit Profile
               </button>
-
               <button
                 onClick={handleDeleteClick}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-red-500 text-red-500 font-semibold shadow-md hover:shadow-lg hover:bg-red-50 transform transition-all duration-200 hover:scale-105"
@@ -239,27 +285,39 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* ── Delete Confirmation Modal ── */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-fadeIn">
             <div className="p-6">
-              {/* Warning Icon */}
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
                   <AlertTriangle size={32} className="text-red-600" />
                 </div>
               </div>
 
-              {/* Modal Content */}
               <h3 className="text-2xl font-bold text-gray-800 text-center mb-2">
                 Delete Pet Profile?
               </h3>
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to delete <span className="font-bold text-[#52B2AD]">{pet.petName}</span>'s profile? This action cannot be undone.
+              <p className="text-gray-600 text-center mb-4">
+                Are you sure you want to delete{" "}
+                <span className="font-bold text-[#52B2AD]">{pet.petName}</span>
+                's profile? This action cannot be undone.
               </p>
 
-              {/* Action Buttons */}
+              {/* ✅ Inline error message — sirf tab dikhao jab error ho */}
+              {deleteError && (
+                <div className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4">
+                  <XCircle
+                    size={18}
+                    className="text-orange-500 mt-0.5 flex-shrink-0"
+                  />
+                  <p className="text-sm text-orange-800 leading-relaxed">
+                    {deleteError}
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={handleDeleteCancel}
@@ -294,7 +352,7 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
+          to   { opacity: 1; transform: scale(1); }
         }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
       `}</style>

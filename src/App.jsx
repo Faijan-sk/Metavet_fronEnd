@@ -10,22 +10,22 @@ import LoginForm from "./views/pages/forms/login";
 import OtpVerification from "./views/pages/forms/otpForm/index";
 import SignUp from "./views/pages/forms/registerUser/index";
 import DoctorProfileUpdate from "./views/pages/forms/updateForm/index";
-import WalkerToClientKyc from "./views/pages/kyc/walker-kyc/WalkerToClientKyc"
+import WalkerToClientKyc from "./views/pages/kyc/walker-kyc/WalkerToClientKyc";
 import PetRecord from "./views/pages/pets/index";
-import PetServiceAppointment from "./views/pages/petServicesAppointment/index"
-import ServiceProviders from "./views/pages/serviceProvider/index"
-import ProfilePage from "./../src/views/pages/profilepage/index"
-import DoctorAppointentindex from "./../src/views/pages/appointment/doctorAppointment/index"
-import PaymentCheckOutForm from "./../src/views/pages/payment/CheckOut"
-import PaymentSuccess from "./../src/views/pages/payment/PaymentSuccess"
-import PaymentFailed from "./../src/views/pages/payment/PaymentFailed"
-import PayNOw from "./../src/views/pages/appointment/PayNow"
-import GroomerDashboard from "./../src/views/pages/petServicesAppointment/groomer/index"
-import WalkerDashboard from "./../src/views/pages/petServicesAppointment/walker/index"
+import PetServiceAppointment from "./views/pages/petServicesAppointment/index";
+import ServiceProviders from "./views/pages/serviceProvider/index";
+import ProfilePage from "./../src/views/pages/profilepage/index";
+import DoctorAppointentindex from "./../src/views/pages/appointment/doctorAppointment/index";
+import PaymentCheckOutForm from "./../src/views/pages/payment/CheckOut";
+import PaymentSuccess from "./../src/views/pages/payment/PaymentSuccess";
+import PaymentFailed from "./../src/views/pages/payment/PaymentFailed";
+import PayNOw from "./../src/views/pages/appointment/PayNow";
+import GroomerDashboard from "./../src/views/pages/petServicesAppointment/groomer/index";
+import WalkerDashboard from "./../src/views/pages/petServicesAppointment/walker/index";
 import BehaviouristDashboard from "./../src/views/pages/petServicesAppointment/behaviourist/index";
-import BehavioAppointment from "./../src/views/pages/serviceProvider/petBehaviourist/AppointmentListing"
-import WalkerBookedAppointment  from "./../src/views/pages/serviceProvider/petWalker/AppointmentList"
-import GroomerBookedAppointment from "./../src/views/pages/serviceProvider/petGroomer/AppointmentListing"
+import BehavioAppointment from "./../src/views/pages/serviceProvider/petBehaviourist/AppointmentListing";
+import WalkerBookedAppointment from "./../src/views/pages/serviceProvider/petWalker/AppointmentList";
+import GroomerBookedAppointment from "./../src/views/pages/serviceProvider/petGroomer/AppointmentListing";
 // ** Pages
 
 const Dashboard = lazy(() => import("./views/pages/dashboard"));
@@ -41,20 +41,20 @@ const Teleconsultation = lazy(() => import("./views/pages/teleconsultation"));
 const TreatmentPlans = lazy(() => import("./views/pages/treatmentplans"));
 const Bloodwork = lazy(() => import("./views/pages/bloodwork"));
 const Grooming = lazy(() => import("./views/pages/grooming"));
-const BehaviouralConcern = lazy(() =>
-  import("./views/pages/behaviouralConcern")
+const BehaviouralConcern = lazy(
+  () => import("./views/pages/behaviouralConcern"),
 );
-import WalkerKyc from "./views/pages/kyc/walker-kyc/index"
-import Behaviourist  from "./views/pages/kyc/behaviourist-kyc/index"
-import BehavioristToClient from "./views/pages/kyc/behaviourist-kyc/behaviouristToClient"
-import GroomerToClientKyc from "./views/pages/kyc/groomer-kyc/GroomerToClientKyc"
+import WalkerKyc from "./views/pages/kyc/walker-kyc/index";
+import Behaviourist from "./views/pages/kyc/behaviourist-kyc/index";
+import BehavioristToClient from "./views/pages/kyc/behaviourist-kyc/behaviouristToClient";
+import GroomerToClientKyc from "./views/pages/kyc/groomer-kyc/GroomerToClientKyc";
 const GroomerKyc = lazy(() => import("./views/pages/kyc/groomer-kyc/index"));
 const KennelsBoarding = lazy(() => import("./views/pages/kennels/boarding"));
 const DogTraining = lazy(() => import("./views/pages/dogtraining"));
 const Dental = lazy(() => import("./views/pages/dental"));
 const Vaccines = lazy(() => import("./views/pages/vaccines"));
-const ParasitePrevention = lazy(() =>
-  import("./views/pages/parasiteprevention")
+const ParasitePrevention = lazy(
+  () => import("./views/pages/parasiteprevention"),
 );
 const SpayingOrNeutering = lazy(() => import("./views/pages/spayingneutering"));
 const Nutrition = lazy(() => import("./views/pages/nutrition"));
@@ -71,8 +71,8 @@ const PetHealth = lazy(() => import("./views/pages/pethealth"));
 const ChoosingPet = lazy(() => import("./views/pages/choosingpet"));
 const LivingPet = lazy(() => import("./views/pages/livingpet"));
 const VideoNewsroom = lazy(() => import("./views/pages/videonewsroom"));
-const TodaysVeterinarian = lazy(() =>
-  import("./views/pages/todaysveterinarian")
+const TodaysVeterinarian = lazy(
+  () => import("./views/pages/todaysveterinarian"),
 );
 const NewsletterArchive = lazy(() => import("./views/pages/newsletterarchive"));
 const HospitalTour = lazy(() => import("./views/pages/hospitaltour"));
@@ -97,6 +97,7 @@ const FeathersTeaser = lazy(() => import("./views/pages/feathersteaser"));
 const Kong = lazy(() => import("./views/pages/kong"));
 const MilkBone = lazy(() => import("./views/pages/milkbone"));
 const HillScienceDog = lazy(() => import("./views/pages/hillsciencedog"));
+import DoctorAppointmentListing from "./views/pages/appointment/doctorAppointment/Dashboard";
 
 const ViewProfile4 = lazy(() => import("./views/pages/viewprofile4"));
 
@@ -126,7 +127,6 @@ const App = () => {
             <Routes>
               <Route path="*" element={<h1>404 page not found</h1>} />
               <Route path="/" element={<Layout />}>
-
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/appointment" element={<Appointment />} />
@@ -146,21 +146,31 @@ const App = () => {
                 <Route path="/blood-work" element={<Bloodwork />} />
                 <Route path="/grooming" element={<Grooming />} />
 
-
-
                 <Route path="/groomer-kyc" element={<GroomerKyc />} />
                 <Route path="/walker-kyc" element={<WalkerKyc />} />
-                <Route path="/walkerTo-client-Kyc" element={<WalkerToClientKyc />} />
-                <Route path="/behaviourist-kyc" element={<Behaviourist/>} />
-                <Route path="/behaviouristTo-client-kyc" element={<BehavioristToClient/>} />
-                <Route path="/groomerTo-client-kyc" element={<GroomerToClientKyc/>} />
-                <Route path="/service-appointment" element={<PetServiceAppointment />} />
-            
+                <Route
+                  path="/walkerTo-client-Kyc"
+                  element={<WalkerToClientKyc />}
+                />
+                <Route path="/behaviourist-kyc" element={<Behaviourist />} />
+                <Route
+                  path="/behaviouristTo-client-kyc"
+                  element={<BehavioristToClient />}
+                />
+                <Route
+                  path="/groomerTo-client-kyc"
+                  element={<GroomerToClientKyc />}
+                />
+                <Route
+                  path="/service-appointment"
+                  element={<PetServiceAppointment />}
+                />
 
-
-      {/* other service  */}
-                <Route path="/service-provider/:serviceType" element={<ServiceProviders />} />
-
+                {/* other service  */}
+                <Route
+                  path="/service-provider/:serviceType"
+                  element={<ServiceProviders />}
+                />
 
                 <Route path="/kennels-boarding" element={<KennelsBoarding />} />
                 <Route path="/dog-training" element={<DogTraining />} />
@@ -211,7 +221,10 @@ const App = () => {
                   element={<DoctorProfileUpdate />}
                 /> */}
 
-                  <Route path="/doctor-profile" element={<DoctorAppointentindex />} />
+                <Route
+                  path="/doctor-profile"
+                  element={<DoctorAppointentindex />}
+                />
 
                 <Route
                   path="/updateProfile"
@@ -220,25 +233,41 @@ const App = () => {
                 {/* Public Routes */}
                 <Route path="/signin" element={<LoginForm />}></Route>
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/otp-verification/:token" element={<OtpVerification />} />
+                <Route
+                  path="/otp-verification/:token"
+                  element={<OtpVerification />}
+                />
 
-                
+                <Route path="/payment-sucess" element={<PaymentSuccess />} />
+                <Route path="/payment-failed" element={<PaymentFailed />} />
+                <Route path="/pay-now" element={<PayNOw />} />
 
+                {/* service Provider */}
 
-<Route path="/payment-sucess" element={<PaymentSuccess />} />
-<Route path="/payment-failed" element={<PaymentFailed />} />
-<Route path="/pay-now" element={<PayNOw />} />
+                <Route path="/pet-groomer" element={<GroomerDashboard />} />
+                <Route path="/pet-walker" element={<WalkerDashboard />} />
+                <Route
+                  path="/pet-behaviorist"
+                  element={<BehaviouristDashboard />}
+                />
 
+                <Route
+                  path="/behaviourist-appointments"
+                  element={<BehavioAppointment />}
+                />
+                <Route
+                  path="/walker-appointments"
+                  element={<WalkerBookedAppointment />}
+                />
+                <Route
+                  path="/groomer-appointments"
+                  element={<GroomerBookedAppointment />}
+                />
 
-{/* service Provider */}
-
-<Route path="/pet-groomer" element={<GroomerDashboard />} />
-<Route path="/pet-walker" element={<WalkerDashboard />} />
-<Route path="/pet-behaviorist" element={<BehaviouristDashboard />} />
-
-<Route path="/behaviourist-appointments" element={<BehavioAppointment />} />
-<Route path="/walker-appointments" element={<WalkerBookedAppointment />} />
-<Route path="/groomer-appointments" element={<GroomerBookedAppointment />} />
+                <Route
+                  path="/doctor-appointment"
+                  element={<DoctorAppointmentListing />}
+                />
               </Route>
             </Routes>
           </Suspense>
