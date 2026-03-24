@@ -589,4 +589,29 @@ export default class JwtService {
       this.jwtConfig.getMedicalHistoryEndpoint.replace("{PetUid}", petUid),
     );
   }
+
+  getWalkerToClientKycByPet(petUid) {
+    return axios.get(
+      this.jwtConfig.getWalkerToClientKycByPet.replace("{petUid}", petUid),
+    );
+  }
+
+  getBehavioToClientKycByPet(petUid) {
+    return axios.get(
+      this.jwtConfig.getBehaviToClientKycByPet.replace("{petUid}", petUid),
+    );
+  }
+
+  updateWalkerToClientKyc(uid, payload) {
+    return axios.put(
+      this.jwtConfig.updateWalkerToClientKyc.replace("{kycUid}", uid),
+      payload,
+    );
+  }
+
+  getGroomerKycByPetUid(petUid) {
+    return axios.get(
+      this.jwtConfig.getGroomerToClientKycByPet.replace("{petUid}", petUid),
+    );
+  }
 }

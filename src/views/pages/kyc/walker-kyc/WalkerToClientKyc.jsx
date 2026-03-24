@@ -1,159 +1,270 @@
-import React, { useEffect, useState } from 'react'
-import useJwt from "./../../../../enpoints/jwt/useJwt"
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import useJwt from "./../../../../enpoints/jwt/useJwt";
 
 // Initial empty form state (so we can reset easily after success)
 const initialFormData = {
-  petUid: '',
-  petNames: '',
-  breedType: '',
-  age: '',
-  petSpecies: '',
+  petUid: "",
+  petNames: "",
+  breedType: "",
+  age: "",
+  petSpecies: "",
 
-  energyLevel: '',
-  walkingExperience: '',
-  preferredWalkType: '',
-  preferredWalkDuration: '',
-  customWalkDuration: '',
-  frequency: '',
-  frequencyOther: '',
-  preferredTimeOfDay: '',
-  preferredStartDate: '',
+  energyLevel: "",
+  walkingExperience: "",
+  preferredWalkType: "",
+  preferredWalkDuration: "",
+  customWalkDuration: "",
+  frequency: "",
+  frequencyOther: "",
+  preferredTimeOfDay: "",
+  preferredStartDate: "",
 
   leashBehavior: [],
-  leashBehaviorOther: '',
-  knownTriggers: '',
-  socialCompatibility: '',
+  leashBehaviorOther: "",
+  knownTriggers: "",
+  socialCompatibility: "",
   handlingNotes: [],
-  handlingNotesOther: '',
-  comfortingMethods: '',
+  handlingNotesOther: "",
+  comfortingMethods: "",
 
   medicalConditions: null,
-  medicalConditionsDetails: '',
+  medicalConditionsDetails: "",
   medications: null,
-  medicationsDetails: '',
-  emergencyVetInfo: '',
+  medicationsDetails: "",
+  emergencyVetInfo: "",
 
-  startingLocation: '',
-  addressMeetingPoint: '',
-  accessInstructions: '',
-  backupContact: '',
+  startingLocation: "",
+  addressMeetingPoint: "",
+  accessInstructions: "",
+  backupContact: "",
   postWalkPreferences: [],
 
   additionalServices: [],
-  additionalServicesOther: '',
+  additionalServicesOther: "",
 
   consent: false,
-  signature: '',
-  signatureDate: ''
-}
+  signature: "",
+  signatureDate: "",
+};
+
+// ─── Helper: parse comma-separated string from API → array ───────────────────
+const parseArrayField = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return val
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
+// ─── Map API fullRecord → formData shape ─────────────────────────────────────
+const mapKycToFormData = (fullRecord) => {
+  if (!fullRecord) return null;
+
+  return {
+    petUid: fullRecord.petUid ?? "",
+    petNames: fullRecord.petNames ?? "",
+    breedType: fullRecord.breedType ?? "",
+    age:
+      fullRecord.age !== null && fullRecord.age !== undefined
+        ? String(fullRecord.age)
+        : "",
+    petSpecies: fullRecord.petSpecies ?? "",
+
+    energyLevel: fullRecord.energyLevel
+      ? // API returns "MEDIUM" etc., form uses "Medium" etc.
+        fullRecord.energyLevel.charAt(0).toUpperCase() +
+        fullRecord.energyLevel.slice(1).toLowerCase()
+      : "",
+    walkingExperience: fullRecord.walkingExperience
+      ? fullRecord.walkingExperience.charAt(0).toUpperCase() +
+        fullRecord.walkingExperience.slice(1).toLowerCase()
+      : "",
+    preferredWalkType: fullRecord.preferredWalkType
+      ? fullRecord.preferredWalkType.charAt(0).toUpperCase() +
+        fullRecord.preferredWalkType.slice(1).toLowerCase()
+      : "",
+    preferredWalkDuration: fullRecord.preferredWalkDuration ?? "",
+    customWalkDuration:
+      fullRecord.customWalkDuration !== null &&
+      fullRecord.customWalkDuration !== undefined
+        ? String(fullRecord.customWalkDuration)
+        : "",
+
+    frequency: fullRecord.frequency ?? "",
+    frequencyOther: fullRecord.frequencyOther ?? "",
+    preferredTimeOfDay: fullRecord.preferredTimeOfDay ?? "",
+    preferredStartDate: fullRecord.preferredStartDate ?? "",
+
+    leashBehavior: parseArrayField(fullRecord.leashBehavior),
+    leashBehaviorOther: fullRecord.leashBehaviorOther ?? "",
+    knownTriggers: fullRecord.knownTriggers ?? "",
+    socialCompatibility: fullRecord.socialCompatibility ?? "",
+    handlingNotes: parseArrayField(fullRecord.handlingNotes),
+    handlingNotesOther: fullRecord.handlingNotesOther ?? "",
+    comfortingMethods: fullRecord.comfortingMethods ?? "",
+
+    medicalConditions:
+      fullRecord.medicalConditions !== null &&
+      fullRecord.medicalConditions !== undefined
+        ? Boolean(fullRecord.medicalConditions)
+        : null,
+    medicalConditionsDetails: fullRecord.medicalConditionsDetails ?? "",
+    medications:
+      fullRecord.medications !== null && fullRecord.medications !== undefined
+        ? Boolean(fullRecord.medications)
+        : null,
+    medicationsDetails: fullRecord.medicationsDetails ?? "",
+    emergencyVetInfo: fullRecord.emergencyVetInfo ?? "",
+
+    startingLocation: fullRecord.startingLocation ?? "",
+    addressMeetingPoint: fullRecord.addressMeetingPoint ?? "",
+    accessInstructions: fullRecord.accessInstructions ?? "",
+    backupContact: fullRecord.backupContact ?? "",
+    postWalkPreferences: parseArrayField(fullRecord.postWalkPreferences),
+
+    additionalServices: parseArrayField(fullRecord.additionalServices),
+    additionalServicesOther: fullRecord.additionalServicesOther ?? "",
+
+    consent: Boolean(fullRecord.consent),
+    signature: fullRecord.signature ?? "",
+    signatureDate: fullRecord.signatureDate ?? "",
+  };
+};
 
 const PetWalkerKYC = () => {
-  const [pets, setPets] = useState([])
-  const [loadingPets, setLoadingPets] = useState(false)
-  const [petsError, setPetsError] = useState(null)
-  const [selectedPetId, setSelectedPetId] = useState('')
+  const location = useLocation();
 
-  const [submitting, setSubmitting] = useState(false)
-  const [apiError, setApiError] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(null)
+  // kycData comes from BookWalkModal → navigate("/walkerTo-client-Kyc", { state: { kycData: response.data.data } })
+  // response.data.data shape: { petUid, fullRecord: {...}, kycUid, status }
+  const kycData = location.state?.kycData || null;
+  const isUpdateMode = !!kycData; // true → prefill + update, false → fresh create
 
-  const [formData, setFormData] = useState(initialFormData)
+  const kycUid = kycData?.kycUid || null; // top-level kycUid from API response data
+
+  const [pets, setPets] = useState([]);
+  const [loadingPets, setLoadingPets] = useState(false);
+  const [petsError, setPetsError] = useState(null);
+  const [selectedPetId, setSelectedPetId] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  // ─── Pre-fill form when arriving from "Update KYC" ───────────────────────
+  useEffect(() => {
+    if (isUpdateMode && kycData?.fullRecord) {
+      const mapped = mapKycToFormData(kycData.fullRecord);
+      if (mapped) {
+        setFormData(mapped);
+        // Set the selected pet id so the dropdown shows the right pet
+        setSelectedPetId(kycData.fullRecord.petUid ?? kycData.petUid ?? "");
+      }
+    }
+  }, [isUpdateMode]);
 
   // Generic setter that validates input against a provided regex.
-  // Allows empty string so users can clear fields.
   const setIfValid = (field, value, regex) => {
-    if (value === '' || regex.test(value)) {
-      setFormData(prev => ({ ...prev, [field]: value }))
+    if (value === "" || regex.test(value)) {
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
-  }
+  };
 
   const handleCheckboxArray = (field, value) => {
-    setFormData(prev => {
-      const current = Array.isArray(prev[field]) ? prev[field] : []
+    setFormData((prev) => {
+      const current = Array.isArray(prev[field]) ? prev[field] : [];
       return {
         ...prev,
         [field]: current.includes(value)
-          ? current.filter(i => i !== value)
-          : [...current, value]
-      }
-    })
-  }
+          ? current.filter((i) => i !== value)
+          : [...current, value],
+      };
+    });
+  };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  // When user selects a pet from dropdown, populate fields (but keep breed/age/species/petName hidden from user)
+  // When user selects a pet from dropdown, populate fields
   const handlePetSelect = (petIdentifier) => {
-    setSelectedPetId(petIdentifier)
+    setSelectedPetId(petIdentifier);
 
     if (!petIdentifier) {
-      // clear pet-specific fields if user chooses blank option
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        petNames: '',
-        breedType: '',
-        age: '',
-        petSpecies: '',
-        petUid: ''
-      }))
-      return
+        petNames: "",
+        breedType: "",
+        age: "",
+        petSpecies: "",
+        petUid: "",
+      }));
+      return;
     }
 
-    // Try to find by uid first, then id
-    const pet = pets.find(p =>
-      (p.uid && String(p.uid) === String(petIdentifier)) ||
-      (p.id && String(p.id) === String(petIdentifier))
-    )
+    const pet = pets.find(
+      (p) =>
+        (p.uid && String(p.uid) === String(petIdentifier)) ||
+        (p.id && String(p.id) === String(petIdentifier)),
+    );
 
     if (!pet) {
-      // If not found, still set petUid to the selected identifier (defensive)
-      setFormData(prev => ({ ...prev, petUid: String(petIdentifier) }))
-      return
+      setFormData((prev) => ({ ...prev, petUid: String(petIdentifier) }));
+      return;
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      petNames: pet.petName ?? prev.petNames ?? '',
-      breedType: pet.petBreed ?? prev.breedType ?? '',
-      age: (pet.petAge !== undefined && pet.petAge !== null) ? String(pet.petAge) : prev.age ?? '',
-      petSpecies: pet.petSpecies ?? prev.petSpecies ?? '',
-      petUid: pet.uid ?? String(pet.id ?? petIdentifier)
-    }))
-  }
+      petNames: pet.petName ?? prev.petNames ?? "",
+      breedType: pet.petBreed ?? prev.breedType ?? "",
+      age:
+        pet.petAge !== undefined && pet.petAge !== null
+          ? String(pet.petAge)
+          : (prev.age ?? ""),
+      petSpecies: pet.petSpecies ?? prev.petSpecies ?? "",
+      petUid: pet.uid ?? String(pet.id ?? petIdentifier),
+    }));
+  };
 
   useEffect(() => {
     async function fetchPetsByOwner() {
       try {
-        setLoadingPets(true)
-        setPetsError(null)
-        const response = await useJwt.getAllPetsByOwner()
-
-        const items = response?.data?.data ?? response?.data ?? response ?? []
-        const arr = Array.isArray(items) ? items : (Array.isArray(items.data) ? items.data : [])
-        setPets(arr)
+        setLoadingPets(true);
+        setPetsError(null);
+        const response = await useJwt.getAllPetsByOwner();
+        const items = response?.data?.data ?? response?.data ?? response ?? [];
+        const arr = Array.isArray(items)
+          ? items
+          : Array.isArray(items.data)
+            ? items.data
+            : [];
+        setPets(arr);
       } catch (err) {
-        console.error("Failed to fetch pets:", err)
-        setPetsError(err?.message ?? 'Failed to load pets')
-        setPets([])
+        console.error("Failed to fetch pets:", err);
+        setPetsError(err?.message ?? "Failed to load pets");
+        setPets([]);
       } finally {
-        setLoadingPets(false)
+        setLoadingPets(false);
       }
     }
 
-    fetchPetsByOwner()
-  }, [])
+    fetchPetsByOwner();
+  }, []);
 
   const buildPayloadForBackend = (raw) => {
-    const ageNum = raw.age === '' || raw.age === null ? null : Number(raw.age)
+    const ageNum = raw.age === "" || raw.age === null ? null : Number(raw.age);
     const customDurNum =
-      raw.customWalkDuration === '' || raw.customWalkDuration === null
+      raw.customWalkDuration === "" || raw.customWalkDuration === null
         ? null
-        : Number(raw.customWalkDuration)
+        : Number(raw.customWalkDuration);
 
-    const medicalConditions = raw.medicalConditions === null ? null : !!raw.medicalConditions
-    const medications = raw.medications === null ? null : !!raw.medications
-    const consent = !!raw.consent
+    const medicalConditions =
+      raw.medicalConditions === null ? null : !!raw.medicalConditions;
+    const medications = raw.medications === null ? null : !!raw.medications;
+    const consent = !!raw.consent;
 
     return {
       petUid: raw.petUid || null,
@@ -198,111 +309,169 @@ const PetWalkerKYC = () => {
 
       consent,
       signature: raw.signature || null,
-      signatureDate: raw.signatureDate || null
-    }
-  }
+      signatureDate: raw.signatureDate || null,
+    };
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setApiError(null)
-    setSuccessMessage(null)
+  // ─── Shared client-side validation ───────────────────────────────────────
+  const validateForm = () => {
+    const errors = [];
 
-    // -------- Client-side validations (important ones matching backend) --------
-    const errors = []
+    if (!formData.petUid) errors.push("Please select your pet.");
+    if (!formData.consent) errors.push("Consent is required to proceed.");
+    if (!formData.signature || formData.signature.trim() === "")
+      errors.push("Signature is required.");
+    if (!formData.signatureDate) errors.push("Signature date is required.");
 
-    if (!formData.petUid) {
-      errors.push("Please select your pet.")
-    }
-
-    if (!formData.consent) {
-      errors.push("Consent is required to proceed.")
-    }
-    if (!formData.signature || formData.signature.trim() === '') {
-      errors.push("Signature is required.")
-    }
-    if (!formData.signatureDate) {
-      errors.push("Signature date is required.")
+    if (formData.preferredWalkDuration === "Custom") {
+      if (
+        !formData.customWalkDuration ||
+        Number(formData.customWalkDuration) <= 0
+      )
+        errors.push("Custom walk duration must be greater than 0.");
     }
 
-    if (formData.preferredWalkDuration === 'Custom') {
-      if (!formData.customWalkDuration || Number(formData.customWalkDuration) <= 0) {
-        errors.push("Custom walk duration must be greater than 0.")
-      }
+    if (formData.frequency === "Other") {
+      if (!formData.frequencyOther || formData.frequencyOther.trim() === "")
+        errors.push("Please specify the frequency when 'Other' is selected.");
     }
 
-    if (formData.frequency === 'Other') {
-      if (!formData.frequencyOther || formData.frequencyOther.trim() === '') {
-        errors.push("Please specify the frequency when 'Other' is selected.")
-      }
+    if (formData.leashBehavior.includes("Other")) {
+      if (
+        !formData.leashBehaviorOther ||
+        formData.leashBehaviorOther.trim() === ""
+      )
+        errors.push(
+          "Please specify leash behavior details when 'Other' is selected.",
+        );
     }
 
-    if (formData.leashBehavior.includes('Other')) {
-      if (!formData.leashBehaviorOther || formData.leashBehaviorOther.trim() === '') {
-        errors.push("Please specify leash behavior details when 'Other' is selected.")
-      }
-    }
-
-    if (formData.handlingNotes.includes('Other')) {
-      if (!formData.handlingNotesOther || formData.handlingNotesOther.trim() === '') {
-        errors.push("Please specify handling notes when 'Other' is selected.")
-      }
+    if (formData.handlingNotes.includes("Other")) {
+      if (
+        !formData.handlingNotesOther ||
+        formData.handlingNotesOther.trim() === ""
+      )
+        errors.push("Please specify handling notes when 'Other' is selected.");
     }
 
     if (formData.medicalConditions === true) {
-      if (!formData.medicalConditionsDetails || formData.medicalConditionsDetails.trim() === '') {
-        errors.push("Please provide medical condition details when 'Medical Conditions' is Yes.")
-      }
+      if (
+        !formData.medicalConditionsDetails ||
+        formData.medicalConditionsDetails.trim() === ""
+      )
+        errors.push(
+          "Please provide medical condition details when 'Medical Conditions' is Yes.",
+        );
     }
 
     if (formData.medications === true) {
-      if (!formData.medicationsDetails || formData.medicationsDetails.trim() === '') {
-        errors.push("Please provide medication details when 'Medications' is Yes.")
-      }
+      if (
+        !formData.medicationsDetails ||
+        formData.medicationsDetails.trim() === ""
+      )
+        errors.push(
+          "Please provide medication details when 'Medications' is Yes.",
+        );
     }
 
+    return errors;
+  };
+
+  // ─── CREATE (POST) ────────────────────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setApiError(null);
+    setSuccessMessage(null);
+
+    const errors = validateForm();
     if (errors.length > 0) {
-      setApiError(errors.join(' '))
-      return
+      setApiError(errors.join(" "));
+      return;
     }
 
-    const payload = buildPayloadForBackend(formData)
-    console.log('Submitting Walker KYC payload:', payload)
+    const payload = buildPayloadForBackend(formData);
+    console.log("Submitting Walker KYC (CREATE) payload:", payload);
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      // Axios-style call: useJwt.walkerToClientKyc(payload) expected to be axios.post(...)
-      const res = await useJwt.walkerToClientKyc(payload)
-      const data = res?.data ?? res
+      const res = await useJwt.walkerToClientKyc(payload);
+      const data = res?.data ?? res;
 
       if (data && data.success === false) {
-        const backendMsg = data.details || data.message || 'Submission failed due to validation error.'
-        setApiError(backendMsg)
-        console.error('Submission failed (backend validation):', data)
-        return
+        setApiError(
+          data.details ||
+            data.message ||
+            "Submission failed due to validation error.",
+        );
+        return;
       }
 
-      console.log('Submission successful:', data)
-      setSuccessMessage('Walker KYC submitted successfully.')
-
-      // ✅ Reset full form & selection after successful submit
-      setFormData(initialFormData)
-      setSelectedPetId('')
+      console.log("Submission successful:", data);
+      setSuccessMessage("Walker KYC submitted successfully.");
+      setFormData(initialFormData);
+      setSelectedPetId("");
     } catch (err) {
-      console.error('Submission error:', err)
-      // Handle axios error shape
-      const backend = err?.response?.data
-      let message = err?.message ?? 'Unknown error during submission.'
-      if (backend) {
-        message = backend.details || backend.message || message
-      }
-      setApiError(`Submission failed: ${message}`)
+      console.error("Submission error:", err);
+      const backend = err?.response?.data;
+      let message = err?.message ?? "Unknown error during submission.";
+      if (backend) message = backend.details || backend.message || message;
+      setApiError(`Submission failed: ${message}`);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
+
+  // ─── UPDATE (PUT/PATCH) ───────────────────────────────────────────────────
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setApiError(null);
+    setSuccessMessage(null);
+
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setApiError(errors.join(" "));
+      return;
+    }
+
+    if (!kycUid) {
+      setApiError("KYC UID is missing. Cannot update.");
+      return;
+    }
+
+    const payload = buildPayloadForBackend(formData);
+    console.log("Updating Walker KYC payload:", payload, "kycUid:", kycUid);
+
+    setSubmitting(true);
+    try {
+      // ✅ Integrate your update API here — pass kycUid + payload
+      // Example: const res = await useJwt.updateWalkerToClientKyc(kycUid, payload);
+      const res = await useJwt.updateWalkerToClientKyc(kycUid, payload);
+      const data = res?.data ?? res;
+
+      if (data && data.success === false) {
+        setApiError(
+          data.details ||
+            data.message ||
+            "Update failed due to validation error.",
+        );
+        return;
+      }
+
+      console.log("Update successful:", data);
+      setSuccessMessage("Walker KYC updated successfully.");
+    } catch (err) {
+      console.error("Update error:", err);
+      const backend = err?.response?.data;
+      let message = err?.message ?? "Unknown error during update.";
+      if (backend) message = backend.details || backend.message || message;
+      setApiError(`Update failed: ${message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Today's date (YYYY-MM-DD) for min/max in date inputs
-  const today = new Date().toISOString().split("T")[0]
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div className="min-h-screen px-4 py-8">
@@ -310,7 +479,18 @@ const PetWalkerKYC = () => {
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">
           🚶‍♂️ Pet Walker → Client KYC Summary
         </h1>
-        <p className="text-center text-gray-600 mb-4">Metavet Pet Walking Services</p>
+        <p className="text-center text-gray-600 mb-1">
+          Metavet Pet Walking Services
+        </p>
+
+        {/* ─── Update Mode Badge ─── */}
+        {isUpdateMode && (
+          <div className="flex justify-center mb-4">
+            <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full">
+              ✏️ Update Mode — editing existing KYC
+            </span>
+          </div>
+        )}
 
         {successMessage && (
           <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
@@ -324,8 +504,11 @@ const PetWalkerKYC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Pet & Routine Overview */}
+        <form
+          onSubmit={isUpdateMode ? handleUpdate : handleSubmit}
+          className="space-y-8"
+        >
+          {/* ─── Pet & Routine Overview ─────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Pet & Routine Overview
@@ -347,61 +530,51 @@ const PetWalkerKYC = () => {
                   <select
                     value={selectedPetId}
                     onChange={(e) => handlePetSelect(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    // In update mode, pet is locked (KYC is per-pet)
+                    disabled={isUpdateMode}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                      isUpdateMode
+                        ? "bg-gray-100 cursor-not-allowed opacity-70"
+                        : ""
+                    }`}
                   >
                     <option value="">— Select your pet —</option>
-                    {pets.map(p => (
+                    {pets.map((p) => (
                       <option key={p.uid ?? p.id} value={p.uid ?? p.id}>
-                        {p.petName} {p.petSpecies ? `(${p.petSpecies})` : ''} {p.petBreed ? `— ${p.petBreed}` : ''}
+                        {p.petName} {p.petSpecies ? `(${p.petSpecies})` : ""}{" "}
+                        {p.petBreed ? `— ${p.petBreed}` : ""}
                       </option>
                     ))}
+                    {/* Fallback: if update mode but pet not in list yet, show petUid */}
+                    {isUpdateMode &&
+                      selectedPetId &&
+                      !pets.find(
+                        (p) => String(p.uid ?? p.id) === String(selectedPetId),
+                      ) && (
+                        <option value={selectedPetId}>
+                          {formData.petNames || selectedPetId}
+                        </option>
+                      )}
                   </select>
+                )}
+                {isUpdateMode && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Pet cannot be changed when updating an existing KYC.
+                  </p>
                 )}
               </div>
 
-              {/* Pet Name - hidden */}
+              {/* Hidden fields — auto-filled from pet selection */}
               <div className="hidden">
-                <label className="block font-medium text-gray-700 mb-2">
-                  Pet Name(s):
-                </label>
-                <input
-                  type="text"
-                  value={formData.petNames}
-                  onChange={(e) => setIfValid('petNames', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
-                  placeholder="e.g., Bella, Charlie"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
+                <input type="text" value={formData.petNames} readOnly />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Breed/Type - hidden */}
                 <div className="hidden">
-                  <label className="block font-medium text-gray-700 mb-2">
-                    Breed/Type:
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.breedType}
-                    onChange={(e) => setIfValid('breedType', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
+                  <input type="text" value={formData.breedType} readOnly />
                 </div>
-
-                {/* Age - hidden */}
                 <div className="hidden">
-                  <label className="block font-medium text-gray-700 mb-2">
-                    Age:
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formData.age}
-                    onChange={(e) => setIfValid('age', e.target.value, /^[0-9]*$/u)}
-                    placeholder="e.g., 3"
-                    pattern="^[0-9]+$"
-                    title="Please enter numbers only"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
+                  <input type="text" value={formData.age} readOnly />
                 </div>
 
                 <div>
@@ -410,7 +583,9 @@ const PetWalkerKYC = () => {
                   </label>
                   <select
                     value={formData.energyLevel}
-                    onChange={(e) => handleInputChange('energyLevel', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("energyLevel", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
@@ -426,7 +601,9 @@ const PetWalkerKYC = () => {
                   </label>
                   <select
                     value={formData.walkingExperience}
-                    onChange={(e) => handleInputChange('walkingExperience', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("walkingExperience", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
@@ -443,7 +620,9 @@ const PetWalkerKYC = () => {
                   </label>
                   <select
                     value={formData.preferredWalkType}
-                    onChange={(e) => handleInputChange('preferredWalkType', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("preferredWalkType", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
@@ -460,27 +639,43 @@ const PetWalkerKYC = () => {
                     Preferred Walk Duration:
                   </label>
                   <div className="space-y-2">
-                    {['15', '30', '60', 'Custom'].map(d => (
-                      <label key={d} className="flex items-center space-x-2 cursor-pointer">
+                    {["15", "30", "60", "Custom"].map((d) => (
+                      <label
+                        key={d}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
                         <input
                           type="radio"
                           name="preferredWalkDuration"
                           value={d}
                           checked={formData.preferredWalkDuration === d}
-                          onChange={(e) => handleInputChange('preferredWalkDuration', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "preferredWalkDuration",
+                              e.target.value,
+                            )
+                          }
                           className="w-4 h-4 text-primary"
                         />
                         <span className="text-gray-700">
-                          {d === 'Custom' ? 'Custom → Please specify' : d + ' minutes'}
+                          {d === "Custom"
+                            ? "Custom → Please specify"
+                            : d + " minutes"}
                         </span>
                       </label>
                     ))}
 
-                    {formData.preferredWalkDuration === 'Custom' && (
+                    {formData.preferredWalkDuration === "Custom" && (
                       <input
                         type="text"
                         value={formData.customWalkDuration}
-                        onChange={(e) => setIfValid('customWalkDuration', e.target.value, /^[0-9]*$/u)}
+                        onChange={(e) =>
+                          setIfValid(
+                            "customWalkDuration",
+                            e.target.value,
+                            /^[0-9]*$/u,
+                          )
+                        }
                         placeholder="Please specify duration (e.g., 45)"
                         inputMode="numeric"
                         pattern="^[0-9]+$"
@@ -496,27 +691,39 @@ const PetWalkerKYC = () => {
                     Frequency:
                   </label>
                   <div className="space-y-2">
-                    {['Daily', 'Weekly', 'As needed', 'Other'].map(opt => (
-                      <label key={opt} className="flex items-center space-x-2 cursor-pointer">
+                    {["Daily", "Weekly", "As needed", "Other"].map((opt) => (
+                      <label
+                        key={opt}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
                         <input
                           type="radio"
                           name="frequency"
                           value={opt}
                           checked={formData.frequency === opt}
-                          onChange={(e) => handleInputChange('frequency', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("frequency", e.target.value)
+                          }
                           className="w-4 h-4 text-primary"
                         />
                         <span className="text-gray-700">
-                          {opt}{opt === 'Other' ? ' → Please specify' : ''}
+                          {opt}
+                          {opt === "Other" ? " → Please specify" : ""}
                         </span>
                       </label>
                     ))}
 
-                    {formData.frequency === 'Other' && (
+                    {formData.frequency === "Other" && (
                       <input
                         type="text"
                         value={formData.frequencyOther}
-                        onChange={(e) => setIfValid('frequencyOther', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
+                        onChange={(e) =>
+                          setIfValid(
+                            "frequencyOther",
+                            e.target.value,
+                            /^[A-Za-z0-9 ,.'-]*$/u,
+                          )
+                        }
                         placeholder="Please specify frequency"
                         className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -530,7 +737,9 @@ const PetWalkerKYC = () => {
                   </label>
                   <select
                     value={formData.preferredTimeOfDay}
-                    onChange={(e) => handleInputChange('preferredTimeOfDay', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("preferredTimeOfDay", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
@@ -546,32 +755,25 @@ const PetWalkerKYC = () => {
                 <label className="block font-medium text-gray-700 mb-2">
                   Preferred Start Date:
                 </label>
-
                 <input
                   type="date"
                   value={formData.preferredStartDate}
-                  min={today} // backend: @FutureOrPresent
-                  onChange={(e) => handleInputChange("preferredStartDate", e.target.value)}
+                  min={today}
+                  onChange={(e) =>
+                    handleInputChange("preferredStartDate", e.target.value)
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
 
-              {/* Species - hidden */}
+              {/* Hidden species field */}
               <div className="hidden">
-                <label className="block font-medium text-gray-700 mb-2">
-                  Species:
-                </label>
-                <input
-                  type="text"
-                  value={formData.petSpecies}
-                  onChange={(e) => setIfValid('petSpecies', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                />
+                <input type="text" value={formData.petSpecies} readOnly />
               </div>
             </div>
           </section>
 
-          {/* Behavior & Handling */}
+          {/* ─── Behavior & Handling ─────────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Behavior & Handling
@@ -583,23 +785,40 @@ const PetWalkerKYC = () => {
                   Leash Behavior:
                 </label>
                 <div className="space-y-2">
-                  {['Pulls', 'Walks nicely', 'Lunges at other dogs', 'Reactive', 'Other'].map(opt => (
-                    <label key={opt} className="flex items-center space-x-2 cursor-pointer">
+                  {[
+                    "Pulls",
+                    "Walks nicely",
+                    "Lunges at other dogs",
+                    "Reactive",
+                    "Other",
+                  ].map((opt) => (
+                    <label
+                      key={opt}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         checked={formData.leashBehavior.includes(opt)}
-                        onChange={() => handleCheckboxArray('leashBehavior', opt)}
+                        onChange={() =>
+                          handleCheckboxArray("leashBehavior", opt)
+                        }
                         className="w-4 h-4 text-primary rounded"
                       />
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
 
-                  {formData.leashBehavior.includes('Other') && (
+                  {formData.leashBehavior.includes("Other") && (
                     <input
                       type="text"
                       value={formData.leashBehaviorOther}
-                      onChange={(e) => setIfValid('leashBehaviorOther', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
+                      onChange={(e) =>
+                        setIfValid(
+                          "leashBehaviorOther",
+                          e.target.value,
+                          /^[A-Za-z0-9 ,.'-]*$/u,
+                        )
+                      }
                       placeholder="Please specify..."
                       className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
@@ -613,7 +832,13 @@ const PetWalkerKYC = () => {
                 </label>
                 <textarea
                   value={formData.knownTriggers}
-                  onChange={(e) => setIfValid('knownTriggers', e.target.value, /^[A-Za-z0-9\s,.'"-]*$/u)}
+                  onChange={(e) =>
+                    setIfValid(
+                      "knownTriggers",
+                      e.target.value,
+                      /^[A-Za-z0-9\s,.'"-]*$/u,
+                    )
+                  }
                   rows="2"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="e.g., skateboards, kids yelling, other dogs..."
@@ -627,7 +852,9 @@ const PetWalkerKYC = () => {
                   </label>
                   <select
                     value={formData.socialCompatibility}
-                    onChange={(e) => handleInputChange('socialCompatibility', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("socialCompatibility", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
@@ -642,23 +869,40 @@ const PetWalkerKYC = () => {
                     Handling Notes:
                   </label>
                   <div className="space-y-2">
-                    {['Needs harness', 'Wears muzzle', 'Prefers calm approach', 'Avoids stairs', 'Other'].map(opt => (
-                      <label key={opt} className="flex items-center space-x-2 cursor-pointer">
+                    {[
+                      "Needs harness",
+                      "Wears muzzle",
+                      "Prefers calm approach",
+                      "Avoids stairs",
+                      "Other",
+                    ].map((opt) => (
+                      <label
+                        key={opt}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={formData.handlingNotes.includes(opt)}
-                          onChange={() => handleCheckboxArray('handlingNotes', opt)}
+                          onChange={() =>
+                            handleCheckboxArray("handlingNotes", opt)
+                          }
                           className="w-4 h-4 text-primary rounded"
                         />
                         <span className="text-gray-700">{opt}</span>
                       </label>
                     ))}
 
-                    {formData.handlingNotes.includes('Other') && (
+                    {formData.handlingNotes.includes("Other") && (
                       <input
                         type="text"
                         value={formData.handlingNotesOther}
-                        onChange={(e) => setIfValid('handlingNotesOther', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
+                        onChange={(e) =>
+                          setIfValid(
+                            "handlingNotesOther",
+                            e.target.value,
+                            /^[A-Za-z0-9 ,.'-]*$/u,
+                          )
+                        }
                         placeholder="Please specify..."
                         className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
@@ -673,7 +917,13 @@ const PetWalkerKYC = () => {
                 </label>
                 <textarea
                   value={formData.comfortingMethods}
-                  onChange={(e) => setIfValid('comfortingMethods', e.target.value, /^[A-Za-z0-9\s,.'"-]*$/u)}
+                  onChange={(e) =>
+                    setIfValid(
+                      "comfortingMethods",
+                      e.target.value,
+                      /^[A-Za-z0-9\s,.'"-]*$/u,
+                    )
+                  }
                   rows="2"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder="e.g., treats, cue words, favorite toy..."
@@ -682,7 +932,7 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* Health & Safety */}
+          {/* ─── Health & Safety ─────────────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Health & Safety
@@ -699,7 +949,9 @@ const PetWalkerKYC = () => {
                       type="radio"
                       name="medicalConditions"
                       checked={formData.medicalConditions === true}
-                      onChange={() => handleInputChange('medicalConditions', true)}
+                      onChange={() =>
+                        handleInputChange("medicalConditions", true)
+                      }
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">Yes</span>
@@ -710,7 +962,9 @@ const PetWalkerKYC = () => {
                       type="radio"
                       name="medicalConditions"
                       checked={formData.medicalConditions === false}
-                      onChange={() => handleInputChange('medicalConditions', false)}
+                      onChange={() =>
+                        handleInputChange("medicalConditions", false)
+                      }
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">No</span>
@@ -719,7 +973,13 @@ const PetWalkerKYC = () => {
                   {formData.medicalConditions === true && (
                     <textarea
                       value={formData.medicalConditionsDetails}
-                      onChange={(e) => setIfValid('medicalConditionsDetails', e.target.value, /^[A-Za-z0-9\s,.'"-]*$/u)}
+                      onChange={(e) =>
+                        setIfValid(
+                          "medicalConditionsDetails",
+                          e.target.value,
+                          /^[A-Za-z0-9\s,.'"-]*$/u,
+                        )
+                      }
                       rows="2"
                       placeholder="Please describe medical conditions..."
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -738,7 +998,7 @@ const PetWalkerKYC = () => {
                       type="radio"
                       name="medications"
                       checked={formData.medications === true}
-                      onChange={() => handleInputChange('medications', true)}
+                      onChange={() => handleInputChange("medications", true)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">Yes</span>
@@ -749,7 +1009,7 @@ const PetWalkerKYC = () => {
                       type="radio"
                       name="medications"
                       checked={formData.medications === false}
-                      onChange={() => handleInputChange('medications', false)}
+                      onChange={() => handleInputChange("medications", false)}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-gray-700">No</span>
@@ -759,8 +1019,15 @@ const PetWalkerKYC = () => {
                     <textarea
                       value={formData.medicationsDetails}
                       onChange={(e) => {
-                        const allowed = e.target.value.replace(/[^A-Za-z0-9\s.,]/g, "")
-                        setIfValid("medicationsDetails", allowed, /^[A-Za-z0-9\s.,]*$/)
+                        const allowed = e.target.value.replace(
+                          /[^A-Za-z0-9\s.,]/g,
+                          "",
+                        );
+                        setIfValid(
+                          "medicationsDetails",
+                          allowed,
+                          /^[A-Za-z0-9\s.,]*$/,
+                        );
                       }}
                       rows="2"
                       placeholder="Name, dosage, timing..."
@@ -777,7 +1044,13 @@ const PetWalkerKYC = () => {
                 <input
                   type="text"
                   value={formData.emergencyVetInfo}
-                  onChange={(e) => setIfValid('emergencyVetInfo', e.target.value, /^[A-Za-z0-9\s,()+\-.#]*$/u)}
+                  onChange={(e) =>
+                    setIfValid(
+                      "emergencyVetInfo",
+                      e.target.value,
+                      /^[A-Za-z0-9\s,()+\-.#]*$/u,
+                    )
+                  }
                   placeholder="Vet name, phone, address"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -785,7 +1058,7 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* Access & Logistics */}
+          {/* ─── Access & Logistics ──────────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Access & Logistics
@@ -798,7 +1071,9 @@ const PetWalkerKYC = () => {
                 </label>
                 <select
                   value={formData.startingLocation}
-                  onChange={(e) => handleInputChange('startingLocation', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("startingLocation", e.target.value)
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 >
                   <option value="">Select</option>
@@ -816,20 +1091,33 @@ const PetWalkerKYC = () => {
                 <input
                   type="text"
                   value={formData.addressMeetingPoint}
-                  onChange={(e) => setIfValid('addressMeetingPoint', e.target.value, /^[A-Za-z0-9\s,.'#\/ -]*$/u)}
+                  onChange={(e) =>
+                    setIfValid(
+                      "addressMeetingPoint",
+                      e.target.value,
+                      /^[A-Za-z0-9\s,.'#\/ -]*$/u,
+                    )
+                  }
                   placeholder="Full address or meetup spot"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
 
-              {(formData.startingLocation === 'Home' || formData.startingLocation === 'Apartment') && (
+              {(formData.startingLocation === "Home" ||
+                formData.startingLocation === "Apartment") && (
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Access Instructions:
                   </label>
                   <textarea
                     value={formData.accessInstructions}
-                    onChange={(e) => setIfValid('accessInstructions', e.target.value, /^[A-Za-z0-9\s,.'"#:\/ -]*$/u)}
+                    onChange={(e) =>
+                      setIfValid(
+                        "accessInstructions",
+                        e.target.value,
+                        /^[A-Za-z0-9\s,.'"#:\/ -]*$/u,
+                      )
+                    }
                     rows="2"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="e.g., gate code, leave key with neighbor..."
@@ -844,7 +1132,13 @@ const PetWalkerKYC = () => {
                 <input
                   type="text"
                   value={formData.backupContact}
-                  onChange={(e) => setIfValid('backupContact', e.target.value, /^[0-9+\-\s]*$/u)}
+                  onChange={(e) =>
+                    setIfValid(
+                      "backupContact",
+                      e.target.value,
+                      /^[0-9+\-\s]*$/u,
+                    )
+                  }
                   placeholder="Name & phone"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -855,23 +1149,30 @@ const PetWalkerKYC = () => {
                   Post-Walk Preferences:
                 </label>
                 <div className="space-y-2">
-                  {['Text update', 'Photo update', 'Walk summary in app'].map(opt => (
-                    <label key={opt} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.postWalkPreferences.includes(opt)}
-                        onChange={() => handleCheckboxArray('postWalkPreferences', opt)}
-                        className="w-4 h-4 text-primary rounded"
-                      />
-                      <span className="text-gray-700">{opt}</span>
-                    </label>
-                  ))}
+                  {["Text update", "Photo update", "Walk summary in app"].map(
+                    (opt) => (
+                      <label
+                        key={opt}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.postWalkPreferences.includes(opt)}
+                          onChange={() =>
+                            handleCheckboxArray("postWalkPreferences", opt)
+                          }
+                          className="w-4 h-4 text-primary rounded"
+                        />
+                        <span className="text-gray-700">{opt}</span>
+                      </label>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Services & Add-ons */}
+          {/* ─── Services & Add-ons ──────────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Services & Add-ons
@@ -883,33 +1184,48 @@ const PetWalkerKYC = () => {
                   Additional Services:
                 </label>
                 <div className="space-y-2">
-                  {['Feeding', 'Water', 'Towel Dry', 'Medication'].map(opt => (
-                    <label key={opt} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.additionalServices.includes(opt)}
-                        onChange={() => handleCheckboxArray('additionalServices', opt)}
-                        className="w-4 h-4 text-primary rounded"
-                      />
-                      <span className="text-gray-700">{opt}</span>
-                    </label>
-                  ))}
+                  {["Feeding", "Water", "Towel Dry", "Medication"].map(
+                    (opt) => (
+                      <label
+                        key={opt}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.additionalServices.includes(opt)}
+                          onChange={() =>
+                            handleCheckboxArray("additionalServices", opt)
+                          }
+                          className="w-4 h-4 text-primary rounded"
+                        />
+                        <span className="text-gray-700">{opt}</span>
+                      </label>
+                    ),
+                  )}
 
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.additionalServices.includes('Other')}
-                      onChange={() => handleCheckboxArray('additionalServices', 'Other')}
+                      checked={formData.additionalServices.includes("Other")}
+                      onChange={() =>
+                        handleCheckboxArray("additionalServices", "Other")
+                      }
                       className="w-4 h-4 text-primary rounded"
                     />
                     <span className="text-gray-700">Other</span>
                   </label>
 
-                  {formData.additionalServices.includes('Other') && (
+                  {formData.additionalServices.includes("Other") && (
                     <input
                       type="text"
                       value={formData.additionalServicesOther}
-                      onChange={(e) => setIfValid('additionalServicesOther', e.target.value, /^[A-Za-z0-9 ,.'-]*$/u)}
+                      onChange={(e) =>
+                        setIfValid(
+                          "additionalServicesOther",
+                          e.target.value,
+                          /^[A-Za-z0-9 ,.'-]*$/u,
+                        )
+                      }
                       placeholder="Please describe..."
                       className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     />
@@ -919,7 +1235,7 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* Consent & Signature */}
+          {/* ─── Consent & Signature ─────────────────────────────────────── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               ✅ Consent & Signature
@@ -930,11 +1246,15 @@ const PetWalkerKYC = () => {
                 <input
                   type="checkbox"
                   checked={formData.consent}
-                  onChange={(e) => handleInputChange('consent', e.target.checked)}
+                  onChange={(e) =>
+                    handleInputChange("consent", e.target.checked)
+                  }
                   className="w-4 h-4 text-primary mt-1"
                 />
                 <span className="text-gray-700">
-                  I confirm that the information provided is accurate and consent to share it with my assigned walker through the Metavet platform.
+                  I confirm that the information provided is accurate and
+                  consent to share it with my assigned walker through the
+                  Metavet platform.
                 </span>
               </label>
 
@@ -945,7 +1265,9 @@ const PetWalkerKYC = () => {
                 <input
                   type="text"
                   value={formData.signature}
-                  onChange={(e) => setIfValid('signature', e.target.value, /^[A-Za-z\s.'-]*$/u)}
+                  onChange={(e) =>
+                    setIfValid("signature", e.target.value, /^[A-Za-z\s.'-]*$/u)
+                  }
                   placeholder="Full name as signature"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
@@ -958,40 +1280,51 @@ const PetWalkerKYC = () => {
                 <input
                   type="date"
                   value={formData.signatureDate}
-                  min={today}  // ✅ @PastOrPresent: blocks future dates
-                  onChange={(e) => handleInputChange('signatureDate', e.target.value)}
+                  min={today}
+                  onChange={(e) =>
+                    handleInputChange("signatureDate", e.target.value)
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
             </div>
           </section>
-{successMessage && (
-          <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
-            {successMessage}
-          </div>
-        )}
 
-        {apiError && (
-          <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
-            {apiError}
-          </div>
-        )}
+          {successMessage && (
+            <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
+              {successMessage}
+            </div>
+          )}
+
+          {apiError && (
+            <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
+              {apiError}
+            </div>
+          )}
 
           <div className="pt-6">
             <button
               type="submit"
               disabled={submitting}
               className={`w-full ${
-                submitting ? 'opacity-60 cursor-not-allowed' : 'bg-primary hover:opacity-90'
+                submitting
+                  ? "opacity-60 cursor-not-allowed"
+                  : "bg-primary hover:opacity-90"
               } text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
             >
-              {submitting ? 'Submitting...' : 'Submit Walker KYC'}
+              {submitting
+                ? isUpdateMode
+                  ? "Updating..."
+                  : "Submitting..."
+                : isUpdateMode
+                  ? "Update Walker KYC"
+                  : "Submit Walker KYC"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PetWalkerKYC
+export default PetWalkerKYC;

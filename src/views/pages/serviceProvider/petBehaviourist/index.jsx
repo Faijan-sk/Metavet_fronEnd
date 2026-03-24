@@ -1,39 +1,60 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Brain, Star, Award, Clock, Heart, Phone, Sparkles, Loader2, CalendarDays } from "lucide-react";
-import KycWarning from '../KycWarning'
-import MainPage from "./../DefaultPage"
-import useJwt from "./../../../../enpoints/jwt/useJwt"
-import BookingModal from "./BookingModal"
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Search,
+  MapPin,
+  Brain,
+  Star,
+  Award,
+  Clock,
+  Heart,
+  Phone,
+  Sparkles,
+  Loader2,
+  CalendarDays,
+} from "lucide-react";
+import KycWarning from "../KycWarning";
+import MainPage from "./../DefaultPage";
+import useJwt from "./../../../../enpoints/jwt/useJwt";
+import BookingModal from "./BookingModal";
 
-function DefaultPage() {
-  return (
-    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-        <div className="w-20 h-20 bg-[#52B2AD]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Sparkles className="w-10 h-10 text-[#52B2AD]" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification in Progress</h2>
-        <p className="text-gray-600">Your account is being verified. Please check back soon!</p>
-      </div>
-    </div>
-  );
-}
+// function DefaultPage() {
+//   return (
+//     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
+//       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
+//         <div className="w-20 h-20 bg-[#52B2AD]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+//           <Sparkles className="w-10 h-10 text-[#52B2AD]" />
+//         </div>
+//         <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification in Progress</h2>
+//         <p className="text-gray-600">Your account is being verified. Please check back soon!</p>
+//       </div>
+//     </div>
+//   );
+// }
 
-function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession }) {
+function BehaviouristCard({
+  behaviourist,
+  onFavorite,
+  isFavorite,
+  onBookSession,
+}) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const formatTag = (text) => text.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
+  const formatTag = (text) =>
+    text
+      .split("_")
+      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(" ");
 
   return (
-    <div 
+    <div
       className="group relative bg-white border-2 border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="absolute top-4 left-4 z-10">
         <span className="px-3 py-1 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white text-xs font-bold rounded-full shadow-lg">
-          {behaviourist.yearsExperience > 5 ? 'Expert' : 'Certified'}
+          {behaviourist.yearsExperience > 5 ? "Expert" : "Certified"}
         </span>
       </div>
 
@@ -41,15 +62,21 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
         onClick={() => onFavorite(behaviourist.uid)}
         className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
       >
-        <Heart 
-          className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+        <Heart
+          className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
         />
       </button>
 
       <div className="relative h-48 bg-gradient-to-br from-[#52B2AD]/10 to-[#459d99]/10 flex items-center justify-center overflow-hidden">
-        <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? 'scale-110' : ''}`}>
+        <div
+          className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? "scale-110" : ""}`}
+        >
           <span className="text-4xl font-bold text-white">
-            {behaviourist.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+            {behaviourist.fullName
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()}
           </span>
         </div>
         <div className="absolute bottom-4 right-4">
@@ -64,7 +91,9 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
         <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-[#52B2AD] transition-colors truncate">
           {behaviourist.fullName}
         </h3>
-        <p className="text-sm text-gray-600 mb-3">{formatTag(behaviourist.serviceType)}</p>
+        <p className="text-sm text-gray-600 mb-3">
+          {formatTag(behaviourist.serviceType)}
+        </p>
 
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-1">
@@ -72,10 +101,12 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
             <span className="font-bold text-gray-900">4.9</span>
             <span className="text-xs text-gray-500">(New)</span>
           </div>
-          
+
           <div className="flex items-center gap-1 text-sm text-gray-600">
             <MapPin className="w-4 h-4 text-[#52B2AD]" />
-            <span className="font-semibold">{behaviourist.distanceKm.toFixed(1)} km</span>
+            <span className="font-semibold">
+              {behaviourist.distanceKm.toFixed(1)} km
+            </span>
           </div>
         </div>
 
@@ -84,15 +115,19 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
             <Clock className="w-4 h-4 text-[#52B2AD]" />
             <div>
               <p className="text-xs text-gray-500">Exp.</p>
-              <p className="text-sm font-bold text-gray-900">{behaviourist.yearsExperience} Years</p>
+              <p className="text-sm font-bold text-gray-900">
+                {behaviourist.yearsExperience} Years
+              </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
             <Award className="w-4 h-4 text-[#52B2AD]" />
             <div>
               <p className="text-xs text-gray-500">Radius</p>
-              <p className="text-sm font-bold text-gray-900">{behaviourist.serviceArea} km</p>
+              <p className="text-sm font-bold text-gray-900">
+                {behaviourist.serviceArea} km
+              </p>
             </div>
           </div>
         </div>
@@ -114,7 +149,10 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
           >
             Book Session
           </button>
-          <a href={`tel:${behaviourist.phoneNumber}`} className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group">
+          <a
+            href={`tel:${behaviourist.phoneNumber}`}
+            className="p-3 border-2 border-gray-200 rounded-xl hover:border-[#52B2AD] hover:bg-[#52B2AD]/5 transition-all duration-200 group"
+          >
             <Phone className="w-5 h-5 text-gray-600 group-hover:text-[#52B2AD]" />
           </a>
         </div>
@@ -124,21 +162,26 @@ function BehaviouristCard({ behaviourist, onFavorite, isFavorite, onBookSession 
 }
 
 function Index() {
-  const [kycStatus, setKycStatus] = useState('NOT_FOUND');
+  const [kycStatus, setKycStatus] = useState("APPROVED");
   const [behaviourists, setBehaviourists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
-  const [coords, setCoords] = useState({ lat: '20.00734825160445', lng: '73.7637480064178' });
+  const [coords, setCoords] = useState({
+    // lat: "20.00734825160445",
+    // lng: "73.7637480064178",
+  });
   const [selectedBehaviourist, setSelectedBehaviourist] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
-  const kycUrl = '/behaviouristTo-client-kyc';
+  const kycUrl = "/behaviouristTo-client-kyc";
 
   const toggleFavorite = (id) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
   };
 
   const handleBookSession = (behaviourist) => {
@@ -154,16 +197,16 @@ function Index() {
   const loadData = useCallback(async (lat, lng, distance) => {
     try {
       setLoading(true);
-      const kycRes = await useJwt.getKycStatusBehaviouristToClinet();
-      setKycStatus(kycRes.data.data.status);
+      // const kycRes = await useJwt.getKycStatusBehaviouristToClinet();
+      // setKycStatus(kycRes.data.data.status);
 
       const response = await useJwt.getAllBehaviouristByDistance(
         lat.toString(),
         lng.toString(),
-        '0',
-        distance || '1000'
+        "0",
+        distance || "1000",
       );
-      
+
       if (response.data.success) {
         setBehaviourists(response.data.data.content);
       }
@@ -186,7 +229,7 @@ function Index() {
         (error) => {
           console.error("Geolocation error:", error);
           loadData(coords.lat, coords.lng, maxDistance);
-        }
+        },
       );
     } else {
       loadData(coords.lat, coords.lng, maxDistance);
@@ -203,10 +246,13 @@ function Index() {
     return () => clearTimeout(delayDebounceFn);
   }, [maxDistance, coords.lat, coords.lng, loadData]);
 
-  const filteredBehaviourists = behaviourists.filter(b => {
-    const matchesSearch = !searchQuery || 
+  const filteredBehaviourists = behaviourists.filter((b) => {
+    const matchesSearch =
+      !searchQuery ||
       b.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      b.specializations.some((s) =>
+        s.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
     return matchesSearch;
   });
 
@@ -218,22 +264,25 @@ function Index() {
     );
   }
 
-  if (kycStatus === 'REJECTED' || kycStatus === 'NOT_FOUND') {
-    return <><KycWarning kycUrl={kycUrl} /><MainPage /></>;
-  }
+  // if (kycStatus === "REJECTED" || kycStatus === "NOT_FOUND") {
+  //   return (
+  //     <>
+  //       <KycWarning kycUrl={kycUrl} />
+  //       <MainPage />
+  //     </>
+  //   );
+  // }
 
-  if (kycStatus === 'PENDING') return <DefaultPage />;
+  // if (kycStatus === "PENDING") return <DefaultPage />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
-        
         {/* Header */}
         <div className="relative mb-10 text-center">
-
           {/* My Appointments Button - Top Right */}
           <button
-            onClick={() => navigate('/behaviourist-appointments')}
+            onClick={() => navigate("/behaviourist-appointments")}
             className="absolute top-0 right-0 flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#52B2AD] text-[#52B2AD] rounded-2xl font-semibold hover:bg-[#52B2AD] hover:text-white transition-all duration-200 shadow-md"
           >
             <CalendarDays className="w-5 h-5" />
@@ -248,7 +297,9 @@ function Index() {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-[#52B2AD] to-[#459d99] bg-clip-text text-transparent mb-3">
             Find Expert Behaviourists
           </h1>
-          <p className="text-gray-600 text-lg">Connected to your live location</p>
+          <p className="text-gray-600 text-lg">
+            Connected to your live location
+          </p>
         </div>
 
         {/* Search & Filter */}
@@ -287,15 +338,17 @@ function Index() {
             ) : (
               <>
                 <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-xl">No behaviourists found within {maxDistance}km</p>
+                <p className="text-gray-500 text-xl">
+                  No behaviourists found within {maxDistance}km
+                </p>
               </>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredBehaviourists.map((b) => (
-              <BehaviouristCard 
-                key={b.uid} 
+              <BehaviouristCard
+                key={b.uid}
                 behaviourist={b}
                 onFavorite={toggleFavorite}
                 isFavorite={favorites.includes(b.uid)}

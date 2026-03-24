@@ -1,25 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, X, MapPin, Star, Award, Clock, Heart, MessageCircle, Phone, Footprints, CalendarDays } from "lucide-react";
-import KycWarning from "./../KycWarning"
-import MainPage from "./../DefaultPage"
-import useJwt from "./../../../../enpoints/jwt/useJwt"
-import BookWalkModal from "./BookAppointmentModal" 
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Search,
+  X,
+  MapPin,
+  Star,
+  Award,
+  Clock,
+  Heart,
+  MessageCircle,
+  Phone,
+  Footprints,
+  CalendarDays,
+} from "lucide-react";
+// import KycWarning from "./../KycWarning";
 
-// DefaultPage Component
-function DefaultPage() {
-  return (
-    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-        <div className="w-20 h-20 bg-[#52B2AD]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Footprints className="w-10 h-10 text-[#52B2AD]" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification in Progress</h2>
-        <p className="text-gray-600">Your account is being verified. Please check back soon!</p>
-      </div>
-    </div>
-  );
-}
+// import MainPage from "./../DefaultPage";
+import useJwt from "./../../../../enpoints/jwt/useJwt";
+import BookWalkModal from "./BookAppointmentModal";
+
+// // DefaultPage Component
+// function DefaultPage() {
+//   return (
+//     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 overflow-hidden">
+//       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
+//         <div className="w-20 h-20 bg-[#52B2AD]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+//           <Footprints className="w-10 h-10 text-[#52B2AD]" />
+//         </div>
+//         <h2 className="text-2xl font-bold text-gray-900 mb-4">
+//           Verification in Progress
+//         </h2>
+//         <p className="text-gray-600">
+//           Your account is being verified. Please check back soon!
+//         </p>
+//       </div>
+//     </div>
+//   );
+// }
 
 // WalkerCard Component
 function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
@@ -42,14 +59,21 @@ function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
         className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform"
       >
         <Heart
-          className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+          className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`}
         />
       </button>
 
       <div className="relative h-48 bg-gradient-to-br from-[#52B2AD]/10 to-[#459d99]/10 flex items-center justify-center overflow-hidden">
-        <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? 'scale-110' : ''}`}>
+        <div
+          className={`w-32 h-32 rounded-full bg-gradient-to-br from-[#52B2AD] to-[#459d99] border-4 border-white shadow-xl transition-transform duration-300 flex items-center justify-center ${isHovered ? "scale-110" : ""}`}
+        >
           <span className="text-4xl font-bold text-white">
-            {walker.name ? walker.name.split(' ').map(n => n[0]).join('') : 'W'}
+            {walker.name
+              ? walker.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+              : "W"}
           </span>
         </div>
 
@@ -91,7 +115,9 @@ function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
             <Clock className="w-4 h-4 text-[#52B2AD]" />
             <div>
               <p className="text-xs text-gray-500">Experience</p>
-              <p className="text-sm font-bold text-gray-900">{walker.experience}</p>
+              <p className="text-sm font-bold text-gray-900">
+                {walker.experience}
+              </p>
             </div>
           </div>
 
@@ -132,7 +158,7 @@ function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
 
 // Main Index Component
 function Index({ location }) {
-  const [kycStatus, setKycStatus] = useState('NOT_FOUND');
+  const [kycStatus, setKycStatus] = useState("APPROVED");
   const [searchQuery, setSearchQuery] = useState("");
   const [maxDistance, setMaxDistance] = useState("");
   const [favorites, setFavorites] = useState([]);
@@ -144,16 +170,16 @@ function Index({ location }) {
   const [coords, setCoords] = useState({ lat: null, lng: null });
 
   const navigate = useNavigate();
-  const kycUrl = '/walkerTo-client-Kyc';
+  const kycUrl = "/walkerTo-client-Kyc";
 
   const clearSearch = () => setSearchQuery("");
   const clearDistance = () => setMaxDistance("10");
 
   const toggleFavorite = (walkerId) => {
-    setFavorites(prev =>
+    setFavorites((prev) =>
       prev.includes(walkerId)
-        ? prev.filter(id => id !== walkerId)
-        : [...prev, walkerId]
+        ? prev.filter((id) => id !== walkerId)
+        : [...prev, walkerId],
     );
   };
 
@@ -164,12 +190,12 @@ function Index({ location }) {
         (position) => {
           setCoords({
             lat: position.coords.latitude.toString(),
-            lng: position.coords.longitude.toString()
+            lng: position.coords.longitude.toString(),
           });
         },
         (error) => {
           console.error("Error getting location:", error);
-        }
+        },
       );
     }
   }, []);
@@ -182,14 +208,11 @@ function Index({ location }) {
       try {
         setLoading(true);
 
-        const kycResponse = await useJwt.getStatusWalkerToClientKyc();
-        setKycStatus(kycResponse.data.data.status);
-
         const walkersResponse = await useJwt.getAllWalkerByDistance(
           coords.lat,
           coords.lng,
-          '0',
-          maxDistance || '10'
+          "0",
+          maxDistance || "10",
         );
 
         if (walkersResponse.data.success) {
@@ -198,7 +221,9 @@ function Index({ location }) {
           const mappedWalkers = rawData.map((item) => ({
             id: item.uid,
             name: item.fullName,
-            specialization: item.serviceType ? item.serviceType.replace('_', ' ') : "Professional Walker",
+            specialization: item.serviceType
+              ? item.serviceType.replace("_", " ")
+              : "Professional Walker",
             experience: `${item.yearsExperience || 0} years`,
             rating: 4.8,
             reviews: 15,
@@ -212,7 +237,6 @@ function Index({ location }) {
 
           setWalkers(mappedWalkers);
         }
-
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -223,30 +247,22 @@ function Index({ location }) {
     fetchData();
   }, [coords, maxDistance]);
 
-  const filteredWalkers = walkers.filter(walker => {
-    return !searchQuery ||
+  const filteredWalkers = walkers.filter((walker) => {
+    return (
+      !searchQuery ||
       walker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      walker.specialization.toLowerCase().includes(searchQuery.toLowerCase());
+      walker.specialization.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   });
-
-  if (kycStatus === 'REJECTED' || kycStatus === 'NOT_FOUND') {
-    return <><KycWarning kycUrl={kycUrl} /><MainPage /></>;
-  }
-
-  if (kycStatus === 'PENDING') {
-    return <DefaultPage />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8">
-
         {/* Header */}
         <div className="relative mb-10 text-center">
-
           {/* My Appointments Button - Top Right */}
           <button
-            onClick={() => navigate('/walker-appointments')}
+            onClick={() => navigate("/walker-appointments")}
             className="absolute top-0 right-0 flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#52B2AD] text-[#52B2AD] rounded-2xl font-semibold hover:bg-[#52B2AD] hover:text-white transition-all duration-200 shadow-md"
           >
             <CalendarDays className="w-5 h-5" />
@@ -261,13 +277,14 @@ function Index({ location }) {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-[#52B2AD] to-[#459d99] bg-clip-text text-transparent mb-3">
             Find Your Perfect Walker
           </h1>
-          <p className="text-gray-600 text-lg">Showing results for your current location</p>
+          <p className="text-gray-600 text-lg">
+            Showing results for your current location
+          </p>
         </div>
 
         <div className="max-w-4xl mx-auto mb-8">
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-6 border border-gray-100">
             <div className="flex flex-col md:flex-row gap-4">
-
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Search className="h-6 w-6 text-[#52B2AD]" />
@@ -294,19 +311,25 @@ function Index({ location }) {
                   className="block w-full pl-14 pr-12 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-[#52B2AD] focus:ring-4 focus:ring-[#52B2AD]/10 transition-all"
                 />
                 {maxDistance && (
-                  <button onClick={clearDistance} className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70">
+                  <button
+                    onClick={clearDistance}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:opacity-70"
+                  >
                     <X className="h-6 w-6 text-gray-400" />
                   </button>
                 )}
               </div>
-
             </div>
           </div>
         </div>
 
         <div className="mb-8 text-center">
           <p className="text-gray-600 text-xl">
-            Found <span className="font-bold text-[#52B2AD] text-2xl">{filteredWalkers.length}</span> amazing walkers near you
+            Found{" "}
+            <span className="font-bold text-[#52B2AD] text-2xl">
+              {filteredWalkers.length}
+            </span>{" "}
+            amazing walkers near you
           </p>
         </div>
 
@@ -320,9 +343,14 @@ function Index({ location }) {
             <div className="inline-block p-6 bg-gray-100 rounded-full mb-6">
               <Search className="w-16 h-16 text-gray-400" />
             </div>
-            <p className="text-gray-500 text-xl mb-4">No walkers found in {maxDistance}km</p>
+            <p className="text-gray-500 text-xl mb-4">
+              No walkers found in {maxDistance}km
+            </p>
             <button
-              onClick={() => { clearSearch(); setMaxDistance("50"); }}
+              onClick={() => {
+                clearSearch();
+                setMaxDistance("50");
+              }}
               className="px-8 py-3 bg-gradient-to-r from-[#52B2AD] to-[#459d99] text-white rounded-xl font-semibold"
             >
               Try Larger Radius
@@ -356,9 +384,7 @@ function Index({ location }) {
             {/* Modal Header */}
             <div className="sticky top-0 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-3xl flex items-center justify-between z-10">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  Book a Walk
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900">Book a Walk</h3>
                 <p className="text-sm text-[#52B2AD] font-medium">
                   with {selectedWalker.name}
                 </p>

@@ -1,227 +1,295 @@
-import React, { useEffect, useState } from "react"
-import useJwt from "./../../../../enpoints/jwt/useJwt"
-import { Calendar, ChevronLeft, ChevronRight, Clock, Plus, X } from "lucide-react"
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useJwt from "./../../../../enpoints/jwt/useJwt";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Plus,
+  X,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 const monthNames = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-]
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-const weekDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function BookWalkModal({ walker, onClose }) {
-  if (!walker) return null
+function BookWalkModal({ walker, onClose, kycVerified = false }) {
+  useEffect(() => {
+    console.log("wwwwwwwwwwwwwwwwwwww0", walker.name);
+  }, []);
+  if (!walker) return null;
 
   // ================= STATES =================
-  const [walkerDays, setWalkerDays] = useState([])
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [calendarOpen, setCalendarOpen] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [pets, setPets] = useState([])
-  const [selectedPet, setSelectedPet] = useState(null)
+  const [walkerDays, setWalkerDays] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [pets, setPets] = useState([]);
+  const [selectedPet, setSelectedPet] = useState(null);
+  const navigate = useNavigate(); // ✅ add karo
+  const [kycRecord, setKycRecord] = useState(null);
+  const [walkerDayUid, setWalkerDayUid] = useState(null);
 
-  const [walkerDayUid, setWalkerDayUid] = useState(null)
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [availableSlots, setAvailableSlots] = useState([])
-  const [slotsLoading, setSlotsLoading] = useState(false)
-  const [slotsError, setSlotsError] = useState("")
-  const [selectedSlot, setSelectedSlot] = useState(null)
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  const [notes, setNotes] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [bookingError, setBookingError] = useState("")
-  const [bookingSuccess, setBookingSuccess] = useState(false)
+  // "idle" | "loading" | "found" | "not_found"
+  const [kycStatus, setKycStatus] = useState("idle");
 
   // ================= FETCH WALKER DAYS =================
   useEffect(() => {
     const fetchDays = async () => {
       try {
-        const response = await useJwt.getWalkerAvailableDays(walker.id)
-        setWalkerDays(response.data?.data || response.data || [])
+        const response = await useJwt.getWalkerAvailableDays(walker.id);
+        setWalkerDays(response.data?.data || response.data || []);
       } catch (error) {
-        console.error("Error fetching walker days:", error)
+        console.error("Error fetching walker days:", error);
       }
-    }
+    };
 
-    if (walker?.id) fetchDays()
-  }, [walker?.id])
+    if (walker?.id) fetchDays();
+  }, [walker?.id]);
 
   // ================= FETCH PETS =================
   useEffect(() => {
     const fetchPets = async () => {
       try {
-        const response = await useJwt.getAllPetsByOwner()
+        const response = await useJwt.getAllPetsByOwner();
         const petsList = response.data.data.map((pet) => ({
           id: pet.id,
           uid: pet.uid,
           petName: pet.petName,
           petSpecies: pet.petSpecies,
           petBreed: pet.petBreed,
-        }))
-        setPets(petsList)
+        }));
+        setPets(petsList);
       } catch (error) {
-        console.error("Error fetching pets:", error)
+        console.error("Error fetching pets:", error);
       }
-    }
+    };
 
-    fetchPets()
-  }, [])
+    fetchPets();
+  }, []);
 
   // ================= FETCH SLOTS =================
   useEffect(() => {
     const fetchSlots = async () => {
-      if (!selectedDate || !walkerDayUid) return
+      if (!selectedDate || !walkerDayUid) return;
 
-      setSlotsLoading(true)
-      setSlotsError("")
-      setAvailableSlots([])
-      setSelectedSlot(null)
+      setSlotsLoading(true);
+      setSlotsError("");
+      setAvailableSlots([]);
+      setSelectedSlot(null);
 
       try {
-        const formattedDate = selectedDate.toISOString().split("T")[0]
+        const formattedDate = selectedDate.toISOString().split("T")[0];
         const response = await useJwt.getWalkerAvailableSlot(
           formattedDate,
           walkerDayUid,
-          walker.id
-        )
-        setAvailableSlots(response.data?.data || response.data || [])
+          walker.id,
+        );
+        setAvailableSlots(response.data?.data || response.data || []);
       } catch (error) {
-        console.error("Error fetching slots:", error)
-        setAvailableSlots([])
-        setSlotsError("Failed to load slots. Please try again.")
+        console.error("Error fetching slots:", error);
+        setAvailableSlots([]);
+        setSlotsError("Failed to load slots. Please try again.");
       } finally {
-        setSlotsLoading(false)
+        setSlotsLoading(false);
       }
-    }
+    };
 
-    fetchSlots()
-  }, [selectedDate, walkerDayUid])
+    fetchSlots();
+  }, [selectedDate, walkerDayUid]);
 
   // ================= HELPERS =================
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const goToPreviousMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
-    )
-  }
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1),
+    );
+  };
 
   const goToNextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
-    )
-  }
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
+    );
+  };
 
   const formatTime = (time) => {
-    const [hours, minutes] = time.split(":")
-    const hour = parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
-    return `${displayHour}:${minutes} ${ampm}`
-  }
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   const resetForm = () => {
-    setSelectedPet(null)
-    setSelectedDate(null)
-    setSelectedSlot(null)
-    setNotes("")
-    setWalkerDayUid(null)
-    setAvailableSlots([])
-    setBookingError("")
-    setBookingSuccess(false)
-  }
+    setSelectedPet(null);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    setNotes("");
+    setWalkerDayUid(null);
+    setAvailableSlots([]);
+    setBookingError("");
+    setBookingSuccess(false);
+    setKycStatus("idle");
+  };
+
+  // ================= FETCH KYC STATUS ON PET SELECT =================
+  useEffect(() => {
+    if (!selectedPet?.uid) {
+      setKycStatus("idle");
+      return;
+    }
+
+    const fetchKyc = async () => {
+      setKycStatus("loading");
+      try {
+        const response = await useJwt.getWalkerToClientKycByPet(
+          selectedPet.uid,
+        );
+        // 200 success → KYC found
+        if (response.data?.success) {
+          setKycStatus("found");
+          setKycRecord(response.data.data);
+          // console.log("tytytytytytytyt", response?.data?.data?.kycUid);
+        } else {
+          setKycStatus("not_found");
+        }
+      } catch (error) {
+        const errorCode = error.response?.data?.errorCode;
+        if (error.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
+          setKycStatus("not_found");
+        } else {
+          // unexpected error — treat as not found to be safe
+          setKycStatus("not_found");
+          console.error("KYC fetch error:", error);
+        }
+      }
+    };
+
+    fetchKyc();
+  }, [selectedPet]);
+
+  // KYC is verified only when status is "found"
+  const isKycVerified = kycStatus === "found";
 
   // ================= BOOK WALK =================
   const handleBookWalk = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedPet?.uid || !selectedDate || !selectedSlot || !walkerDayUid) {
-      setBookingError("Please fill all required fields")
-      return
+      setBookingError("Please fill all required fields");
+      return;
     }
 
-    setLoading(true)
-    setBookingError("")
+    setLoading(true);
+    setBookingError("");
 
     try {
       const payload = {
         petWalkerUid: selectedSlot.petWalker.uid,
         petWalkerDayUid: selectedSlot.petWalkerDayUid,
         slotUid: selectedSlot.slotUid,
+        kycId: kycRecord?.kycUid,
         appointmentDate: [
           selectedDate.getFullYear(),
           String(selectedDate.getMonth() + 1).padStart(2, "0"),
-          String(selectedDate.getDate()).padStart(2, "0")
+          String(selectedDate.getDate()).padStart(2, "0"),
         ].join("-"),
         petUid: selectedPet.uid,
-        
-      }
-      console.log('PPPPPPPPPPPAyload to walekr' ,payload);
+      };
+      // console.log("PPPPPPPPPPP to walekr", kycRecord?.kycUid);
 
-      const response = await useJwt.BookWalkerAppointment(payload)
+      const response = await useJwt.BookWalkerAppointment(payload);
 
-      const checkoutUrl = response.data?.checkoutUrl || response.data?.data?.checkoutUrl
+      const checkoutUrl =
+        response.data?.checkoutUrl || response.data?.data?.checkoutUrl;
 
-      setBookingSuccess(true)
+      setBookingSuccess(true);
 
-      // Modal band nahi hoga, loader dikhta rahega jab tak redirect na ho
       if (checkoutUrl) {
-        window.location.href = checkoutUrl
-        // Redirect ke baad page chala jayega, isliye loading true hi rahega
+        window.location.href = checkoutUrl;
       } else {
-        // Agar checkout URL nahi aya toh normal close karo
-        setLoading(false)
-        resetForm()
-        if (onClose) onClose()
+        setLoading(false);
+        resetForm();
+        if (onClose) onClose();
       }
-
     } catch (error) {
-      console.error("Error booking walk:", error)
+      console.error("Error booking walk:", error);
       setBookingError(
-        error.response?.data?.message || "Failed to book walk. Please try again."
-      )
-      setLoading(false)
+        error.response?.data?.message ||
+          "Failed to book walk. Please try again.",
+      );
+      setLoading(false);
     }
-  }
+  };
 
   // ================= CALENDAR =================
   const renderCalendar = () => {
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
 
-    const firstDayOfMonth = new Date(year, month, 1).getDay()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const cells = []
+    const cells = [];
 
     weekDays.forEach((day) => {
       cells.push(
-        <div key={day} className="text-xs text-center text-gray-500 font-medium py-1">
+        <div
+          key={day}
+          className="text-xs text-center text-gray-500 font-medium py-1"
+        >
           {day}
-        </div>
-      )
-    })
+        </div>,
+      );
+    });
 
     for (let i = 0; i < firstDayOfMonth; i++) {
-      cells.push(<div key={`empty-${i}`} />)
+      cells.push(<div key={`empty-${i}`} />);
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateObj = new Date(year, month, day)
-      dateObj.setHours(0, 0, 0, 0)
+      const dateObj = new Date(year, month, day);
+      dateObj.setHours(0, 0, 0, 0);
 
-      const isPast = dateObj < today
+      const isPast = dateObj < today;
 
       const dayName = dateObj
         .toLocaleDateString("en-US", { weekday: "long" })
-        .toUpperCase()
+        .toUpperCase();
 
-      const matchedDay = walkerDays.find((d) => d.dayOfWeek === dayName)
+      const matchedDay = walkerDays.find((d) => d.dayOfWeek === dayName);
 
-      const isWalkerAvailable = !!matchedDay
-      const isSelected = selectedDate?.getTime() === dateObj.getTime()
-      const isDisabled = isPast || !isWalkerAvailable
+      const isWalkerAvailable = !!matchedDay;
+      const isSelected = selectedDate?.getTime() === dateObj.getTime();
+      const isDisabled = isPast || !isWalkerAvailable;
 
       cells.push(
         <button
@@ -230,10 +298,10 @@ function BookWalkModal({ walker, onClose }) {
           type="button"
           onClick={() => {
             if (!isDisabled) {
-              setSelectedDate(dateObj)
-              setCalendarOpen(false)
-              setWalkerDayUid(matchedDay.petWalkerDayUid)
-              setSelectedSlot(null)
+              setSelectedDate(dateObj);
+              setCalendarOpen(false);
+              setWalkerDayUid(matchedDay.petWalkerDayUid);
+              setSelectedSlot(null);
             }
           }}
           className={`text-sm h-10 rounded-md transition font-medium
@@ -241,45 +309,50 @@ function BookWalkModal({ walker, onClose }) {
               isSelected
                 ? "bg-[#52B2AD] text-white"
                 : isWalkerAvailable
-                ? "bg-[#52B2AD]/15 text-[#2b8f8a] hover:bg-[#52B2AD]/25"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-[#52B2AD]/15 text-[#2b8f8a] hover:bg-[#52B2AD]/25"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }
             ${isPast ? "opacity-50" : ""}
           `}
         >
           {day}
-        </button>
-      )
+        </button>,
+      );
     }
 
-    return cells
-  }
+    return cells;
+  };
 
   // ================= JSX =================
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => {
-        // Jab tak loading chal raha ho, backdrop click se modal band nahi hoga
         if (!loading && e.target === e.currentTarget) {
-          resetForm()
-          onClose && onClose()
+          resetForm();
+          onClose && onClose();
         }
       }}
     >
       {/* Modal */}
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
-
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-3xl px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between z-10">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Book a Walk</h2>
-            <p className="text-sm text-[#52B2AD] font-medium mt-0.5">with {walker.fullName}</p>
+            <p className="text-sm text-[#52B2AD] font-medium mt-0.5">
+              with {walker.name}
+            </p>
           </div>
           <button
             type="button"
             disabled={loading}
-            onClick={() => { if (!loading) { resetForm(); onClose && onClose() } }}
+            onClick={() => {
+              if (!loading) {
+                resetForm();
+                onClose && onClose();
+              }
+            }}
             className={`p-2 rounded-full hover:bg-gray-100 transition ${loading ? "opacity-40 cursor-not-allowed" : ""}`}
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -288,15 +361,16 @@ function BookWalkModal({ walker, onClose }) {
 
         {/* Body */}
         <form onSubmit={handleBookWalk} className="px-6 py-5 space-y-5">
-
           {/* PET SELECT */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Select Pet *</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              Select Pet *
+            </label>
             <select
               value={selectedPet?.id || ""}
               onChange={(e) => {
-                const pet = pets.find((p) => p.id === parseInt(e.target.value))
-                setSelectedPet(pet || null)
+                const pet = pets.find((p) => p.id === parseInt(e.target.value));
+                setSelectedPet(pet || null);
               }}
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
               required
@@ -309,10 +383,93 @@ function BookWalkModal({ walker, onClose }) {
               ))}
             </select>
           </div>
-
+          {/* ================= KYC BANNER ================= */}
+          {/* Loading state */}
+          {kycStatus === "loading" && (
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <svg
+                className="animate-spin h-4 w-4 text-[#52B2AD]"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <p className="text-sm text-gray-500">Checking KYC status…</p>
+            </div>
+          )}
+          {/* KYC NOT FOUND → Fill KYC (same as before, blocks booking) */}
+          {kycStatus === "not_found" && (
+            <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-400 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800 leading-tight">
+                    KYC Verification Required
+                  </p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Complete your KYC to book a walk
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose && onClose();
+                  window.location.href = "/walkerTo-client-Kyc";
+                }}
+                className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
+              >
+                Fill KYC
+              </button>
+            </div>
+          )}
+          {/* KYC FOUND → Update KYC option (does NOT block booking) */}
+          {kycStatus === "found" && (
+            <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-300 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800 leading-tight">
+                    KYC Verified
+                  </p>
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Want to update your KYC information?
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose && onClose();
+                  // ✅ State ke saath navigate karo
+                  navigate("/walkerTo-client-Kyc", {
+                    state: { kycData: kycRecord }, // pura object bhejo
+                  });
+                }}
+                className="shrink-0 bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
+              >
+                Update KYC
+              </button>
+            </div>
+          )}
           {/* DATE SELECTOR */}
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Select Date *</label>
+            <label className="block text-sm font-semibold text-gray-800 mb-1">
+              Select Date *
+            </label>
 
             <button
               type="button"
@@ -323,7 +480,9 @@ function BookWalkModal({ walker, onClose }) {
                   : "border-gray-200 bg-gray-50 hover:border-gray-300"
               }`}
             >
-              <span className={selectedDate ? "text-gray-900" : "text-gray-400"}>
+              <span
+                className={selectedDate ? "text-gray-900" : "text-gray-400"}
+              >
                 {selectedDate
                   ? selectedDate.toLocaleDateString("en-GB", {
                       weekday: "short",
@@ -340,13 +499,22 @@ function BookWalkModal({ walker, onClose }) {
             {calendarOpen && (
               <div className="mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-inner p-4">
                 <div className="flex justify-between items-center mb-3">
-                  <button type="button" onClick={goToPreviousMonth} className="p-1 hover:bg-gray-100 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={goToPreviousMonth}
+                    className="p-1 hover:bg-gray-100 rounded-lg"
+                  >
                     <ChevronLeft size={18} />
                   </button>
                   <div className="font-semibold text-sm">
-                    {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                    {monthNames[currentMonth.getMonth()]}{" "}
+                    {currentMonth.getFullYear()}
                   </div>
-                  <button type="button" onClick={goToNextMonth} className="p-1 hover:bg-gray-100 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={goToNextMonth}
+                    className="p-1 hover:bg-gray-100 rounded-lg"
+                  >
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -354,13 +522,16 @@ function BookWalkModal({ walker, onClose }) {
                 {/* Legend */}
                 <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-[#52B2AD]/20 inline-block" /> Available
+                    <span className="w-3 h-3 rounded bg-[#52B2AD]/20 inline-block" />{" "}
+                    Available
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-[#52B2AD] inline-block" /> Selected
+                    <span className="w-3 h-3 rounded bg-[#52B2AD] inline-block" />{" "}
+                    Selected
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded bg-gray-100 inline-block" /> Unavailable
+                    <span className="w-3 h-3 rounded bg-gray-100 inline-block" />{" "}
+                    Unavailable
                   </span>
                 </div>
 
@@ -368,16 +539,25 @@ function BookWalkModal({ walker, onClose }) {
               </div>
             )}
           </div>
-
           {/* TIME SLOTS */}
           {selectedDate && (
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">Select Time Slot *</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Select Time Slot *
+              </label>
 
-              {slotsLoading && <div className="text-sm text-gray-500">Loading available slots…</div>}
-              {slotsError && <div className="text-sm text-red-600">{slotsError}</div>}
+              {slotsLoading && (
+                <div className="text-sm text-gray-500">
+                  Loading available slots…
+                </div>
+              )}
+              {slotsError && (
+                <div className="text-sm text-red-600">{slotsError}</div>
+              )}
               {!slotsLoading && !slotsError && availableSlots.length === 0 && (
-                <div className="text-sm text-gray-500">No slots available for this date.</div>
+                <div className="text-sm text-gray-500">
+                  No slots available for this date.
+                </div>
               )}
               {!slotsLoading && !slotsError && availableSlots.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
@@ -400,38 +580,27 @@ function BookWalkModal({ walker, onClose }) {
               )}
             </div>
           )}
-
-          {/* NOTES */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">
-              Notes <span className="font-normal text-gray-400">(Optional)</span>
-            </label>
-            <input
-              id="notes"
-              name="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. My dog is friendly, needs a leash"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] placeholder:text-gray-400 text-sm"
-            />
-          </div>
-
           {bookingError && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{bookingError}</div>
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">
+              {bookingError}
+            </div>
           )}
-
           {bookingSuccess && (
             <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl">
               Walk booked successfully! Redirecting to payment...
             </div>
           )}
-
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
               disabled={loading}
-              onClick={() => { if (!loading) { resetForm(); onClose && onClose() } }}
+              onClick={() => {
+                if (!loading) {
+                  resetForm();
+                  onClose && onClose();
+                }
+              }}
               className={`px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition text-sm font-medium text-gray-700 ${loading ? "opacity-40 cursor-not-allowed" : ""}`}
             >
               Cancel
@@ -439,18 +608,34 @@ function BookWalkModal({ walker, onClose }) {
 
             <button
               type="submit"
-              disabled={loading || !selectedSlot}
+              disabled={loading || !selectedSlot || !isKycVerified}
               className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                loading || !selectedSlot
+                loading || !selectedSlot || !isKycVerified
                   ? "opacity-60 cursor-not-allowed bg-gray-400"
                   : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
               }`}
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   {bookingSuccess ? "Redirecting…" : "Booking…"}
                 </>
@@ -462,11 +647,10 @@ function BookWalkModal({ walker, onClose }) {
               )}
             </button>
           </div>
-
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default BookWalkModal
+export default BookWalkModal;

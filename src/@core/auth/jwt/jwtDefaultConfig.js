@@ -68,7 +68,12 @@ export default {
   metavetToWalkerKycEndpoint: "/walkerkyc/create",
   metavetToGroomerKyCEndpoint: "/groomerkyc/create",
   metavetToBehaviouristKycEndPoint: "/behaviouristkyc/create",
+  getBehaviToClientKycByPet: "/api/behaviorist-kyc/pet-uid/{petUid}",
+
   walkerToClientKyc: "/api/walker-kyc",
+  getWalkerToClientKycByPet: "/api/walker-kyc/pet-uid/{petUid}",
+  updateWalkerToClientKyc: "/api/walker-kyc/{kycUid}",
+
   getStatusWalkerToClientKyc: "/api/walker-kyc/get-status",
   getAllWalkerByDistance:
     "/walkerkyc/nearby?latitude={latitude}&longitude={longitude}&maxDistance={Distance}&page=0&size=10",
@@ -98,6 +103,8 @@ export default {
   createServicesEndpoint: "/groomer/appointment/services",
   createDaysForGroomerEndpoint: "/groomer/appointment/days",
   getGroomerAppointment: "/groomer/appointment/my-appointments",
+  getGroomerToClientKycByPet: "/api/groomer-kyc/pet-uid/{petUid}",
+
   //groomer-client side
   GetAvailableSlotAndService:
     "/groomer/appointment/{GroomerUid}/availability?date={date}",
