@@ -136,4 +136,6 @@ export default {
   getMetavetChargesEndpoint: "/metavet-charge/{userType}",
 
   verifyPaymentCommonEndpoint: "/clients/verify/{sessionId}",
+  updateBehaviKycBehaviToClient: "/api/behaviorist-kyc/{uid}",
+  updateGroomerToClientKyc: "/api/groomer-kyc/{uid}",
 };

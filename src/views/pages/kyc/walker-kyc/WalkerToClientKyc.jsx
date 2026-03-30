@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
+import { useNavigate } from "react-router-dom";
 
 // Initial empty form state (so we can reset easily after success)
 const initialFormData = {
@@ -147,7 +148,7 @@ const PetWalkerKYC = () => {
   const [loadingPets, setLoadingPets] = useState(false);
   const [petsError, setPetsError] = useState(null);
   const [selectedPetId, setSelectedPetId] = useState("");
-
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -403,6 +404,7 @@ const PetWalkerKYC = () => {
             data.message ||
             "Submission failed due to validation error.",
         );
+
         return;
       }
 
@@ -410,6 +412,9 @@ const PetWalkerKYC = () => {
       setSuccessMessage("Walker KYC submitted successfully.");
       setFormData(initialFormData);
       setSelectedPetId("");
+      setTimeout(() => {
+        navigate("/service-provider/petWalker");
+      }, 1000);
     } catch (err) {
       console.error("Submission error:", err);
       const backend = err?.response?.data;
@@ -459,6 +464,9 @@ const PetWalkerKYC = () => {
 
       console.log("Update successful:", data);
       setSuccessMessage("Walker KYC updated successfully.");
+      setTimeout(() => {
+        navigate("/service-provider/petWalker");
+      }, 1000);
     } catch (err) {
       console.error("Update error:", err);
       const backend = err?.response?.data;

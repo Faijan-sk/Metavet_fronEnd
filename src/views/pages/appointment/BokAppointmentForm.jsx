@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { X, Plus, Clock } from "lucide-react";
 import useJwt from "../../../enpoints/jwt/useJwt";
 import { useNavigate } from "react-router-dom";
+import AddPetForm from "./../pets/AddPetForm"; // ✅ Import
 
 export default function BookAppointmentForm({
   onClose,
@@ -30,18 +31,47 @@ export default function BookAppointmentForm({
   const [doctorsError, setDoctorsError] = useState(null);
   const [specializations, setSpecializations] = useState([]);
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
-  // Available time slots
   const [availableSlots, setAvailableSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState(null);
   const [bookingResponse, setBookingResponse] = useState(null);
-  // pets
   const [pets, setPets] = useState([]);
   const [petsLoading, setPetsLoading] = useState(false);
   const [petsError, setPetsError] = useState(null);
-  const [isAddingPet, setIsAddingPet] = useState(false);
+
+  // ✅ NEW: Add Pet Modal state
+  const [showAddPetModal, setShowAddPetModal] = useState(false);
 
   const upd = useCallback((patch) => setForm((p) => ({ ...p, ...patch })), []);
+
+  // ✅ fetchPets useCallback mein wrap kiya — re-fetch ke liye
+  const fetchPets = useCallback(async () => {
+    setPetsLoading(true);
+    setPetsError(null);
+    try {
+      const resp = await useJwt.getAllPetsByOwner();
+      let data = [];
+      if (Array.isArray(resp?.data?.data)) data = resp.data.data;
+      else if (Array.isArray(resp?.data)) data = resp.data;
+      else if (Array.isArray(resp?.data?.results)) data = resp.data.results;
+
+      setPets(data || []);
+
+      if (initialValues?.petId) {
+        const matched = data.find(
+          (p) => String(p.pid) === String(initialValues.petId),
+        );
+        if (matched) upd({ petId: matched.pid });
+      }
+    } catch (err) {
+      console.error("Error fetching pets:", err);
+      const message =
+        err?.response?.data?.message || err?.message || "Failed to fetch pets.";
+      setPetsError(message);
+    } finally {
+      setPetsLoading(false);
+    }
+  }, [initialValues?.petId, upd]);
 
   // prefill when editing
   useEffect(() => {
@@ -53,44 +83,8 @@ export default function BookAppointmentForm({
 
   // fetch pets on mount
   useEffect(() => {
-    let mounted = true;
-    const fetchPets = async () => {
-      setPetsLoading(true);
-      setPetsError(null);
-      try {
-        const resp = await useJwt.getAllPetsByOwner();
-        let data = [];
-        if (Array.isArray(resp?.data?.data)) data = resp.data.data;
-        else if (Array.isArray(resp?.data)) data = resp.data;
-        else if (Array.isArray(resp?.data?.results)) data = resp.data.results;
-
-        setPets(data || []);
-
-        if (initialValues?.petId && mounted) {
-          const initPetId = initialValues.petId;
-          const matched = data.find((p) => String(p.pid) === String(initPetId));
-          if (matched) {
-            upd({ petId: matched.pid });
-            setIsAddingPet(false);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching pets:", err);
-        const message =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Failed to fetch pets.";
-        setPetsError(message);
-      } finally {
-        setPetsLoading(false);
-      }
-    };
-
     fetchPets();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  }, [fetchPets]);
 
   // compute weekday and fetch doctors when appointmentDate changes
   useEffect(() => {
@@ -125,11 +119,9 @@ export default function BookAppointmentForm({
       setAvailableSlots([]);
       try {
         const resp = await useJwt.getDoctorByDay(dayName);
-        // normalize response structure
         const rawData = Array.isArray(resp?.data)
           ? resp.data
           : resp?.data?.results || [];
-        // filter only APPROVED doctors
         const approved = (rawData || []).filter(
           (r) =>
             r.doctor &&
@@ -138,7 +130,6 @@ export default function BookAppointmentForm({
         );
 
         if (!approved.length) {
-          // no approved doctors for the selected day
           setDoctors([]);
           setVisibleDoctors([]);
           setSpecializations([]);
@@ -152,7 +143,6 @@ export default function BookAppointmentForm({
 
         setDoctors(approved || []);
 
-        // extract unique specializations from approved doctors
         const specs = Array.from(
           new Set(
             (approved || [])
@@ -162,7 +152,6 @@ export default function BookAppointmentForm({
         );
         setSpecializations(specs);
 
-        // if initialValues doctor is present, try to select it only if it's in approved list
         if (initialValues?.doctorId) {
           const initialDoctorId =
             Number(initialValues.doctorId) || initialValues.doctorId;
@@ -188,7 +177,6 @@ export default function BookAppointmentForm({
           }
         }
 
-        // otherwise show all approved doctors
         setVisibleDoctors(approved || []);
       } catch (err) {
         console.error("Error fetching doctors:", err);
@@ -257,29 +245,32 @@ export default function BookAppointmentForm({
     setAvailableSlots([]);
   };
 
+  // ✅ UPDATED: "+ Add Pet" handle karo
   const handlePetSelectChange = (e) => {
     const val = e.target.value;
     if (val === "__add_new__") {
-      setIsAddingPet(true);
+      // Dropdown value reset karo, modal open karo
       upd({ petId: "" });
+      setShowAddPetModal(true);
     } else {
-      setIsAddingPet(false);
       upd({ petId: val });
     }
   };
 
-  // Handle doctor selection and fetch available slots
+  // ✅ NEW: Pet successfully add hone ke baad
+  const handlePetAdded = async () => {
+    setShowAddPetModal(false); // Modal band karo
+    await fetchPets(); // Pet list refresh karo
+  };
+
   const handleDoctorChange = async (e) => {
     const selectedDoctorId = e.target.value;
-
-    // Clear previous slots
     setAvailableSlots([]);
     setSlotsError(null);
     upd({ doctorId: "", doctorDayId: "", slotId: "" });
 
     if (!selectedDoctorId) return;
 
-    // Find the selected doctor's complete data from the fetched doctors list
     const selectedDoctor = doctors.find(
       (d) => String(d.doctorId) === String(selectedDoctorId),
     );
@@ -290,14 +281,8 @@ export default function BookAppointmentForm({
     }
 
     const doctorDayId = selectedDoctor.doctorDayId;
+    upd({ doctorId: selectedDoctorId, doctorDayId: doctorDayId });
 
-    // Update form with doctorId and doctorDayId
-    upd({
-      doctorId: selectedDoctorId,
-      doctorDayId: doctorDayId,
-    });
-
-    // Fetch available slots if we have all required data
     if (selectedDoctorId && doctorDayId && form.appointmentDate) {
       setSlotsLoading(true);
       setSlotsError(null);
@@ -308,7 +293,6 @@ export default function BookAppointmentForm({
           form.appointmentDate,
         );
 
-        // Handle different response structures
         const slots = Array.isArray(response?.data)
           ? response.data
           : Array.isArray(response?.data?.slots)
@@ -334,7 +318,6 @@ export default function BookAppointmentForm({
     }
   };
 
-  // Handle slot selection
   const handleSlotSelect = (slot) => {
     const slotId = slot.slotId || slot.id;
     upd({ slotId: slotId });
@@ -352,17 +335,16 @@ export default function BookAppointmentForm({
     setDoctorsLoading(false);
     setPetsError(null);
     setPetsLoading(false);
-    setIsAddingPet(false);
     setError(null);
     setAvailableSlots([]);
     setSlotsError(null);
+    setShowAddPetModal(false); // ✅
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // Validate required fields
     if (
       !form.petId ||
       !form.doctorId ||
@@ -376,14 +358,13 @@ export default function BookAppointmentForm({
 
     setLoading(true);
     try {
-      // Prepare payload for backend
       const payload = {
         petId: Number(form.petId),
         doctorId: Number(form.doctorId),
         doctorDayId: Number(form.doctorDayId),
         slotId: Number(form.slotId),
         appointmentDate: form.appointmentDate,
-        note: form.reason, // ✅ reason field sent as "note" to backend
+        note: form.reason,
         platForm: "WEB",
       };
 
@@ -399,8 +380,6 @@ export default function BookAppointmentForm({
             amount: response.data.amount,
           }),
         );
-
-        // Redirect user to Stripe payment page
         window.location.href = response.data.checkoutUrl;
       } else {
         setError("Failed to create payment session. Please try again.");
@@ -419,334 +398,366 @@ export default function BookAppointmentForm({
   };
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 transform transition-all animate-fadeIn">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-[#52B2AD]"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden
-          >
-            <path
-              d="M3 7h18M8 3v4M16 3v4"
-              stroke="#52B2AD"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+    <>
+      {/* ─── Main Booking Form ─── */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-6 transform transition-all animate-fadeIn">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-[#52B2AD]"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M3 7h18M8 3v4M16 3v4"
+                stroke="#52B2AD"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Book Appointment
+          </h3>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="text-sm text-gray-500 px-3 py-1 rounded-md hover:bg-gray-100"
+              onClick={() => {
+                resetForm();
+                onClose && onClose();
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              onClick={() => {
+                resetForm();
+                onClose && onClose();
+              }}
+              aria-label="Close dialog"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          {/* Date Field */}
+          <div>
+            <label
+              htmlFor="appointmentDate"
+              className="block text-xs font-semibold text-gray-600 mb-1"
+            >
+              Date *
+            </label>
+            <input
+              id="appointmentDate"
+              name="appointmentDate"
+              value={form.appointmentDate}
+              onChange={handleDateChange}
+              type="date"
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+              required
             />
-          </svg>
-          Book Appointment
-        </h3>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="text-sm text-gray-500 px-3 py-1 rounded-md hover:bg-gray-100"
-            onClick={() => {
-              resetForm();
-              onClose && onClose();
-            }}
-            title="Cancel"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
-            onClick={() => {
-              resetForm();
-              onClose && onClose();
-            }}
-            title="Close"
-            aria-label="Close dialog"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        {/* Date Field */}
-        <div>
-          <label
-            htmlFor="appointmentDate"
-            className="block text-xs font-semibold text-gray-600 mb-1"
-          >
-            Date *
-          </label>
-
-          <input
-            id="appointmentDate"
-            name="appointmentDate"
-            value={form.appointmentDate}
-            onChange={handleDateChange}
-            type="date"
-            min={new Date().toISOString().split("T")[0]}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-            required
-          />
-
-          {appointmentDay && (
-            <div className="mt-1 text-xs text-gray-600">
-              Day: {appointmentDay}
-            </div>
-          )}
-        </div>
-
-        {/* Doctors Loading State */}
-        {doctorsLoading && (
-          <div className="md:col-span-2 text-sm text-gray-600">
-            Loading available doctors for {appointmentDay}…
+            {appointmentDay && (
+              <div className="mt-1 text-xs text-gray-600">
+                Day: {appointmentDay}
+              </div>
+            )}
           </div>
-        )}
 
-        {!doctorsLoading && doctorsError && (
-          <div className="md:col-span-2 text-sm text-primary-600" role="alert">
-            {doctorsError}
-          </div>
-        )}
-
-        {!doctorsLoading &&
-          !doctorsError &&
-          !doctors.length &&
-          appointmentDate && (
-            <div className="md:col-span-2 text-sm text-yellow-700">
-              No doctors available for {appointmentDay}. Please choose another
-              date.
+          {doctorsLoading && (
+            <div className="md:col-span-2 text-sm text-gray-600">
+              Loading available doctors for {appointmentDay}…
             </div>
           )}
 
-        {/* Rest of the form - only show when doctors are available */}
-        {!doctorsLoading && visibleDoctors.length > 0 && (
-          <>
-            {/* Pet Select */}
-            <div>
-              <label
-                htmlFor="petId"
-                className="block text-xs font-semibold text-gray-600 mb-1"
-              >
-                Select Pet *
-              </label>
-              {petsLoading ? (
-                <div className="text-sm text-gray-600">Loading pets…</div>
-              ) : petsError ? (
-                <div className="text-sm text-red-600">{petsError}</div>
-              ) : (
-                <>
-                  {!isAddingPet ? (
-                    <select
-                      id="petId"
-                      name="petId"
-                      value={form.petId}
-                      onChange={handlePetSelectChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-white"
-                      required
-                    >
-                      <option value="">Select a pet</option>
-                      {pets.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.petName} {p.petSpecies ? `• ${p.petSpecies}` : ""}{" "}
-                          {p.petBreed ? `(${p.petBreed})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="text-sm text-gray-600">
-                      Please add a pet first from Pet Management section.
-                    </div>
-                  )}
-                </>
-              )}
+          {!doctorsLoading && doctorsError && (
+            <div
+              className="md:col-span-2 text-sm text-primary-600"
+              role="alert"
+            >
+              {doctorsError}
             </div>
+          )}
 
-            {/* Doctor Select */}
-            <div>
-              <label
-                htmlFor="doctorId"
-                className="block text-xs font-semibold text-gray-600 mb-1"
-              >
-                Doctor *
-              </label>
-              <select
-                id="doctorId"
-                name="doctorId"
-                value={form.doctorId}
-                onChange={handleDoctorChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-white"
-              >
-                <option value="">Select a doctor</option>
-                {visibleDoctors.map((d) => {
-                  const doc = d.doctor || d;
-                  return (
-                    <option key={d.doctorId} value={d.doctorId}>
-                      {doctorLabel(d)}{" "}
-                      {doc?.experienceYears
-                        ? `• ${doc.experienceYears} yrs`
-                        : ""}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Time Slots - Show when doctor is selected */}
-            {form.doctorId && (
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-gray-600 mb-2">
-                  <Clock size={14} className="inline mr-1" />
-                  Select Time Slot *
-                </label>
-
-                {slotsLoading && (
-                  <div className="text-sm text-gray-600 py-2">
-                    Loading available time slots...
-                  </div>
-                )}
-
-                {!slotsLoading && slotsError && (
-                  <div className="text-sm text-yellow-600 py-2">
-                    {slotsError}
-                  </div>
-                )}
-
-                {!slotsLoading && !slotsError && availableSlots.length > 0 && (
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                    {availableSlots.map((slot) => {
-                      const slotId = slot.slotId || slot.id;
-                      const startTime = slot.startTime || slot.time || "";
-                      const endTime = slot.endTime || "";
-                      const displayTime = endTime
-                        ? `${startTime} - ${endTime}`
-                        : startTime;
-                      const isSelected = Number(form.slotId) === Number(slotId);
-
-                      return (
-                        <button
-                          key={slotId}
-                          type="button"
-                          onClick={() => handleSlotSelect(slot)}
-                          className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
-                            isSelected
-                              ? "bg-[#52B2AD] text-white ring-2 ring-[#52B2AD] ring-offset-2"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                        >
-                          {displayTime}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {!slotsLoading &&
-                  !slotsError &&
-                  availableSlots.length === 0 &&
-                  form.doctorId && (
-                    <div className="text-sm text-gray-500 py-2">
-                      No available slots found.
-                    </div>
-                  )}
+          {!doctorsLoading &&
+            !doctorsError &&
+            !doctors.length &&
+            appointmentDate && (
+              <div className="md:col-span-2 text-sm text-yellow-700">
+                No doctors available for {appointmentDay}. Please choose another
+                date.
               </div>
             )}
 
-            {/* Reason */}
-            <div className="md:col-span-2">
-              <label
-                htmlFor="reason"
-                className="block text-xs font-semibold text-gray-600 mb-1"
-              >
-                Reason <span className="text-red">*</span>
-              </label>
-              <input
-                id="reason"
-                name="reason"
-                value={form.reason}
-                onChange={(e) => upd({ reason: e.target.value })}
-                placeholder="e.g. Vaccination, Checkup"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-              />
-            </div>
-          </>
-        )}
-
-        {error && (
-          <div
-            className="md:col-span-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="md:col-span-2 flex items-center justify-end gap-3 mt-2">
-          <button
-            type="button"
-            onClick={() => {
-              resetForm();
-              onClose && onClose();
-            }}
-            className="px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 transition"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            disabled={
-              loading ||
-              doctorsLoading ||
-              visibleDoctors.length === 0 ||
-              !form.slotId
-            }
-            className={`px-5 py-2 rounded-md text-white font-semibold transition flex items-center ${
-              loading ||
-              doctorsLoading ||
-              visibleDoctors.length === 0 ||
-              !form.slotId
-                ? "opacity-70 cursor-not-allowed bg-gray-400"
-                : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.01] shadow-lg"
-            }`}
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
+          {!doctorsLoading && visibleDoctors.length > 0 && (
+            <>
+              {/* ✅ Pet Select — hamesha "+ Add Pet" option ke saath */}
+              <div>
+                <label
+                  htmlFor="petId"
+                  className="block text-xs font-semibold text-gray-600 mb-1"
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Booking...
-              </>
-            ) : (
-              <>
-                <Plus size={16} className="inline-block mr-2 -mt-1" />
-                {initialValues ? "Update Appointment" : "Book Appointment"}
-              </>
-            )}
-          </button>
+                  Select Pet *
+                </label>
+
+                {petsLoading ? (
+                  <div className="text-sm text-gray-600">Loading pets…</div>
+                ) : petsError ? (
+                  <div className="text-sm text-red-600">{petsError}</div>
+                ) : (
+                  <select
+                    id="petId"
+                    name="petId"
+                    value={form.petId}
+                    onChange={handlePetSelectChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-white"
+                    required
+                  >
+                    <option value="">Select a pet</option>
+
+                    {/* Existing pets */}
+                    {pets.map((p) => (
+                      <option key={p.pid || p.id} value={p.pid || p.id}>
+                        {p.petName}
+                        {p.petSpecies ? ` • ${p.petSpecies}` : ""}
+                        {p.petBreed ? ` (${p.petBreed})` : ""}
+                      </option>
+                    ))}
+
+                    {/* ✅ Hamesha last mein Add Pet option */}
+                    <option value="__add_new__">➕ Add New Pet</option>
+                  </select>
+                )}
+              </div>
+
+              {/* Doctor Select */}
+              <div>
+                <label
+                  htmlFor="doctorId"
+                  className="block text-xs font-semibold text-gray-600 mb-1"
+                >
+                  Doctor *
+                </label>
+                <select
+                  id="doctorId"
+                  name="doctorId"
+                  value={form.doctorId}
+                  onChange={handleDoctorChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-white"
+                >
+                  <option value="">Select a doctor</option>
+                  {visibleDoctors.map((d) => {
+                    const doc = d.doctor || d;
+                    return (
+                      <option key={d.doctorId} value={d.doctorId}>
+                        {doctorLabel(d)}
+                        {doc?.experienceYears
+                          ? ` • ${doc.experienceYears} yrs`
+                          : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Time Slots */}
+              {form.doctorId && (
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-600 mb-2">
+                    <Clock size={14} className="inline mr-1" />
+                    Select Time Slot *
+                  </label>
+
+                  {slotsLoading && (
+                    <div className="text-sm text-gray-600 py-2">
+                      Loading available time slots...
+                    </div>
+                  )}
+
+                  {!slotsLoading && slotsError && (
+                    <div className="text-sm text-yellow-600 py-2">
+                      {slotsError}
+                    </div>
+                  )}
+
+                  {!slotsLoading &&
+                    !slotsError &&
+                    availableSlots.length > 0 && (
+                      <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                        {availableSlots.map((slot) => {
+                          const slotId = slot.slotId || slot.id;
+                          const startTime = slot.startTime || slot.time || "";
+                          const endTime = slot.endTime || "";
+                          const displayTime = endTime
+                            ? `${startTime} - ${endTime}`
+                            : startTime;
+                          const isSelected =
+                            Number(form.slotId) === Number(slotId);
+
+                          return (
+                            <button
+                              key={slotId}
+                              type="button"
+                              onClick={() => handleSlotSelect(slot)}
+                              className={`px-3 py-2 rounded-lg text-xs font-medium transition ${
+                                isSelected
+                                  ? "bg-[#52B2AD] text-white ring-2 ring-[#52B2AD] ring-offset-2"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                            >
+                              {displayTime}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                  {!slotsLoading &&
+                    !slotsError &&
+                    availableSlots.length === 0 &&
+                    form.doctorId && (
+                      <div className="text-sm text-gray-500 py-2">
+                        No available slots found.
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Reason */}
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="reason"
+                  className="block text-xs font-semibold text-gray-600 mb-1"
+                >
+                  Reason <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="reason"
+                  name="reason"
+                  value={form.reason}
+                  onChange={(e) => upd({ reason: e.target.value })}
+                  placeholder="e.g. Vaccination, Checkup"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+                />
+              </div>
+            </>
+          )}
+
+          {error && (
+            <div
+              className="md:col-span-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg"
+              role="alert"
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="md:col-span-2 flex items-center justify-end gap-3 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                onClose && onClose();
+              }}
+              className="px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 transition"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                doctorsLoading ||
+                visibleDoctors.length === 0 ||
+                !form.petId || // ✅ pet select nahi = disabled
+                !form.slotId
+              }
+              className={`px-5 py-2 rounded-md text-white font-semibold transition flex items-center ${
+                loading ||
+                doctorsLoading ||
+                visibleDoctors.length === 0 ||
+                !form.petId || // ✅ yahan bhi
+                !form.slotId
+                  ? "opacity-70 cursor-not-allowed bg-gray-400" // disabled color
+                  : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.01] shadow-lg"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Booking...
+                </>
+              ) : (
+                <>
+                  <Plus size={16} className="inline-block mr-2 -mt-1" />
+                  {initialValues ? "Update Appointment" : "Book Appointment"}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ✅ Add Pet Modal — Booking form ke upar overlay */}
+      {showAddPetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Add New Pet
+              </h3>
+              <button
+                type="button"
+                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+                onClick={() => setShowAddPetModal(false)}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* AddPetForm */}
+            <AddPetForm
+              onClose={() => setShowAddPetModal(false)} // Cancel → sirf modal band
+              onSubmit={handlePetAdded} // Success → modal band + re-fetch
+              editPetData={null} // Hamesha add mode
+            />
+          </div>
         </div>
-      </form>
-    </div>
+      )}
+    </>
   );
 }

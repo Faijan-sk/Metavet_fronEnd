@@ -98,8 +98,13 @@ const Kong = lazy(() => import("./views/pages/kong"));
 const MilkBone = lazy(() => import("./views/pages/milkbone"));
 const HillScienceDog = lazy(() => import("./views/pages/hillsciencedog"));
 import DoctorAppointmentListing from "./views/pages/appointment/doctorAppointment/Dashboard";
+import WalkerAppointmentBooking from "./views/pages/serviceProvider/petWalker/bookingPage";
 
 const ViewProfile4 = lazy(() => import("./views/pages/viewprofile4"));
+
+// context import
+// Ye line add karo - baaki imports ke saath
+import { WalkerAppointmentProvider } from "./context/WalkerAppointmentContext";
 
 const App = () => {
   const [themeMode, setThemeMode] = useState("light");
@@ -122,155 +127,165 @@ const App = () => {
     <ThemeProvider value={{ themeMode, darkTheme, lightTheme }}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          {/* Suspense will display a fallback while the lazy components load */}
-          <Suspense fallback={<div>Loading...</div>}>
-            <Routes>
-              <Route path="*" element={<h1>404 page not found</h1>} />
-              <Route path="/" element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/appointment" element={<Appointment />} />
-                <Route path="/healthrecord" element={<HealthRecord />} />
-                <Route path="/mypet" element={<MyPet />} />
-                <Route path="/finddoctor" element={<FindDoctor />} />
-                <Route path="/contactus" element={<ContactUs />} />
-                <Route path="/addpet" element={<AddPet />} />
-                <Route
-                  path="/teleconsultation"
-                  element={<Teleconsultation />}
-                />
-                <Route
-                  path="/treatment-plans-rx"
-                  element={<TreatmentPlans />}
-                />
-                <Route path="/blood-work" element={<Bloodwork />} />
-                <Route path="/grooming" element={<Grooming />} />
+          <WalkerAppointmentProvider>
+            {/* Suspense will display a fallback while the lazy components load */}
+            <Suspense fallback={<div>Loading...</div>}>
+              <Routes>
+                <Route path="*" element={<h1>404 page not found</h1>} />
+                <Route path="/" element={<Layout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/appointment" element={<Appointment />} />
+                  <Route path="/healthrecord" element={<HealthRecord />} />
+                  <Route path="/mypet" element={<MyPet />} />
+                  <Route path="/finddoctor" element={<FindDoctor />} />
+                  <Route path="/contactus" element={<ContactUs />} />
+                  <Route path="/addpet" element={<AddPet />} />
+                  <Route
+                    path="/teleconsultation"
+                    element={<Teleconsultation />}
+                  />
+                  <Route
+                    path="/treatment-plans-rx"
+                    element={<TreatmentPlans />}
+                  />
+                  <Route path="/blood-work" element={<Bloodwork />} />
+                  <Route path="/grooming" element={<Grooming />} />
 
-                <Route path="/groomer-kyc" element={<GroomerKyc />} />
-                <Route path="/walker-kyc" element={<WalkerKyc />} />
-                <Route
-                  path="/walkerTo-client-Kyc"
-                  element={<WalkerToClientKyc />}
-                />
-                <Route path="/behaviourist-kyc" element={<Behaviourist />} />
-                <Route
-                  path="/behaviouristTo-client-kyc"
-                  element={<BehavioristToClient />}
-                />
-                <Route
-                  path="/groomerTo-client-kyc"
-                  element={<GroomerToClientKyc />}
-                />
-                <Route
-                  path="/service-appointment"
-                  element={<PetServiceAppointment />}
-                />
+                  <Route path="/groomer-kyc" element={<GroomerKyc />} />
+                  <Route path="/walker-kyc" element={<WalkerKyc />} />
+                  <Route
+                    path="/walkerTo-client-Kyc"
+                    element={<WalkerToClientKyc />}
+                  />
+                  <Route path="/behaviourist-kyc" element={<Behaviourist />} />
+                  <Route
+                    path="/behaviouristTo-client-kyc"
+                    element={<BehavioristToClient />}
+                  />
+                  <Route
+                    path="/groomerTo-client-kyc"
+                    element={<GroomerToClientKyc />}
+                  />
+                  <Route
+                    path="/service-appointment"
+                    element={<PetServiceAppointment />}
+                  />
 
-                {/* other service  */}
-                <Route
-                  path="/service-provider/:serviceType"
-                  element={<ServiceProviders />}
-                />
+                  {/* other service  */}
+                  <Route
+                    path="/service-provider/:serviceType"
+                    element={<ServiceProviders />}
+                  />
 
-                <Route path="/kennels-boarding" element={<KennelsBoarding />} />
-                <Route path="/dog-training" element={<DogTraining />} />
-                <Route path="/dental" element={<Dental />} />
-                <Route path="/vaccines" element={<Vaccines />} />
-                <Route
-                  path="/parasite-prevention"
-                  element={<ParasitePrevention />}
-                />
-                <Route path="/about-pet" element={<PetRecord />} />
-                <Route
-                  path="/spaying-neutering"
-                  element={<SpayingOrNeutering />}
-                />
-                <Route path="/nutrition" element={<Nutrition />} />
-                <Route path="/behaviour" element={<Behavior />} />
-                <Route path="/other-services" element={<OtherServices />} />
-                <Route path="/what-to-expect" element={<WhatExpect />} />
-                <Route
-                  path="/behavioural-concern"
-                  element={<BehaviouralConcern />}
-                />
-                <Route path="/payment-options" element={<PaymentOptions />} />
-                <Route
-                  path="/pet-wellness-program"
-                  element={<PetWellnessProgram />}
-                />
-                <Route path="/our-team" element={<OurTeam />} />
-                <Route path="/about-us" element={<AboutUs />} />
-                <Route path="/meet-the-team" element={<MeetTeam />} />
-                <Route path="/blogs" element={<Blog />} />
-                <Route path="/pet-health" element={<PetHealth />} />
-                <Route path="/choosing-pet" element={<ChoosingPet />} />
-                <Route path="/livingpet" element={<LivingPet />} />
-                <Route path="/videonewsroom" element={<VideoNewsroom />} />
-                <Route
-                  path="/todayveterinarian"
-                  element={<TodaysVeterinarian />}
-                />
-                <Route path="/newsletter" element={<NewsletterArchive />} />
-                <Route path="/surgery" element={<Surgery />} />
-                <Route path="/radiology" element={<Radiology />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/viewprofile4" element={<ViewProfile4 />} />
-                <Route path="/viewprofile" element={<Viewprofile />} />
-                {/* <Route
+                  <Route
+                    path="/kennels-boarding"
+                    element={<KennelsBoarding />}
+                  />
+                  <Route path="/dog-training" element={<DogTraining />} />
+                  <Route path="/dental" element={<Dental />} />
+                  <Route path="/vaccines" element={<Vaccines />} />
+                  <Route
+                    path="/parasite-prevention"
+                    element={<ParasitePrevention />}
+                  />
+                  <Route path="/about-pet" element={<PetRecord />} />
+                  <Route
+                    path="/spaying-neutering"
+                    element={<SpayingOrNeutering />}
+                  />
+                  <Route path="/nutrition" element={<Nutrition />} />
+                  <Route path="/behaviour" element={<Behavior />} />
+                  <Route path="/other-services" element={<OtherServices />} />
+                  <Route path="/what-to-expect" element={<WhatExpect />} />
+                  <Route
+                    path="/behavioural-concern"
+                    element={<BehaviouralConcern />}
+                  />
+                  <Route path="/payment-options" element={<PaymentOptions />} />
+                  <Route
+                    path="/pet-wellness-program"
+                    element={<PetWellnessProgram />}
+                  />
+                  <Route path="/our-team" element={<OurTeam />} />
+                  <Route path="/about-us" element={<AboutUs />} />
+                  <Route path="/meet-the-team" element={<MeetTeam />} />
+                  <Route path="/blogs" element={<Blog />} />
+                  <Route path="/pet-health" element={<PetHealth />} />
+                  <Route path="/choosing-pet" element={<ChoosingPet />} />
+                  <Route path="/livingpet" element={<LivingPet />} />
+                  <Route path="/videonewsroom" element={<VideoNewsroom />} />
+                  <Route
+                    path="/todayveterinarian"
+                    element={<TodaysVeterinarian />}
+                  />
+                  <Route path="/newsletter" element={<NewsletterArchive />} />
+                  <Route path="/surgery" element={<Surgery />} />
+                  <Route path="/radiology" element={<Radiology />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/viewprofile4" element={<ViewProfile4 />} />
+                  <Route path="/viewprofile" element={<Viewprofile />} />
+                  {/* <Route
                   path="/updateProfile/:token"
                   element={<DoctorProfileUpdate />}
                 /> */}
 
-                <Route
-                  path="/doctor-profile"
-                  element={<DoctorAppointentindex />}
-                />
+                  <Route
+                    path="/doctor-profile"
+                    element={<DoctorAppointentindex />}
+                  />
 
-                <Route
-                  path="/updateProfile"
-                  element={<DoctorProfileUpdate />}
-                />
-                {/* Public Routes */}
-                <Route path="/signin" element={<LoginForm />}></Route>
-                <Route path="/signup" element={<SignUp />} />
-                <Route
-                  path="/otp-verification/:token"
-                  element={<OtpVerification />}
-                />
+                  <Route
+                    path="/updateProfile"
+                    element={<DoctorProfileUpdate />}
+                  />
+                  {/* Public Routes */}
+                  <Route path="/signin" element={<LoginForm />}></Route>
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route
+                    path="/otp-verification/:token"
+                    element={<OtpVerification />}
+                  />
 
-                <Route path="/payment-sucess" element={<PaymentSuccess />} />
-                <Route path="/payment-failed" element={<PaymentFailed />} />
-                <Route path="/pay-now" element={<PayNOw />} />
+                  <Route path="/payment-sucess" element={<PaymentSuccess />} />
+                  <Route path="/payment-failed" element={<PaymentFailed />} />
+                  <Route path="/pay-now" element={<PayNOw />} />
 
-                {/* service Provider */}
+                  {/* service Provider */}
 
-                <Route path="/pet-groomer" element={<GroomerDashboard />} />
-                <Route path="/pet-walker" element={<WalkerDashboard />} />
-                <Route
-                  path="/pet-behaviorist"
-                  element={<BehaviouristDashboard />}
-                />
+                  <Route path="/pet-groomer" element={<GroomerDashboard />} />
+                  <Route path="/pet-walker" element={<WalkerDashboard />} />
+                  <Route
+                    path="/pet-behaviorist"
+                    element={<BehaviouristDashboard />}
+                  />
 
-                <Route
-                  path="/behaviourist-appointments"
-                  element={<BehavioAppointment />}
-                />
-                <Route
-                  path="/walker-appointments"
-                  element={<WalkerBookedAppointment />}
-                />
-                <Route
-                  path="/groomer-appointments"
-                  element={<GroomerBookedAppointment />}
-                />
+                  <Route
+                    path="/behaviourist-appointments"
+                    element={<BehavioAppointment />}
+                  />
+                  <Route
+                    path="/walker-appointments"
+                    element={<WalkerBookedAppointment />}
+                  />
+                  <Route
+                    path="/groomer-appointments"
+                    element={<GroomerBookedAppointment />}
+                  />
 
-                <Route
-                  path="/doctor-appointment"
-                  element={<DoctorAppointmentListing />}
-                />
-              </Route>
-            </Routes>
-          </Suspense>
+                  <Route
+                    path="/doctor-appointment"
+                    element={<DoctorAppointmentListing />}
+                  />
+
+                  <Route
+                    path="/walker-appointment"
+                    element={<WalkerAppointmentBooking />}
+                  />
+                </Route>
+              </Routes>
+            </Suspense>
+          </WalkerAppointmentProvider>
         </BrowserRouter>{" "}
       </QueryClientProvider>
     </ThemeProvider>

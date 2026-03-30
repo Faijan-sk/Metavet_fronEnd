@@ -185,10 +185,6 @@ const AddPetForm = ({ onClose, onSubmit, editPetData }) => {
     }
   };
 
-  // Display kya dikhana hai preview mein:
-  // 1. Naya selected image preview (imagePreview) — highest priority
-  // 2. Existing image from API (existingImageUrl) — edit mode mein
-  // 3. Kuch nahi — upload box dikhao
   const displayImage = imagePreview || existingImageUrl;
 
   return (

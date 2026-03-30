@@ -259,13 +259,13 @@ export default function PetProfileOne({ pet, onEditClick, onDeleteSuccess }) {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <a
+              {/* <a
                 href={`tel:${pet.owner?.fullPhoneNumber || pet.owner?.phoneNumber || ""}`}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#52B2AD] to-[#3d8a86] text-white font-semibold shadow-lg hover:shadow-xl transform transition-all duration-200 hover:scale-105"
               >
                 <Phone size={18} />
                 Call Owner
-              </a>
+              </a> */}
               <button
                 onClick={() => onEditClick && onEditClick(pet)}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white border-2 border-[#52B2AD] text-[#52B2AD] font-semibold shadow-md hover:shadow-lg hover:bg-teal-50 transform transition-all duration-200 hover:scale-105"

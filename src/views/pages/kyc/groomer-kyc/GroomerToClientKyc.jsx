@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import useJwt from "../../../../enpoints/jwt/useJwt";
 
 const HEALTH_CONDITION_MAP = {
@@ -9,6 +10,9 @@ const HEALTH_CONDITION_MAP = {
   None: "NONE",
   Other: "OTHER",
 };
+const HEALTH_CONDITION_REVERSE_MAP = Object.fromEntries(
+  Object.entries(HEALTH_CONDITION_MAP).map(([k, v]) => [v, k]),
+);
 
 const BEHAVIOR_ISSUE_MAP = {
   "Nervousness/anxiety": "NERVOUSNESS_ANXIETY",
@@ -17,22 +21,31 @@ const BEHAVIOR_ISSUE_MAP = {
   "Growling or snapping": "GROWLING_OR_SNAPPING",
   "None of the above": "NONE_OF_THE_ABOVE",
 };
+const BEHAVIOR_ISSUE_REVERSE_MAP = Object.fromEntries(
+  Object.entries(BEHAVIOR_ISSUE_MAP).map(([k, v]) => [v, k]),
+);
 
 const SERVICE_MAP = {
   "Full groom (bath + cut)": "FULL_GROOM",
-  "Bath + brush only": "BATH_BRUSH_ONLY", // ✅ backend enum
+  "Bath + brush only": "BATH_BRUSH_ONLY",
   "Nail trim": "NAIL_TRIM",
   "Ear cleaning": "EAR_CLEANING",
   Deshedding: "DESHEDDING",
-  "Specialty/creative cut": "SPECIALITY_CREATIVE_CUT", // ✅ spelling "SPECIALITY"
+  "Specialty/creative cut": "SPECIALITY_CREATIVE_CUT",
   Other: "OTHER",
 };
+const SERVICE_REVERSE_MAP = Object.fromEntries(
+  Object.entries(SERVICE_MAP).map(([k, v]) => [v, k]),
+);
 
 const ADDON_MAP = {
   "Scented finish": "SCENTED_FINISH",
   "De-matting": "DE_MATTING",
   "Seasonal accessories": "SEASONAL_ACCESSORIES",
 };
+const ADDON_REVERSE_MAP = Object.fromEntries(
+  Object.entries(ADDON_MAP).map(([k, v]) => [v, k]),
+);
 
 const initialFormState = {
   groomingFrequency: "",
@@ -55,32 +68,108 @@ const initialFormState = {
   appointmentTime: "",
   additionalNotes: "",
   addOns: [],
-  selectedPetUid: "",
 };
 
+const reverseMapArray = (enumArray = [], reverseMap) =>
+  enumArray.map((e) => reverseMap[e]).filter(Boolean);
+
+const buildFormFromRecord = (record) => ({
+  groomingFrequency: record.groomingFrequency || "",
+  lastGroomingDate: record.lastGroomingDate || "",
+  preferredStyle: record.preferredStyle || "",
+  avoidFocusAreas: record.avoidFocusAreas || "",
+  healthConditions: reverseMapArray(
+    record.healthConditions,
+    HEALTH_CONDITION_REVERSE_MAP,
+  ),
+  otherHealthCondition: record.otherHealthCondition || "",
+  onMedication: record.onMedication ?? null,
+  medicationDetails: record.medicationDetails || "",
+  hadInjuriesSurgery: record.hadInjuriesSurgery ?? null,
+  injurySurgeryDetails: record.injurySurgeryDetails || "",
+  behaviorIssues: reverseMapArray(
+    record.behaviorIssues,
+    BEHAVIOR_ISSUE_REVERSE_MAP,
+  ),
+  calmingMethods: record.calmingMethods || "",
+  triggers: record.triggers || "",
+  services: reverseMapArray(record.services, SERVICE_REVERSE_MAP),
+  otherService: record.otherService || "",
+  groomingLocation: record.groomingLocation || "",
+  appointmentDate: record.appointmentDate || "",
+  // backend "10:00:00" → "10:00"
+  appointmentTime: record.appointmentTime
+    ? record.appointmentTime.slice(0, 5)
+    : "",
+  additionalNotes: record.additionalNotes || "",
+  addOns: reverseMapArray(record.addOns, ADDON_REVERSE_MAP),
+});
+
 const Index = () => {
-  const [pets, setPets] = useState([]);
-  const [loadingPets, setLoadingPets] = useState(false);
-  const [petsError, setPetsError] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [submitting, setSubmitting] = useState(false);
+  // petUid jo GroomerBookingModal ne navigate state mein bheja
+  const petUid = location.state?.petUid;
+
+  // "loading" | "create" | "update" | "error"
+  const [pageStatus, setPageStatus] = useState("loading");
+  const [existingKycUid, setExistingKycUid] = useState(null);
+
   const [formData, setFormData] = useState(initialFormState);
-
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
   const [apiSuccess, setApiSuccess] = useState("");
 
+  // ─── Auto-fetch KYC on mount using petUid from route state ───────────────
+  useEffect(() => {
+    if (!petUid) {
+      setPageStatus("error");
+      return;
+    }
+
+    const fetchKyc = async () => {
+      setPageStatus("loading");
+      try {
+        const response = await useJwt.getGroomerKycByPetUid(petUid);
+        const data = response?.data;
+
+        if (data?.success && data?.data?.fullRecord) {
+          setExistingKycUid(data.data.kycUid);
+          setFormData(buildFormFromRecord(data.data.fullRecord));
+          setPageStatus("update");
+        } else {
+          setPageStatus("create");
+        }
+      } catch (error) {
+        const status = error?.response?.status;
+        const errorCode = error?.response?.data?.errorCode;
+        if (status === 404 || errorCode === "KYC_NOT_FOUND") {
+          setPageStatus("create");
+        } else {
+          setPageStatus("error");
+          setApiError(
+            "Could not fetch KYC details. Please go back and try again.",
+          );
+        }
+      }
+    };
+
+    fetchKyc();
+  }, [petUid]);
+
+  // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleCheckboxChange = (field, value) => {
     setFormData((prev) => {
       const exists = prev[field].includes(value);
-      const updated = exists
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value];
-
-      return { ...prev, [field]: updated };
+      return {
+        ...prev,
+        [field]: exists
+          ? prev[field].filter((i) => i !== value)
+          : [...prev[field], value],
+      };
     });
-
-    // clear field error on change
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
@@ -92,171 +181,168 @@ const Index = () => {
   const mapEnumArray = (selected, map) =>
     (selected || []).map((label) => map[label]).filter(Boolean);
 
-  // Build payload that matches GroomerToClientKycRequestDto expected shape
-  const buildPayload = () => {
-    return {
-      petUid: formData.selectedPetUid || null,
-      groomingFrequency: formData.groomingFrequency || null,
-      lastGroomingDate: formData.lastGroomingDate || null, // ISO date string yyyy-MM-dd
-      preferredStyle: formData.preferredStyle || null,
-      avoidFocusAreas: formData.avoidFocusAreas || null,
-      healthConditions: mapEnumArray(
-        formData.healthConditions,
-        HEALTH_CONDITION_MAP,
-      ),
-      otherHealthCondition: formData.otherHealthCondition || null,
-      onMedication:
-        formData.onMedication !== null ? formData.onMedication : null,
-      medicationDetails: formData.medicationDetails || null,
-      hadInjuriesSurgery:
-        formData.hadInjuriesSurgery !== null
-          ? formData.hadInjuriesSurgery
-          : null,
-      injurySurgeryDetails: formData.injurySurgeryDetails || null,
-      behaviorIssues: mapEnumArray(formData.behaviorIssues, BEHAVIOR_ISSUE_MAP),
-      calmingMethods: formData.calmingMethods || null,
-      triggers: formData.triggers || null,
-      services: mapEnumArray(formData.services, SERVICE_MAP),
-      otherService: formData.otherService || null,
-      groomingLocation: formData.groomingLocation || null,
-      appointmentDate: formData.appointmentDate || null, // ISO date string
-      appointmentTime: formData.appointmentTime || null, // HH:mm
-      additionalNotes: formData.additionalNotes || null,
-      addOns: mapEnumArray(formData.addOns, ADDON_MAP),
-    };
-  };
+  const buildPayload = () => ({
+    petUid: petUid,
+    groomingFrequency: formData.groomingFrequency || null,
+    lastGroomingDate: formData.lastGroomingDate || null,
+    preferredStyle: formData.preferredStyle || null,
+    avoidFocusAreas: formData.avoidFocusAreas || null,
+    healthConditions: mapEnumArray(
+      formData.healthConditions,
+      HEALTH_CONDITION_MAP,
+    ),
+    otherHealthCondition: formData.otherHealthCondition || null,
+    onMedication: formData.onMedication !== null ? formData.onMedication : null,
+    medicationDetails: formData.medicationDetails || null,
+    hadInjuriesSurgery:
+      formData.hadInjuriesSurgery !== null ? formData.hadInjuriesSurgery : null,
+    injurySurgeryDetails: formData.injurySurgeryDetails || null,
+    behaviorIssues: mapEnumArray(formData.behaviorIssues, BEHAVIOR_ISSUE_MAP),
+    calmingMethods: formData.calmingMethods || null,
+    triggers: formData.triggers || null,
+    services: mapEnumArray(formData.services, SERVICE_MAP),
+    otherService: formData.otherService || null,
+    groomingLocation: formData.groomingLocation || null,
+    appointmentDate: formData.appointmentDate || null,
+    appointmentTime: formData.appointmentTime || null,
+    additionalNotes: formData.additionalNotes || null,
+    addOns: mapEnumArray(formData.addOns, ADDON_MAP),
+  });
 
+  // ─── Validation ───────────────────────────────────────────────────────────
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.selectedPetUid) {
-      newErrors.selectedPetUid = "Please select a pet.";
-    }
-
-    if (!formData.groomingFrequency) {
+    if (!formData.groomingFrequency)
       newErrors.groomingFrequency = "Please select grooming frequency.";
-    }
-
-    if (!formData.healthConditions || formData.healthConditions.length === 0) {
+    if (!formData.healthConditions || formData.healthConditions.length === 0)
       newErrors.healthConditions =
         "Please select at least one health condition (or None).";
-    }
-
     if (
       formData.healthConditions.includes("Other") &&
       !formData.otherHealthCondition.trim()
-    ) {
+    )
       newErrors.otherHealthCondition = "Please specify other health condition.";
-    }
-
-    if (formData.onMedication === null) {
+    if (formData.onMedication === null)
       newErrors.onMedication = "Please specify if your pet is on medication.";
-    } else if (
+    else if (
       formData.onMedication === true &&
       !formData.medicationDetails.trim()
-    ) {
+    )
       newErrors.medicationDetails = "Please provide medication details.";
-    }
-
-    if (formData.hadInjuriesSurgery === null) {
+    if (formData.hadInjuriesSurgery === null)
       newErrors.hadInjuriesSurgery =
         "Please specify if your pet had injuries/surgeries.";
-    } else if (
+    else if (
       formData.hadInjuriesSurgery === true &&
       !formData.injurySurgeryDetails.trim()
-    ) {
+    )
       newErrors.injurySurgeryDetails = "Please provide injury/surgery details.";
-    }
-
-    if (!formData.behaviorIssues || formData.behaviorIssues.length === 0) {
+    if (!formData.behaviorIssues || formData.behaviorIssues.length === 0)
       newErrors.behaviorIssues =
         "Please select at least one behavior option (or None of the above).";
-    }
-
-    if (!formData.services || formData.services.length === 0) {
+    if (!formData.services || formData.services.length === 0)
       newErrors.services = "Please select at least one service.";
-    }
-
-    if (formData.services.includes("Other") && !formData.otherService.trim()) {
+    if (formData.services.includes("Other") && !formData.otherService.trim())
       newErrors.otherService = "Please specify other service.";
-    }
-
-    if (!formData.groomingLocation) {
+    if (!formData.groomingLocation)
       newErrors.groomingLocation =
         "Please choose grooming location preference.";
-    }
-
-    if (!formData.appointmentDate) {
+    if (!formData.appointmentDate)
       newErrors.appointmentDate = "Please choose an appointment date.";
-    }
-
-    if (!formData.appointmentTime) {
+    if (!formData.appointmentTime)
       newErrors.appointmentTime = "Please choose an appointment time.";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Submit handler — sends JSON object to backend using the existing API helper
+  // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
     setApiSuccess("");
-
-    const isValid = validateForm();
-    if (!isValid) return;
-
+    if (!validateForm()) return;
     setSubmitting(true);
-
     try {
       const payload = buildPayload();
-      const response = await useJwt.groomerToClientKyc(payload);
-      const respData = response?.data ?? response;
-
-      // Success message from backend if present
-      const successMsg =
-        respData?.message ||
-        respData?.data?.message ||
-        "KYC form submitted successfully.";
-
-      setApiSuccess(successMsg);
+      if (pageStatus === "update" && existingKycUid) {
+        await useJwt.updateGroomerToClientKyc(existingKycUid, payload);
+        setApiSuccess("KYC updated successfully!");
+      } else {
+        await useJwt.groomerToClientKyc(payload);
+        setApiSuccess("KYC submitted successfully!");
+      }
       setErrors({});
-      setFormData(initialFormState);
-      // console.log('Submission response:', respData)
+      setTimeout(() => {}, 1000);
+      setTimeout(() => navigate("/service-provider/petGroomer"), 1200);
     } catch (error) {
       console.error("Submission error:", error);
       const apiRes = error?.response?.data;
-      const errMsg =
+      setApiError(
         apiRes?.message ||
-        apiRes?.details ||
-        error?.message ||
-        "Error submitting the form.";
-      setApiError(errMsg);
+          apiRes?.details ||
+          error?.message ||
+          "Error submitting the form.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    async function fetchPetByOwner() {
-      setLoadingPets(true);
-      setPetsError(null);
-      try {
-        const response = await useJwt.getAllPetsByOwner();
-        const petsData = response?.data?.data ?? response?.data ?? [];
-        setPets(Array.isArray(petsData) ? petsData : []);
-      } catch (err) {
-        console.error("Error fetching pets:", err);
-        setPetsError("Failed to load pets");
-        setPets([]);
-      } finally {
-        setLoadingPets(false);
-      }
-    }
-    fetchPetByOwner();
-  }, []);
+  // ─── Loading screen ───────────────────────────────────────────────────────
+  if (pageStatus === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-gray-500">
+          <svg
+            className="animate-spin h-8 w-8 text-primary"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          <p className="text-sm">Fetching KYC details…</p>
+        </div>
+      </div>
+    );
+  }
 
+  // ─── Error screen (petUid nahi aya) ──────────────────────────────────────
+  if (pageStatus === "error") {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+          <p className="text-4xl mb-4">⚠️</p>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            No Pet Selected
+          </h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Please go back and select a pet first before accessing KYC.
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition"
+          >
+            ← Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main Form ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
@@ -264,10 +350,29 @@ const Index = () => {
           🧼 Pet Groomer → Client KYC
         </h1>
         <p className="text-center text-gray-600 mb-6">
-          Metavet Pet Grooming Services{" "}
+          Metavet Pet Grooming Services
         </p>
 
-        {/* Global success / error messages */}
+        {/* KYC Mode Banner */}
+        {/* {pageStatus === "update" && (
+          <div className="mb-5 px-4 py-3 rounded-lg bg-blue-50 border border-blue-300 text-blue-800 text-sm flex items-center gap-2">
+            <span className="text-base">✏️</span>
+            <span>
+              <strong>KYC record found.</strong> Form is pre-filled with your
+              existing data. Make changes and click <strong>Update KYC</strong>.
+            </span>
+          </div>
+        )} */}
+        {pageStatus === "create" && (
+          <div className="mb-5 px-4 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm flex items-center gap-2">
+            <span className="text-base">📋</span>
+            <span>
+              <strong>No KYC found for this pet.</strong> Please fill the form
+              below to create one.
+            </span>
+          </div>
+        )}
+
         {apiSuccess && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-300 text-green-800 text-sm">
             {apiSuccess}
@@ -280,59 +385,11 @@ const Index = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* NEW: Pet selection dropdown */}
-          <section>
-            <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
-              🔹 Select Pet
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block font-medium text-gray-700 mb-2">
-                  Choose pet for this KYC *
-                </label>
-
-                {loadingPets ? (
-                  <div className="text-gray-600">Loading pets...</div>
-                ) : petsError ? (
-                  <div className="text-red-500">{petsError}</div>
-                ) : (
-                  <select
-                    required
-                    value={formData.selectedPetUid}
-                    onChange={(e) =>
-                      handleInputChange("selectedPetUid", e.target.value)
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
-                      errors.selectedPetUid
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">-- Select pet --</option>
-                    {pets.map((pet) => (
-                      <option key={pet.id ?? pet.uid} value={pet.uid}>
-                        {`${pet.petName}${pet.petSpecies ? ` (${pet.petSpecies})` : ""}`}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {errors.selectedPetUid && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.selectedPetUid}
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Step 1: Grooming Preferences */}
+          {/* ── Step 1: Grooming Preferences ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 1: Grooming Preferences
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -358,7 +415,6 @@ const Index = () => {
                           handleInputChange("groomingFrequency", e.target.value)
                         }
                         className="w-4 h-4 text-primary"
-                        required
                       />
                       <span className="text-gray-700">{option}</span>
                     </label>
@@ -394,11 +450,8 @@ const Index = () => {
                   type="text"
                   value={formData.preferredStyle}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const regex = /^[A-Za-z0-9 ]*$/;
-                    if (regex.test(value)) {
-                      handleInputChange("preferredStyle", value);
-                    }
+                    if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                      handleInputChange("preferredStyle", e.target.value);
                   }}
                   placeholder="e.g., short trim, breed cut, deshedding, puppy cut"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -409,15 +462,11 @@ const Index = () => {
                 <label className="block font-medium text-gray-700 mb-2">
                   4. Are there any areas you'd like us to avoid or focus on?
                 </label>
-
                 <textarea
                   value={formData.avoidFocusAreas}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const regex = /^[A-Za-z0-9 ]*$/;
-                    if (regex.test(value)) {
-                      handleInputChange("avoidFocusAreas", value);
-                    }
+                    if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                      handleInputChange("avoidFocusAreas", e.target.value);
                   }}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -427,12 +476,11 @@ const Index = () => {
             </div>
           </section>
 
-          {/* Step 2: Health & Safety */}
+          {/* ── Step 2: Health & Safety ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 2: Health & Safety
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -446,6 +494,7 @@ const Index = () => {
                     "Arthritis",
                     "Allergies",
                     "None",
+                    "Other",
                   ].map((condition) => (
                     <label
                       key={condition}
@@ -462,17 +511,6 @@ const Index = () => {
                       <span className="text-gray-700">{condition}</span>
                     </label>
                   ))}
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.healthConditions.includes("Other")}
-                      onChange={() =>
-                        handleCheckboxChange("healthConditions", "Other")
-                      }
-                      className="w-4 h-4 text-primary rounded"
-                    />
-                    <span className="text-gray-700">Other</span>
-                  </label>
                   {formData.healthConditions.includes("Other") && (
                     <input
                       type="text"
@@ -508,43 +546,36 @@ const Index = () => {
                 <label className="block font-medium text-gray-700 mb-2">
                   6. Is your pet currently on any medications or treatments? *
                 </label>
-
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="onMedication"
-                      value="yes"
-                      checked={formData.onMedication === true}
-                      onChange={() => handleInputChange("onMedication", true)}
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">Yes</span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="onMedication"
-                      value="no"
-                      checked={formData.onMedication === false}
-                      onChange={() => handleInputChange("onMedication", false)}
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">No</span>
-                  </label>
-
+                  {[
+                    { label: "Yes", value: true },
+                    { label: "No", value: false },
+                  ].map(({ label, value }) => (
+                    <label
+                      key={label}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="onMedication"
+                        checked={formData.onMedication === value}
+                        onChange={() =>
+                          handleInputChange("onMedication", value)
+                        }
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-gray-700">{label}</span>
+                    </label>
+                  ))}
                   {formData.onMedication === true && (
                     <textarea
                       value={formData.medicationDetails}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        const regex = /^[A-Za-z0-9 ]*$/;
-                        if (regex.test(value)) {
-                          handleInputChange("medicationDetails", value);
-                        }
+                        if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                          handleInputChange(
+                            "medicationDetails",
+                            e.target.value,
+                          );
                       }}
                       rows="2"
                       placeholder="Please describe the medications..."
@@ -573,47 +604,36 @@ const Index = () => {
                   7. Has your pet had any injuries or surgeries in the past
                   year? *
                 </label>
-
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="hadInjuriesSurgery"
-                      value="yes"
-                      checked={formData.hadInjuriesSurgery === true}
-                      onChange={() =>
-                        handleInputChange("hadInjuriesSurgery", true)
-                      }
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">Yes</span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="hadInjuriesSurgery"
-                      value="no"
-                      checked={formData.hadInjuriesSurgery === false}
-                      onChange={() =>
-                        handleInputChange("hadInjuriesSurgery", false)
-                      }
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">No</span>
-                  </label>
-
+                  {[
+                    { label: "Yes", value: true },
+                    { label: "No", value: false },
+                  ].map(({ label, value }) => (
+                    <label
+                      key={label}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="hadInjuriesSurgery"
+                        checked={formData.hadInjuriesSurgery === value}
+                        onChange={() =>
+                          handleInputChange("hadInjuriesSurgery", value)
+                        }
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-gray-700">{label}</span>
+                    </label>
+                  ))}
                   {formData.hadInjuriesSurgery === true && (
                     <textarea
                       value={formData.injurySurgeryDetails}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        const regex = /^[A-Za-z0-9 ]*$/;
-                        if (regex.test(value)) {
-                          handleInputChange("injurySurgeryDetails", value);
-                        }
+                        if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                          handleInputChange(
+                            "injurySurgeryDetails",
+                            e.target.value,
+                          );
                       }}
                       rows="2"
                       placeholder="Please describe the injuries or surgeries..."
@@ -639,12 +659,11 @@ const Index = () => {
             </div>
           </section>
 
-          {/* Step 3: Behavior & Handling */}
+          {/* ── Step 3: Behavior & Handling ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 3: Behavior & Handling
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -685,15 +704,11 @@ const Index = () => {
                 <label className="block font-medium text-gray-700 mb-2">
                   9. What helps calm or comfort your pet?
                 </label>
-
                 <textarea
                   value={formData.calmingMethods}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const regex = /^[A-Za-z0-9 ]*$/;
-                    if (regex.test(value)) {
-                      handleInputChange("calmingMethods", value);
-                    }
+                    if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                      handleInputChange("calmingMethods", e.target.value);
                   }}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -706,15 +721,11 @@ const Index = () => {
                   10. Does your pet have any triggers or dislikes we should know
                   about?
                 </label>
-
                 <textarea
                   value={formData.triggers}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const regex = /^[A-Za-z0-9 ]*$/;
-                    if (regex.test(value)) {
-                      handleInputChange("triggers", value);
-                    }
+                    if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                      handleInputChange("triggers", e.target.value);
                   }}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -724,12 +735,11 @@ const Index = () => {
             </div>
           </section>
 
-          {/* Step 4: Services & Scheduling */}
+          {/* ── Step 4: Services & Scheduling ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 4: Services & Scheduling
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -743,6 +753,7 @@ const Index = () => {
                     "Ear cleaning",
                     "Deshedding",
                     "Specialty/creative cut",
+                    "Other",
                   ].map((service) => (
                     <label
                       key={service}
@@ -759,15 +770,6 @@ const Index = () => {
                       <span className="text-gray-700">{service}</span>
                     </label>
                   ))}
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.services.includes("Other")}
-                      onChange={() => handleCheckboxChange("services", "Other")}
-                      className="w-4 h-4 text-primary rounded"
-                    />
-                    <span className="text-gray-700">Other</span>
-                  </label>
                   {formData.services.includes("Other") && (
                     <input
                       type="text"
@@ -799,59 +801,34 @@ const Index = () => {
                   12. Do you prefer: *
                 </label>
                 <div className="space-y-2">
-                  {/* value must match backend regex:
-                     "Mobile/in-home grooming", "Grooming salon", "Either is Fine"
-                  */}
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="groomingLocation"
-                      value="Mobile/in-home grooming"
-                      checked={
-                        formData.groomingLocation === "Mobile/in-home grooming"
-                      }
-                      onChange={(e) =>
-                        handleInputChange("groomingLocation", e.target.value)
-                      }
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">
-                      Mobile / in-home grooming
-                    </span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="groomingLocation"
-                      value="Grooming salon"
-                      checked={formData.groomingLocation === "Grooming salon"}
-                      onChange={(e) =>
-                        handleInputChange("groomingLocation", e.target.value)
-                      }
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">
-                      I&apos;ll bring my pet to the groomer (salon)
-                    </span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="groomingLocation"
-                      value="Either is Fine"
-                      checked={formData.groomingLocation === "Either is Fine"}
-                      onChange={(e) =>
-                        handleInputChange("groomingLocation", e.target.value)
-                      }
-                      className="w-4 h-4 text-primary"
-                      required
-                    />
-                    <span className="text-gray-700">Either is fine</span>
-                  </label>
+                  {[
+                    {
+                      label: "Mobile / in-home grooming",
+                      value: "Mobile/in-home grooming",
+                    },
+                    {
+                      label: "I'll bring my pet to the groomer (salon)",
+                      value: "Grooming salon",
+                    },
+                    { label: "Either is fine", value: "Either is Fine" },
+                  ].map(({ label, value }) => (
+                    <label
+                      key={value}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="groomingLocation"
+                        value={value}
+                        checked={formData.groomingLocation === value}
+                        onChange={(e) =>
+                          handleInputChange("groomingLocation", e.target.value)
+                        }
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-gray-700">{label}</span>
+                    </label>
+                  ))}
                 </div>
                 {errors.groomingLocation && (
                   <p className="text-red-500 text-sm mt-1">
@@ -862,9 +839,8 @@ const Index = () => {
 
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  13. Preferred appointment window:
+                  13. Preferred appointment window: *
                 </label>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <input
@@ -886,7 +862,6 @@ const Index = () => {
                       </p>
                     )}
                   </div>
-
                   <div>
                     <input
                       type="time"
@@ -913,15 +888,11 @@ const Index = () => {
                 <label className="block font-medium text-gray-700 mb-2">
                   14. Any other notes or requests?
                 </label>
-
                 <textarea
                   value={formData.additionalNotes}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    const regex = /^[A-Za-z0-9 ]*$/;
-                    if (regex.test(value)) {
-                      handleInputChange("additionalNotes", value);
-                    }
+                    if (/^[A-Za-z0-9 ]*$/.test(e.target.value))
+                      handleInputChange("additionalNotes", e.target.value);
                   }}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -954,7 +925,6 @@ const Index = () => {
               </div>
             </div>
           </section>
-
           {apiSuccess && (
             <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-300 text-green-800 text-sm">
               {apiSuccess}
@@ -965,7 +935,7 @@ const Index = () => {
               {apiError}
             </div>
           )}
-
+          {/* ── Submit ── */}
           <div className="pt-6">
             <button
               type="submit"
@@ -974,9 +944,37 @@ const Index = () => {
                 submitting
                   ? "opacity-70 cursor-not-allowed"
                   : "bg-primary hover:opacity-90"
-              } text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
+              } text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center gap-2`}
             >
-              {submitting ? "Submitting..." : "Submit KYC Form"}
+              {submitting ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  {pageStatus === "update" ? "Updating…" : "Submitting…"}
+                </>
+              ) : pageStatus === "update" ? (
+                "✏️ Update KYC"
+              ) : (
+                "📋 Submit KYC Form"
+              )}
             </button>
           </div>
         </form>

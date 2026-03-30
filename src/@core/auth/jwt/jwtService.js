@@ -3,7 +3,7 @@ import jwtDefaultConfig from "./jwtDefaultConfig";
 // import jwt from '../../../enpoints/jwt/useJwt'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = 'http://192.168.29.199:8080/'
+// axios.defaults.baseURL = "http://192.168.1.7:8080/";
 axios.defaults.baseURL = "http://34.170.68.167:8080/";
 // axios.defaults.baseURL = "http://192.168.29.199:8080/";
 
@@ -612,6 +612,20 @@ export default class JwtService {
   getGroomerKycByPetUid(petUid) {
     return axios.get(
       this.jwtConfig.getGroomerToClientKycByPet.replace("{petUid}", petUid),
+    );
+  }
+
+  updateBehavioToClientKyc(uid, payload) {
+    return axios.put(
+      this.jwtConfig.updateBehaviKycBehaviToClient.replace("{uid}", uid),
+      payload,
+    );
+  }
+
+  updateGroomerToClientKyc(uid, payload) {
+    return axios.put(
+      this.jwtConfig.updateGroomerToClientKyc.replace("{uid}", uid),
+      payload,
     );
   }
 }

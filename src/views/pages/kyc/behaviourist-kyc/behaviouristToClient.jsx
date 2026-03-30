@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
+import { useNavigate } from "react-router-dom";
 
 const PetBehaviorForm = () => {
   // ================= LOCATION STATE (Update Mode) =================
@@ -61,6 +62,7 @@ const PetBehaviorForm = () => {
   const [pets, setPets] = useState([]);
   const [petsLoading, setPetsLoading] = useState(true);
   const [petsError, setPetsError] = useState(null);
+  const navigate = useNavigate();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: "", message: "" });
@@ -339,7 +341,7 @@ const PetBehaviorForm = () => {
 
       // ✅ UPDATE MODE: updateBehaviouristToClientKyc, CREATE MODE: behaviouristToClientKyc
       const apiResponse = isUpdateMode
-        ? await useJwt.updateBehaviouristToClientKyc(kycData.kycUid, payload)
+        ? await useJwt.updateBehavioToClientKyc(kycData.kycUid, payload)
         : await useJwt.behaviouristToClientKyc(payload);
 
       let success = false;
@@ -402,6 +404,10 @@ const PetBehaviorForm = () => {
           additionalNotes: "",
           consentAccuracy: false,
         }));
+
+        setTimeout(() => {
+          navigate("/service-provider/petBehaviourist");
+        }, 1000);
       } else {
         const msg =
           (responseData && responseData.message) ||

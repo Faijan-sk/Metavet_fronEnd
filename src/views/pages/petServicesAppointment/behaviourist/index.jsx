@@ -16,7 +16,7 @@ function Index() {
         console.log("response =====> ", response.data);
 
         if (response?.data?.success) {
-          setKycStatus(response.data.status); 
+          setKycStatus(response.data.status);
           // NOT_SUBMITTED | PENDING | APPROVED
         } else {
           setKycStatus("NOT_SUBMITTED");
@@ -42,7 +42,7 @@ function Index() {
   }
 
   // ❌ KYC not submitted
-  if (kycStatus === "NOT_SUBMITTED" || kycStatus === 'REJECTED') {
+  if (kycStatus === "NOT_SUBMITTED" || kycStatus === "REJECTED") {
     return <KycNotFound redirectTo="/behaviourist-kyc" />;
   }
 

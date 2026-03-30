@@ -1,5 +1,4 @@
 import {
-  Trash2,
   Calendar,
   Clock,
   ChevronLeft,
@@ -7,8 +6,11 @@ import {
   MapPin,
   User,
   PawPrint,
+  FileSearch,
 } from "lucide-react";
 import { useState } from "react";
+import useJwt from "../../../../enpoints/jwt/useJwt";
+import WalkerKycModal from "./WalkerToClientKycView"; // adjust path as needed
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,36 +48,53 @@ const getStatus = (appt) => {
 
 const getPetIcon = (species) => {
   switch ((species || "").toLowerCase()) {
-    case "dog":    return "🐕";
-    case "cat":    return "🐈";
-    case "rabbit": return "🐰";
-    case "bird":   return "🐦";
-    default:       return "🐾";
+    case "dog":
+      return "🐕";
+    case "cat":
+      return "🐈";
+    case "rabbit":
+      return "🐰";
+    case "bird":
+      return "🐦";
+    default:
+      return "🐾";
   }
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PRIMARY       = "#52B2AD";
+const PRIMARY = "#52B2AD";
 const PRIMARY_LIGHT = "#EAF6F5";
-const PRIMARY_MID   = "#A8D8D6";
+const PRIMARY_MID = "#A8D8D6";
 const ITEMS_PER_PAGE = 3;
 
 const STATUS_CONFIG = {
-  upcoming:  {
+  upcoming: {
     label: "Upcoming",
-    barStyle:   { background: PRIMARY },
-    badgeStyle: { background: "#EAF6F5", color: PRIMARY, border: "1px solid #52B2AD" },
+    barStyle: { background: PRIMARY },
+    badgeStyle: {
+      background: "#EAF6F5",
+      color: PRIMARY,
+      border: "1px solid #52B2AD",
+    },
   },
   completed: {
     label: "Completed",
-    barStyle:   { background: PRIMARY_MID },
-    badgeStyle: { background: "#F0FAF9", color: "#3D8F8A", border: "1px solid #A8D8D6" },
+    barStyle: { background: PRIMARY_MID },
+    badgeStyle: {
+      background: "#F0FAF9",
+      color: "#3D8F8A",
+      border: "1px solid #A8D8D6",
+    },
   },
   cancelled: {
     label: "Cancelled",
-    barStyle:   { background: "#D4EDEB" },
-    badgeStyle: { background: "#F5F5F5", color: "#888", border: "1px solid #ddd" },
+    barStyle: { background: "#D4EDEB" },
+    badgeStyle: {
+      background: "#F5F5F5",
+      color: "#888",
+      border: "1px solid #ddd",
+    },
   },
 };
 
@@ -88,7 +107,249 @@ const InfoRow = ({ label, value }) => (
   </div>
 );
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Card with KYC ─────────────────────────────────────────────────────────────
+
+const AppointmentCard = ({ appt, index }) => {
+  // const { getBehavioToClientKycByPet } = useJwt();
+
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [kycData, setKycData] = useState(null);
+  const [kycLoading, setKycLoading] = useState(false);
+  const [kycError, setKycError] = useState(null);
+
+  const status = getStatus(appt);
+  const cfg = STATUS_CONFIG[status];
+
+  const handleViewKyc = async () => {
+    setKycLoading(true);
+    setKycError(null);
+    try {
+      console.log("appt ", appt);
+      const response = await useJwt.getWalkerToClientKycByPet(appt?.petUid);
+      const apiData = response?.data;
+      if (apiData?.success && apiData?.data) {
+        setKycData(apiData.data);
+        setKycModalOpen(true);
+      } else {
+        setKycError("KYC record not found for this pet.");
+      }
+    } catch (err) {
+      setKycError("Failed to fetch KYC. Please try again.");
+    } finally {
+      setKycLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1">
+        {/* Top color bar */}
+        <div className="h-2" style={cfg.barStyle} />
+
+        {/* Card Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">
+              {appt.petSpecies ? getPetIcon(appt.petSpecies) : "🐾"}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-800">
+                {appt.petName ||
+                  appt.serviceType?.replace(/_/g, " ") ||
+                  "Walker Appointment"}
+              </h3>
+              <span
+                className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1"
+                style={cfg.badgeStyle}
+              >
+                {cfg.label}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+              #{appt.id?.slice(0, 8) || index + 1}
+            </span>
+
+            {/* View KYC Button */}
+            <button
+              onClick={handleViewKyc}
+              disabled={kycLoading}
+              className="flex items-center gap-1.5 text-white px-3 py-2 rounded-xl transition shadow-sm text-xs font-semibold disabled:opacity-60"
+              style={{ background: kycLoading ? PRIMARY_MID : PRIMARY }}
+              title="View Pet KYC"
+            >
+              <FileSearch size={15} />
+              {kycLoading ? "Loading…" : "View KYC"}
+            </button>
+          </div>
+        </div>
+
+        {/* KYC Error */}
+        {kycError && (
+          <p className="text-xs text-red-500 px-6 pt-3">⚠️ {kycError}</p>
+        )}
+
+        {/* Card Body */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pet Details */}
+          <div
+            className="rounded-xl p-4 border"
+            style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+          >
+            <p
+              className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+              style={{ color: "#42948f" }}
+            >
+              <PawPrint size={13} /> Pet Details
+            </p>
+            {appt.petName ? (
+              <div className="space-y-2">
+                <InfoRow label="Name" value={appt.petName} />
+                <InfoRow label="Species" value={appt.petSpecies} />
+                <InfoRow label="Breed" value={appt.petBreed} />
+                <InfoRow
+                  label="Gender / Age"
+                  value={
+                    [
+                      appt.petGender,
+                      appt.petAge !== null ? `${appt.petAge} yrs` : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "—"
+                  }
+                />
+                {appt.healthStatus && (
+                  <div
+                    className="pt-2 border-t mt-1"
+                    style={{ borderColor: PRIMARY_MID }}
+                  >
+                    <span className="text-xs text-gray-500 block mb-0.5">
+                      Health Status
+                    </span>
+                    <span className="text-xs text-gray-700">
+                      {appt.healthStatus}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">
+                No pet information provided.
+              </p>
+            )}
+          </div>
+
+          {/* Client Details */}
+          <div
+            className="rounded-xl p-4 border"
+            style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+          >
+            <p
+              className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+              style={{ color: "#42948f" }}
+            >
+              <User size={13} /> Client Details
+            </p>
+            <div className="space-y-2">
+              <InfoRow label="Name" value={appt.userName} />
+              <InfoRow label="Email" value={appt.userEmail} />
+              <InfoRow label="Phone" value={appt.userPhone} />
+            </div>
+          </div>
+        </div>
+
+        {/* Slot Footer */}
+        <div className="px-6 pb-6">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Date */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+              }}
+            >
+              <div
+                className="rounded-lg p-2 flex-shrink-0"
+                style={{ background: PRIMARY }}
+              >
+                <Calendar size={16} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">
+                  Appointment Date
+                </p>
+                <p className="text-sm font-bold text-gray-800">
+                  {formatDate(appt.appointmentDate)}
+                </p>
+                {appt.dayOfWeek && (
+                  <p
+                    className="text-xs font-medium capitalize"
+                    style={{ color: "#42948f" }}
+                  >
+                    {appt.dayOfWeek.charAt(0) +
+                      appt.dayOfWeek.slice(1).toLowerCase()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Time Slot */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+              }}
+            >
+              <div
+                className="rounded-lg p-2 flex-shrink-0"
+                style={{ background: "#42948f" }}
+              >
+                <Clock size={16} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Time Slot</p>
+                <p className="text-sm font-bold text-gray-800">
+                  {appt.slotStart && appt.slotEnd
+                    ? `${formatTime(appt.slotStart)} – ${formatTime(appt.slotEnd)}`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {appt.providerAddress && (
+            <div className="mt-3 flex items-start gap-2">
+              <MapPin
+                size={13}
+                style={{ color: PRIMARY }}
+                className="mt-0.5 flex-shrink-0"
+              />
+              <span className="text-xs text-gray-500 leading-relaxed">
+                {appt.providerAddress}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* KYC Modal */}
+      {kycModalOpen && kycData && (
+        <WalkerKycModal
+          kycData={kycData}
+          petName={appt.petName}
+          onClose={() => {
+            setKycModalOpen(false);
+            setKycData(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+// ── Main Listing ──────────────────────────────────────────────────────────────
 
 const AppointmentListing = ({ appointments, onDelete }) => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -97,179 +358,21 @@ const AppointmentListing = ({ appointments, onDelete }) => {
 
   const totalPages = Math.ceil(appointments.length / ITEMS_PER_PAGE);
   const startIndex = currentPage * ITEMS_PER_PAGE;
-  const current    = appointments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const current = appointments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div>
       <div className="space-y-6 mb-8">
-        {current.map((appt, index) => {
-          const status = getStatus(appt);
-          const cfg    = STATUS_CONFIG[status];
-
-          return (
-            <div
-              key={appt.id || index}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
-            >
-              {/* Top color bar */}
-              <div className="h-2" style={cfg.barStyle} />
-
-              {/* Card Header */}
-              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">
-                    {appt.petSpecies ? getPetIcon(appt.petSpecies) : "🐾"}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">
-                      {appt.petName || appt.serviceType?.replace(/_/g, " ") || "Walker Appointment"}
-                    </h3>
-                    <span
-                      className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1"
-                      style={cfg.badgeStyle}
-                    >
-                      {cfg.label}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                    #{appt.id?.slice(0, 8) || index + 1}
-                  </span>
-                  {/* <button
-                    onClick={() => onDelete && onDelete(appt)}
-                    className="p-2.5 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-all transform hover:scale-110"
-                    title="Delete"
-                  >
-                    <Trash2 size={18} />
-                  </button> */}
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* ── Pet Details ── */}
-                <div
-                  className="rounded-xl p-4 border"
-                  style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
-                >
-                  <p
-                    className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
-                    style={{ color: "#42948f" }}
-                  >
-                    <PawPrint size={13} /> Pet Details
-                  </p>
-                  {appt.petName ? (
-                    <div className="space-y-2">
-                      <InfoRow label="Name"    value={appt.petName} />
-                      <InfoRow label="Species" value={appt.petSpecies} />
-                      <InfoRow label="Breed"   value={appt.petBreed} />
-                      <InfoRow
-                        label="Gender / Age"
-                        value={
-                          [
-                            appt.petGender,
-                            appt.petAge !== null ? `${appt.petAge} yrs` : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" · ") || "—"
-                        }
-                      />
-                      {appt.healthStatus && (
-                        <div
-                          className="pt-2 border-t mt-1"
-                          style={{ borderColor: PRIMARY_MID }}
-                        >
-                          <span className="text-xs text-gray-500 block mb-0.5">Health Status</span>
-                          <span className="text-xs text-gray-700">{appt.healthStatus}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">No pet information provided.</p>
-                  )}
-                </div>
-
-                {/* ── Client Details ── */}
-                <div
-                  className="rounded-xl p-4 border"
-                  style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
-                >
-                  <p
-                    className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
-                    style={{ color: "#42948f" }}
-                  >
-                    <User size={13} /> Client Details
-                  </p>
-                  <div className="space-y-2">
-                    <InfoRow label="Name"  value={appt.userName} />
-                    <InfoRow label="Email" value={appt.userEmail} />
-                    <InfoRow label="Phone" value={appt.userPhone} />
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Slot Footer ── */}
-              <div className="px-6 pb-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Date */}
-                  <div
-                    className="flex items-center gap-3 rounded-xl px-4 py-3"
-                    style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
-                  >
-                    <div className="rounded-lg p-2 flex-shrink-0" style={{ background: PRIMARY }}>
-                      <Calendar size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Appointment Date</p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {formatDate(appt.appointmentDate)}
-                      </p>
-                      {appt.dayOfWeek && (
-                        <p className="text-xs font-medium capitalize" style={{ color: "#42948f" }}>
-                          {appt.dayOfWeek.charAt(0) + appt.dayOfWeek.slice(1).toLowerCase()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Time Slot */}
-                  <div
-                    className="flex items-center gap-3 rounded-xl px-4 py-3"
-                    style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
-                  >
-                    <div className="rounded-lg p-2 flex-shrink-0" style={{ background: "#42948f" }}>
-                      <Clock size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Time Slot</p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {appt.slotStart && appt.slotEnd
-                          ? `${formatTime(appt.slotStart)} – ${formatTime(appt.slotEnd)}`
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Provider Address */}
-                {appt.providerAddress && (
-                  <div className="mt-3 flex items-start gap-2">
-                    <MapPin size={13} style={{ color: PRIMARY }} className="mt-0.5 flex-shrink-0" />
-                    <span className="text-xs text-gray-500 leading-relaxed">
-                      {appt.providerAddress}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {current.map((appt, index) => (
+          <AppointmentCard
+            key={appt.id || index}
+            appt={appt}
+            index={startIndex + index}
+          />
+        ))}
       </div>
 
-      {/* ── Pagination ── */}
+      {/* Pagination */}
       {appointments.length > ITEMS_PER_PAGE && (
         <>
           <div className="flex items-center justify-center gap-6 mt-8">
@@ -289,8 +392,8 @@ const AppointmentListing = ({ appointments, onDelete }) => {
                   onClick={() => setCurrentPage(i)}
                   className="transition-all duration-300 rounded-full"
                   style={{
-                    width:      i === currentPage ? "2.5rem" : "0.75rem",
-                    height:     "0.75rem",
+                    width: i === currentPage ? "2.5rem" : "0.75rem",
+                    height: "0.75rem",
                     background: i === currentPage ? PRIMARY : PRIMARY_MID,
                   }}
                 />
@@ -298,7 +401,9 @@ const AppointmentListing = ({ appointments, onDelete }) => {
             </div>
 
             <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              onClick={() =>
+                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+              }
               disabled={currentPage === totalPages - 1}
               className="p-3 rounded-full text-white transition-all transform hover:scale-110 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
               style={{ background: PRIMARY }}
@@ -309,7 +414,8 @@ const AppointmentListing = ({ appointments, onDelete }) => {
 
           <div className="text-center mt-4">
             <p className="text-gray-500 text-sm">
-              Showing {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, appointments.length)} of{" "}
+              Showing {startIndex + 1}–
+              {Math.min(startIndex + ITEMS_PER_PAGE, appointments.length)} of{" "}
               {appointments.length} appointments
             </p>
           </div>

@@ -46,7 +46,9 @@ const Appointment = () => {
 
   const handleConfirmDelete = () => {
     if (deleteConfirmModal) {
-      setAppointments((prev) => prev.filter((a) => a.id !== deleteConfirmModal.id));
+      setAppointments((prev) =>
+        prev.filter((a) => a.id !== deleteConfirmModal.id),
+      );
       setDeleteConfirmModal(null);
     }
   };
@@ -58,33 +60,34 @@ const Appointment = () => {
       const data = response?.data || {};
 
       const mapped = (data.appointments || []).map((appt) => ({
-        id:              appt.appointmentId,
-        uid:             appt.appointmentId,
+        id: appt.appointmentId,
+        uid: appt.appointmentId,
         appointmentDate: appt.appointmentDate,
-        status:          appt.status?.toLowerCase() || "booked",
+        status: appt.status?.toLowerCase() || "booked",
 
         // Slot
         slotStart: appt.slot?.startTime || null,
-        slotEnd:   appt.slot?.endTime   || null,
+        slotEnd: appt.slot?.endTime || null,
         dayOfWeek: appt.slot?.dayOfWeek || null,
 
         // Pet (nullable)
-        petName:     appt.pet?.petName      || null,
-        petSpecies:  appt.pet?.petSpecies   || null,
-        petBreed:    appt.pet?.petBreed     || null,
-        petGender:   appt.pet?.petGender    || null,
-        petAge:      appt.pet?.petAge       ?? null,
+        petName: appt.pet?.petName || null,
+        petSpecies: appt.pet?.petSpecies || null,
+        petBreed: appt.pet?.petBreed || null,
+        petGender: appt.pet?.petGender || null,
+        petAge: appt.pet?.petAge ?? null,
         healthStatus: appt.pet?.healthStatus || null,
-
+        petUid: appt?.pet?.uid || null,
         // User (client)
-        userName:  `${appt.user?.firstName?.trim() || ""} ${appt.user?.lastName?.trim() || ""}`.trim(),
-        userEmail: appt.user?.email           || null,
+        userName:
+          `${appt.user?.firstName?.trim() || ""} ${appt.user?.lastName?.trim() || ""}`.trim(),
+        userEmail: appt.user?.email || null,
         userPhone: appt.user?.fullPhoneNumber || null,
 
         // Service Provider
-        providerName:    appt.serviceProvider?.name        || "—",
-        serviceType:     appt.serviceProvider?.serviceType || "—",
-        providerAddress: appt.serviceProvider?.address     || "",
+        providerName: appt.serviceProvider?.name || "—",
+        serviceType: appt.serviceProvider?.serviceType || "—",
+        providerAddress: appt.serviceProvider?.address || "",
       }));
 
       setAppointments(mapped);
@@ -104,7 +107,9 @@ const Appointment = () => {
       <div className="bg-gradient-to-br from-[#52B2AD]/10 to-[#42948f]/10 rounded-full p-8 mb-6">
         <Calendar className="w-16 h-16 text-[#52B2AD]" />
       </div>
-      <h3 className="text-2xl font-bold text-gray-800 mb-3">No Appointments Yet!</h3>
+      <h3 className="text-2xl font-bold text-gray-800 mb-3">
+        No Appointments Yet!
+      </h3>
       <p className="text-gray-500 text-center mb-8 max-w-md">
         Create your first slot to get started with your walker schedule.
       </p>
@@ -129,8 +134,12 @@ const Appointment = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Pet Walker Appointments</h1>
-          <p className="text-gray-500 mt-1">Manage your pet's walking schedule</p>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Pet Walker Appointments
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Manage your pet's walking schedule
+          </p>
         </div>
 
         {userInfo ? (
@@ -171,7 +180,9 @@ const Appointment = () => {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-800">Setup Schedule</h3>
+              <h3 className="text-xl font-bold text-gray-800">
+                Setup Schedule
+              </h3>
               <button
                 onClick={() => setModalOpen(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
@@ -179,7 +190,10 @@ const Appointment = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(90vh - 80px)" }}>
+            <div
+              className="p-6 overflow-y-auto"
+              style={{ maxHeight: "calc(90vh - 80px)" }}
+            >
               <CreateWalkerSlot
                 onClose={() => setModalOpen(false)}
                 onCreated={() => {

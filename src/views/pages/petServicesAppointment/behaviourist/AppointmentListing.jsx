@@ -7,13 +7,46 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  FileSearch,
 } from "lucide-react";
 import { useState } from "react";
+import useJwt from "../../../../enpoints/jwt/useJwt";
+import BehaviouristKycModal from "./BehvioToClientKycView"; // adjust path if needed
 
 const AppointmentListing = ({ appointments, onDelete }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
 
+  // KYC state
+  const [kycLoading, setKycLoading] = useState(null); // stores appointmentId being loaded
+  const [kycModalData, setKycModalData] = useState(null); // { kycData, petName }
+
+  // ── KYC Handler ────────────────────────────────────────────────────────
+  const handleViewKyc = async (appointment) => {
+    try {
+      setKycLoading(appointment.id);
+      const response = await useJwt.getBehavioToClientKycByPet(
+        appointment.fullPet?.uid || appointment.petUid,
+      );
+      const { data } = response.data; // response.data.data
+      setKycModalData({
+        kycData: {
+          kycStatus: data.kycStatus,
+          fullRecord: data.fullRecord,
+          kycUid: data.kycUid,
+          petUid: data.petUid,
+        },
+        petName: appointment.petName,
+      });
+    } catch (error) {
+      console.error("Failed to fetch KYC:", error);
+      alert("Could not load KYC record. Please try again.");
+    } finally {
+      setKycLoading(null);
+    }
+  };
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
   const isPastDate = (dateString) => {
     if (!dateString) return false;
     const appointmentDate = new Date(dateString);
@@ -28,6 +61,9 @@ const AppointmentListing = ({ appointments, onDelete }) => {
     if (isPastDate(appointment.date)) return "completed";
     return appointment.status?.toLowerCase() || "booked";
   };
+
+  const PRIMARY_MID = "#A8D8D6";
+  const PRIMARY = "#52B2AD";
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -86,7 +122,7 @@ const AppointmentListing = ({ appointments, onDelete }) => {
   const startIndex = currentPage * itemsPerPage;
   const currentAppointments = appointments.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const handlePrevious = () =>
@@ -96,216 +132,270 @@ const AppointmentListing = ({ appointments, onDelete }) => {
   const goToPage = (pageIndex) => setCurrentPage(pageIndex);
 
   return (
-    <div>
-      <div className="space-y-6 mb-8">
-        {currentAppointments.map((appointment, index) => {
-          const actualStatus = getActualStatus(appointment);
+    <>
+      <div>
+        <div className="space-y-6 mb-8">
+          {currentAppointments.map((appointment, index) => {
+            const actualStatus = getActualStatus(appointment);
+            const isLoadingThisKyc = kycLoading === appointment.id;
 
-          return (
-            <div
-              key={appointment.id || index}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
-            >
-              {/* Colored Top Bar */}
-              <div className={`h-2 ${getStatusBarColor(actualStatus)}`} />
+            return (
+              <div
+                key={appointment.id || index}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
+              >
+                {/* Colored Top Bar */}
+                <div className={`h-2 ${getStatusBarColor(actualStatus)}`} />
 
-              {/* Card Header */}
-              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">
-                    {getPetIcon(appointment.petType)}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">
-                      {appointment.petName || "Unknown Pet"}
-                    </h3>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(
-                        actualStatus
-                      )}`}
-                    >
-                      {actualStatus.charAt(0).toUpperCase() +
-                        actualStatus.slice(1)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Appointment ID badge */}
-                <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                  #{appointment.id?.slice(0, 8) || index + 1}
-                </span>
-              </div>
-
-              {/* Card Body — two columns: Pet | Pet Parent */}
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* ── Pet Info ── */}
-                <div className="bg-[#52B2AD]/5 rounded-xl p-4 border border-[#52B2AD]/10">
-                  <p className="text-xs font-bold text-[#42948f] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <PawPrint size={13} />
-                    Pet Details
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">Name</span>
-                      <span className="text-sm font-semibold text-gray-800">
-                        {appointment.petName || "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">Species</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {appointment.petType || "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">Breed</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {appointment.petBreed || "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">Gender / Age</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {[appointment.petGender, appointment.petAge ? `${appointment.petAge} yrs` : ""].filter(Boolean).join(" · ") || "—"}
-                      </span>
-                    </div>
-                    {appointment.petHealthStatus && (
-                      <div className="pt-2 border-t border-[#52B2AD]/10 mt-1">
-                        <span className="text-xs text-gray-500 block mb-0.5">Health Status</span>
-                        <span className="text-xs text-gray-700">
-                          {appointment.petHealthStatus}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── Pet Parent Info ── */}
-                <div className="bg-[#52B2AD]/5 rounded-xl p-4 border border-[#52B2AD]/10">
-                  <p className="text-xs font-bold text-[#42948f] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <User size={13} />
-                    Pet Parent
-                  </p>
-                  {(() => {
-                    const u = appointment.fullUser || {};
-                    const name = appointment.ownerName ||
-                      [u.firstName, u.lastName].map(s => (s||"").trim()).filter(Boolean).join(" ");
-                    const email = appointment.ownerEmail || u.email || "";
-                    const phone = appointment.ownerPhone || u.fullPhoneNumber || "";
-                    return (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Name</span>
-                          <span className="text-sm font-semibold text-gray-800">
-                            {name || "—"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Mail size={13} className="text-[#52B2AD] flex-shrink-0" />
-                          <span className="truncate">{email || "—"}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Phone size={13} className="text-[#52B2AD] flex-shrink-0" />
-                          <span>{phone || "—"}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* ── Slot & Date Footer ── */}
-              <div className="px-6 pb-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Date */}
-                  <div className="flex items-center gap-3 bg-gradient-to-r from-[#52B2AD]/10 to-[#42948f]/5 rounded-xl px-4 py-3">
-                    <div className="bg-[#52B2AD] rounded-lg p-2 flex-shrink-0">
-                      <Calendar size={16} className="text-white" />
+                {/* Card Header */}
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">
+                      {getPetIcon(appointment.petType)}
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">
-                        Appointment Date
-                      </p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {formatDate(appointment.date)}
-                      </p>
-                      {appointment.dayOfWeek && (
-                        <p className="text-xs text-[#42948f] capitalize font-medium">
-                          {appointment.dayOfWeek.charAt(0) +
-                            appointment.dayOfWeek.slice(1).toLowerCase()}
-                        </p>
+                      <h3 className="font-bold text-lg text-gray-800">
+                        {appointment.petName || "Unknown Pet"}
+                      </h3>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusColor(actualStatus)}`}
+                      >
+                        {actualStatus.charAt(0).toUpperCase() +
+                          actualStatus.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Appointment ID badge */}
+                  <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                    #{appointment.id?.slice(0, 8) || index + 1}
+                  </span>
+
+                  {/* View KYC Button */}
+                  <button
+                    onClick={() => handleViewKyc(appointment)}
+                    disabled={isLoadingThisKyc}
+                    className="flex items-center gap-1.5 text-white px-3 py-2 rounded-xl transition shadow-sm text-xs font-semibold disabled:opacity-60 hover:opacity-90 active:scale-95"
+                    style={{
+                      background: isLoadingThisKyc ? PRIMARY_MID : PRIMARY,
+                    }}
+                    title="View Pet KYC"
+                  >
+                    {isLoadingThisKyc ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Loading…
+                      </>
+                    ) : (
+                      <>
+                        <FileSearch size={15} />
+                        View KYC
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Card Body — two columns: Pet | Pet Parent */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* ── Pet Info ── */}
+                  <div className="bg-[#52B2AD]/5 rounded-xl p-4 border border-[#52B2AD]/10">
+                    <p className="text-xs font-bold text-[#42948f] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <PawPrint size={13} />
+                      Pet Details
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Name</span>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {appointment.petName || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Species</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {appointment.petType || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Breed</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {appointment.petBreed || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">
+                          Gender / Age
+                        </span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {[
+                            appointment.petGender,
+                            appointment.petAge
+                              ? `${appointment.petAge} yrs`
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </span>
+                      </div>
+                      {appointment.petHealthStatus && (
+                        <div className="pt-2 border-t border-[#52B2AD]/10 mt-1">
+                          <span className="text-xs text-gray-500 block mb-0.5">
+                            Health Status
+                          </span>
+                          <span className="text-xs text-gray-700">
+                            {appointment.petHealthStatus}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Time Slot */}
-                  <div className="flex items-center gap-3 bg-gradient-to-r from-[#52B2AD]/10 to-[#42948f]/5 rounded-xl px-4 py-3">
-                    <div className="bg-[#42948f] rounded-lg p-2 flex-shrink-0">
-                      <Clock size={16} className="text-white" />
+                  {/* ── Pet Parent Info ── */}
+                  <div className="bg-[#52B2AD]/5 rounded-xl p-4 border border-[#52B2AD]/10">
+                    <p className="text-xs font-bold text-[#42948f] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <User size={13} />
+                      Pet Parent
+                    </p>
+                    {(() => {
+                      const u = appointment.fullUser || {};
+                      const name =
+                        appointment.ownerName ||
+                        [u.firstName, u.lastName]
+                          .map((s) => (s || "").trim())
+                          .filter(Boolean)
+                          .join(" ");
+                      const email = appointment.ownerEmail || u.email || "";
+                      const phone =
+                        appointment.ownerPhone || u.fullPhoneNumber || "";
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Name</span>
+                            <span className="text-sm font-semibold text-gray-800">
+                              {name || "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Mail
+                              size={13}
+                              className="text-[#52B2AD] flex-shrink-0"
+                            />
+                            <span className="truncate">{email || "—"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Phone
+                              size={13}
+                              className="text-[#52B2AD] flex-shrink-0"
+                            />
+                            <span>{phone || "—"}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* ── Slot & Date Footer ── */}
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Date */}
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-[#52B2AD]/10 to-[#42948f]/5 rounded-xl px-4 py-3">
+                      <div className="bg-[#52B2AD] rounded-lg p-2 flex-shrink-0">
+                        <Calendar size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Appointment Date
+                        </p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {formatDate(appointment.date)}
+                        </p>
+                        {appointment.dayOfWeek && (
+                          <p className="text-xs text-[#42948f] capitalize font-medium">
+                            {appointment.dayOfWeek.charAt(0) +
+                              appointment.dayOfWeek.slice(1).toLowerCase()}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">
-                        Time Slot
-                      </p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {appointment.time || "—"}
-                      </p>
+
+                    {/* Time Slot */}
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-[#52B2AD]/10 to-[#42948f]/5 rounded-xl px-4 py-3">
+                      <div className="bg-[#42948f] rounded-lg p-2 flex-shrink-0">
+                        <Clock size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Time Slot
+                        </p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {appointment.time || "—"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
+
+        {/* Pagination */}
+        {appointments.length > itemsPerPage && (
+          <>
+            <div className="flex items-center justify-center gap-6 mt-8">
+              <button
+                onClick={handlePrevious}
+                className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
+                title="Previous"
+              >
+                <ChevronLeft size={24} />
+              </button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToPage(index)}
+                    className={`transition-all duration-300 rounded-full ${
+                      currentPage === index
+                        ? "w-10 h-3 bg-[#52B2AD]"
+                        : "w-3 h-3 bg-gray-300 hover:bg-[#52B2AD]/50"
+                    }`}
+                    title={`Page ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={handleNext}
+                className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
+                title="Next"
+              >
+                <ChevronRight size={24} />
+              </button>
             </div>
-          );
-        })}
+
+            <div className="text-center mt-4">
+              <p className="text-gray-600 text-sm">
+                Showing {startIndex + 1}–
+                {Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
+                {appointments.length} appointments
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Pagination */}
-      {appointments.length > itemsPerPage && (
-        <>
-          <div className="flex items-center justify-center gap-6 mt-8">
-            <button
-              onClick={handlePrevious}
-              className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
-              title="Previous"
-            >
-              <ChevronLeft size={24} />
-            </button>
-
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToPage(index)}
-                  className={`transition-all duration-300 rounded-full ${
-                    currentPage === index
-                      ? "w-10 h-3 bg-[#52B2AD]"
-                      : "w-3 h-3 bg-gray-300 hover:bg-[#52B2AD]/50"
-                  }`}
-                  title={`Page ${index + 1}`}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={handleNext}
-              className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
-              title="Next"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </div>
-
-          <div className="text-center mt-4">
-            <p className="text-gray-600 text-sm">
-              Showing {startIndex + 1}–
-              {Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
-              {appointments.length} appointments
-            </p>
-          </div>
-        </>
+      {/* KYC Modal */}
+      {kycModalData && (
+        <BehaviouristKycModal
+          kycData={kycModalData.kycData}
+          petName={kycModalData.petName}
+          onClose={() => setKycModalData(null)}
+        />
       )}
-    </div>
+    </>
   );
 };
 

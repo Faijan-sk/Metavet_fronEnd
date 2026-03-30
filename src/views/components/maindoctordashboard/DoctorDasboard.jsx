@@ -234,9 +234,9 @@ const DoctorDashboard = () => {
               </span>
             </div>
             <div className="flex gap-2 mt-3">
-              <button className="px-2 py-1 bg-blue-500 text-white text-xs rounded">
+              {/* <button className="px-2 py-1 bg-blue-500 text-white text-xs rounded">
                 📞 Call Owner
-              </button>
+              </button> */}
               <button className="px-2 py-1 bg-gray-200 text-xs rounded">
                 📄 Pet Docs
               </button>
@@ -366,10 +366,10 @@ const DoctorDashboard = () => {
                       i === 0
                         ? "bg-blue-600 w-3/4"
                         : i === 1
-                        ? "bg-green-400 w-2/3"
-                        : i === 2
-                        ? "bg-yellow-400 w-1/2"
-                        : "bg-teal-300 w-1/3"
+                          ? "bg-green-400 w-2/3"
+                          : i === 2
+                            ? "bg-yellow-400 w-1/2"
+                            : "bg-teal-300 w-1/3"
                     }`}
                   ></div>
                 </div>
