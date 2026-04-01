@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
-import { useNavigate } from "react-router-dom";
+import { useWalkerAppointment } from "./../../../../context/WalkerAppointmentContext";
 
-// Initial empty form state (so we can reset easily after success)
+// ─── Initial empty form ───────────────────────────────────────────────────────
 const initialFormData = {
   petUid: "",
   petNames: "",
   breedType: "",
   age: "",
   petSpecies: "",
-
   energyLevel: "",
   walkingExperience: "",
   preferredWalkType: "",
@@ -20,7 +18,6 @@ const initialFormData = {
   frequencyOther: "",
   preferredTimeOfDay: "",
   preferredStartDate: "",
-
   leashBehavior: [],
   leashBehaviorOther: "",
   knownTriggers: "",
@@ -28,28 +25,23 @@ const initialFormData = {
   handlingNotes: [],
   handlingNotesOther: "",
   comfortingMethods: "",
-
   medicalConditions: null,
   medicalConditionsDetails: "",
   medications: null,
   medicationsDetails: "",
   emergencyVetInfo: "",
-
   startingLocation: "",
   addressMeetingPoint: "",
   accessInstructions: "",
   backupContact: "",
   postWalkPreferences: [],
-
   additionalServices: [],
   additionalServicesOther: "",
-
   consent: false,
   signature: "",
   signatureDate: "",
 };
 
-// ─── Helper: parse comma-separated string from API → array ───────────────────
 const parseArrayField = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -59,10 +51,8 @@ const parseArrayField = (val) => {
     .filter(Boolean);
 };
 
-// ─── Map API fullRecord → formData shape ─────────────────────────────────────
 const mapKycToFormData = (fullRecord) => {
   if (!fullRecord) return null;
-
   return {
     petUid: fullRecord.petUid ?? "",
     petNames: fullRecord.petNames ?? "",
@@ -72,10 +62,8 @@ const mapKycToFormData = (fullRecord) => {
         ? String(fullRecord.age)
         : "",
     petSpecies: fullRecord.petSpecies ?? "",
-
     energyLevel: fullRecord.energyLevel
-      ? // API returns "MEDIUM" etc., form uses "Medium" etc.
-        fullRecord.energyLevel.charAt(0).toUpperCase() +
+      ? fullRecord.energyLevel.charAt(0).toUpperCase() +
         fullRecord.energyLevel.slice(1).toLowerCase()
       : "",
     walkingExperience: fullRecord.walkingExperience
@@ -92,12 +80,10 @@ const mapKycToFormData = (fullRecord) => {
       fullRecord.customWalkDuration !== undefined
         ? String(fullRecord.customWalkDuration)
         : "",
-
     frequency: fullRecord.frequency ?? "",
     frequencyOther: fullRecord.frequencyOther ?? "",
     preferredTimeOfDay: fullRecord.preferredTimeOfDay ?? "",
     preferredStartDate: fullRecord.preferredStartDate ?? "",
-
     leashBehavior: parseArrayField(fullRecord.leashBehavior),
     leashBehaviorOther: fullRecord.leashBehaviorOther ?? "",
     knownTriggers: fullRecord.knownTriggers ?? "",
@@ -105,7 +91,6 @@ const mapKycToFormData = (fullRecord) => {
     handlingNotes: parseArrayField(fullRecord.handlingNotes),
     handlingNotesOther: fullRecord.handlingNotesOther ?? "",
     comfortingMethods: fullRecord.comfortingMethods ?? "",
-
     medicalConditions:
       fullRecord.medicalConditions !== null &&
       fullRecord.medicalConditions !== undefined
@@ -118,56 +103,157 @@ const mapKycToFormData = (fullRecord) => {
         : null,
     medicationsDetails: fullRecord.medicationsDetails ?? "",
     emergencyVetInfo: fullRecord.emergencyVetInfo ?? "",
-
     startingLocation: fullRecord.startingLocation ?? "",
     addressMeetingPoint: fullRecord.addressMeetingPoint ?? "",
     accessInstructions: fullRecord.accessInstructions ?? "",
     backupContact: fullRecord.backupContact ?? "",
     postWalkPreferences: parseArrayField(fullRecord.postWalkPreferences),
-
     additionalServices: parseArrayField(fullRecord.additionalServices),
     additionalServicesOther: fullRecord.additionalServicesOther ?? "",
-
     consent: Boolean(fullRecord.consent),
     signature: fullRecord.signature ?? "",
     signatureDate: fullRecord.signatureDate ?? "",
   };
 };
 
-const PetWalkerKYC = () => {
-  const location = useLocation();
-
-  // kycData comes from BookWalkModal → navigate("/walkerTo-client-Kyc", { state: { kycData: response.data.data } })
-  // response.data.data shape: { petUid, fullRecord: {...}, kycUid, status }
-  const kycData = location.state?.kycData || null;
-  const isUpdateMode = !!kycData; // true → prefill + update, false → fresh create
-
-  const kycUid = kycData?.kycUid || null; // top-level kycUid from API response data
-
+/**
+ * Props:
+ *   petUid        — string: pre-selected pet uid (from context)
+ *   onKycSuccess  — function(): called after successful create/update
+ */
+const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [petsError, setPetsError] = useState(null);
   const [selectedPetId, setSelectedPetId] = useState("");
-  const navigate = useNavigate();
+
+  const [kycUid, setKycUid] = useState(null);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [kycLoading, setKycLoading] = useState(false);
+  const [petManuallyChanged, setPetManuallyChanged] = useState(false);
+  const [formData, setFormData] = useState(initialFormData);
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const [formData, setFormData] = useState(initialFormData);
+  const today = new Date().toISOString().split("T")[0];
 
-  // ─── Pre-fill form when arriving from "Update KYC" ───────────────────────
+  const { setKycId, bookingData } = useWalkerAppointment();
+
+  // ─── Fetch all pets on mount ─────────────────────────────────────────────
   useEffect(() => {
-    if (isUpdateMode && kycData?.fullRecord) {
-      const mapped = mapKycToFormData(kycData.fullRecord);
-      if (mapped) {
-        setFormData(mapped);
-        // Set the selected pet id so the dropdown shows the right pet
-        setSelectedPetId(kycData.fullRecord.petUid ?? kycData.petUid ?? "");
+    async function fetchPetsByOwner() {
+      try {
+        setLoadingPets(true);
+        setPetsError(null);
+        const response = await useJwt.getAllPetsByOwner();
+        const items = response?.data?.data ?? response?.data ?? response ?? [];
+        const arr = Array.isArray(items)
+          ? items
+          : Array.isArray(items.data)
+            ? items.data
+            : [];
+        setPets(arr);
+      } catch (err) {
+        console.error("Failed to fetch pets:", err);
+        setPetsError(err?.message ?? "Failed to load pets");
+        setPets([]);
+      } finally {
+        setLoadingPets(false);
       }
     }
-  }, [isUpdateMode]);
+    fetchPetsByOwner();
+  }, []);
 
-  // Generic setter that validates input against a provided regex.
+  // ─── When petUid prop arrives (from context), auto-select & fetch KYC ───
+  useEffect(() => {
+    if (!petUid || petManuallyChanged) return;
+    const uid = typeof petUid === "object" ? petUid.uid : petUid;
+    setSelectedPetId(uid);
+    fetchKycForPet(uid);
+  }, [petUid]);
+
+  // ─── When pets list loads and petUid is set, populate pet fields ─────────
+  useEffect(() => {
+    if (!petUid || pets.length === 0) return;
+    const uid = typeof petUid === "object" ? petUid.uid : petUid;
+    populatePetFields(uid);
+  }, [pets, petUid]);
+
+  // ─── Fetch KYC by petUid ─────────────────────────────────────────────────
+  const fetchKycForPet = async (uid) => {
+    if (!uid) return;
+    setKycLoading(true);
+    try {
+      const response = await useJwt.getWalkerToClientKycByPet(uid);
+      if (response.data?.success && response.data?.data) {
+        const data = response.data.data;
+        setKycUid(data.kycUid ?? null);
+        setKycId(data.kycUid ?? null);
+        setIsUpdateMode(true);
+        if (data.fullRecord) {
+          const mapped = mapKycToFormData(data.fullRecord);
+          if (mapped) setFormData(mapped);
+        }
+      } else {
+        // KYC not found — show empty form
+        setIsUpdateMode(false);
+        setKycUid(null);
+        setFormData((prev) => ({ ...initialFormData, petUid: uid }));
+      }
+    } catch (err) {
+      const errorCode = err.response?.data?.errorCode;
+      if (err.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
+        // No KYC yet — fresh form
+        setIsUpdateMode(false);
+        setKycUid(null);
+        setFormData((prev) => ({ ...initialFormData, petUid: uid }));
+      } else {
+        console.error("KYC fetch error:", err);
+        setIsUpdateMode(false);
+        setKycUid(null);
+      }
+    } finally {
+      setKycLoading(false);
+    }
+  };
+
+  // ─── Populate pet name/breed/age/species into form ───────────────────────
+  const populatePetFields = (identifier) => {
+    const pet = pets.find(
+      (p) =>
+        (p.uid && String(p.uid) === String(identifier)) ||
+        (p.id && String(p.id) === String(identifier)),
+    );
+    if (!pet) return;
+    setFormData((prev) => ({
+      ...prev,
+      petNames: pet.petName ?? prev.petNames ?? "",
+      breedType: pet.petBreed ?? prev.breedType ?? "",
+      age:
+        pet.petAge !== undefined && pet.petAge !== null
+          ? String(pet.petAge)
+          : (prev.age ?? ""),
+      petSpecies: pet.petSpecies ?? prev.petSpecies ?? "",
+      petUid: pet.uid ?? String(pet.id ?? identifier),
+    }));
+  };
+
+  // ─── Manual pet select from dropdown ─────────────────────────────────────
+  const handlePetSelect = (petIdentifier) => {
+    setPetManuallyChanged(true); // user ne khud change kiya
+    setSelectedPetId(petIdentifier);
+    if (!petIdentifier) {
+      setFormData({ ...initialFormData });
+      setIsUpdateMode(false);
+      setKycUid(null);
+      return;
+    }
+    populatePetFields(petIdentifier);
+    fetchKycForPet(petIdentifier);
+  };
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
   const setIfValid = (field, value, regex) => {
     if (value === "" || regex.test(value)) {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -190,101 +276,28 @@ const PetWalkerKYC = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // When user selects a pet from dropdown, populate fields
-  const handlePetSelect = (petIdentifier) => {
-    setSelectedPetId(petIdentifier);
-
-    if (!petIdentifier) {
-      setFormData((prev) => ({
-        ...prev,
-        petNames: "",
-        breedType: "",
-        age: "",
-        petSpecies: "",
-        petUid: "",
-      }));
-      return;
-    }
-
-    const pet = pets.find(
-      (p) =>
-        (p.uid && String(p.uid) === String(petIdentifier)) ||
-        (p.id && String(p.id) === String(petIdentifier)),
-    );
-
-    if (!pet) {
-      setFormData((prev) => ({ ...prev, petUid: String(petIdentifier) }));
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      petNames: pet.petName ?? prev.petNames ?? "",
-      breedType: pet.petBreed ?? prev.breedType ?? "",
-      age:
-        pet.petAge !== undefined && pet.petAge !== null
-          ? String(pet.petAge)
-          : (prev.age ?? ""),
-      petSpecies: pet.petSpecies ?? prev.petSpecies ?? "",
-      petUid: pet.uid ?? String(pet.id ?? petIdentifier),
-    }));
-  };
-
-  useEffect(() => {
-    async function fetchPetsByOwner() {
-      try {
-        setLoadingPets(true);
-        setPetsError(null);
-        const response = await useJwt.getAllPetsByOwner();
-        const items = response?.data?.data ?? response?.data ?? response ?? [];
-        const arr = Array.isArray(items)
-          ? items
-          : Array.isArray(items.data)
-            ? items.data
-            : [];
-        setPets(arr);
-      } catch (err) {
-        console.error("Failed to fetch pets:", err);
-        setPetsError(err?.message ?? "Failed to load pets");
-        setPets([]);
-      } finally {
-        setLoadingPets(false);
-      }
-    }
-
-    fetchPetsByOwner();
-  }, []);
-
+  // ─── Build payload ────────────────────────────────────────────────────────
   const buildPayloadForBackend = (raw) => {
     const ageNum = raw.age === "" || raw.age === null ? null : Number(raw.age);
     const customDurNum =
       raw.customWalkDuration === "" || raw.customWalkDuration === null
         ? null
         : Number(raw.customWalkDuration);
-
-    const medicalConditions =
-      raw.medicalConditions === null ? null : !!raw.medicalConditions;
-    const medications = raw.medications === null ? null : !!raw.medications;
-    const consent = !!raw.consent;
-
     return {
       petUid: raw.petUid || null,
       petNames: raw.petNames || null,
       breedType: raw.breedType || null,
       age: ageNum,
       petSpecies: raw.petSpecies || null,
-
       energyLevel: raw.energyLevel || null,
       walkingExperience: raw.walkingExperience || null,
       preferredWalkType: raw.preferredWalkType || null,
       preferredWalkDuration: raw.preferredWalkDuration || null,
       customWalkDuration: customDurNum,
-
       frequency: raw.frequency || null,
       frequencyOther: raw.frequencyOther || null,
       preferredTimeOfDay: raw.preferredTimeOfDay || null,
       preferredStartDate: raw.preferredStartDate || null,
-
       leashBehavior: raw.leashBehavior || [],
       leashBehaviorOther: raw.leashBehaviorOther || null,
       knownTriggers: raw.knownTriggers || null,
@@ -292,38 +305,33 @@ const PetWalkerKYC = () => {
       handlingNotes: raw.handlingNotes || [],
       handlingNotesOther: raw.handlingNotesOther || null,
       comfortingMethods: raw.comfortingMethods || null,
-
-      medicalConditions,
+      medicalConditions:
+        raw.medicalConditions === null ? null : !!raw.medicalConditions,
       medicalConditionsDetails: raw.medicalConditionsDetails || null,
-      medications,
+      medications: raw.medications === null ? null : !!raw.medications,
       medicationsDetails: raw.medicationsDetails || null,
       emergencyVetInfo: raw.emergencyVetInfo || null,
-
       startingLocation: raw.startingLocation || null,
       addressMeetingPoint: raw.addressMeetingPoint || null,
       accessInstructions: raw.accessInstructions || null,
       backupContact: raw.backupContact || null,
       postWalkPreferences: raw.postWalkPreferences || [],
-
       additionalServices: raw.additionalServices || [],
       additionalServicesOther: raw.additionalServicesOther || null,
-
-      consent,
+      consent: !!raw.consent,
       signature: raw.signature || null,
       signatureDate: raw.signatureDate || null,
     };
   };
 
-  // ─── Shared client-side validation ───────────────────────────────────────
+  // ─── Validation ──────────────────────────────────────────────────────────
   const validateForm = () => {
     const errors = [];
-
     if (!formData.petUid) errors.push("Please select your pet.");
     if (!formData.consent) errors.push("Consent is required to proceed.");
     if (!formData.signature || formData.signature.trim() === "")
       errors.push("Signature is required.");
     if (!formData.signatureDate) errors.push("Signature date is required.");
-
     if (formData.preferredWalkDuration === "Custom") {
       if (
         !formData.customWalkDuration ||
@@ -331,12 +339,10 @@ const PetWalkerKYC = () => {
       )
         errors.push("Custom walk duration must be greater than 0.");
     }
-
     if (formData.frequency === "Other") {
       if (!formData.frequencyOther || formData.frequencyOther.trim() === "")
         errors.push("Please specify the frequency when 'Other' is selected.");
     }
-
     if (formData.leashBehavior.includes("Other")) {
       if (
         !formData.leashBehaviorOther ||
@@ -346,7 +352,6 @@ const PetWalkerKYC = () => {
           "Please specify leash behavior details when 'Other' is selected.",
         );
     }
-
     if (formData.handlingNotes.includes("Other")) {
       if (
         !formData.handlingNotesOther ||
@@ -354,36 +359,28 @@ const PetWalkerKYC = () => {
       )
         errors.push("Please specify handling notes when 'Other' is selected.");
     }
-
     if (formData.medicalConditions === true) {
       if (
         !formData.medicalConditionsDetails ||
         formData.medicalConditionsDetails.trim() === ""
       )
-        errors.push(
-          "Please provide medical condition details when 'Medical Conditions' is Yes.",
-        );
+        errors.push("Please provide medical condition details.");
     }
-
     if (formData.medications === true) {
       if (
         !formData.medicationsDetails ||
         formData.medicationsDetails.trim() === ""
       )
-        errors.push(
-          "Please provide medication details when 'Medications' is Yes.",
-        );
+        errors.push("Please provide medication details.");
     }
-
     return errors;
   };
 
-  // ─── CREATE (POST) ────────────────────────────────────────────────────────
+  // ─── Submit (CREATE) ──────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError(null);
     setSuccessMessage(null);
-
     const errors = validateForm();
     if (errors.length > 0) {
       setApiError(errors.join(" "));
@@ -391,34 +388,30 @@ const PetWalkerKYC = () => {
     }
 
     const payload = buildPayloadForBackend(formData);
-    console.log("Submitting Walker KYC (CREATE) payload:", payload);
-
     setSubmitting(true);
     try {
       const res = await useJwt.walkerToClientKyc(payload);
       const data = res?.data ?? res;
 
-      if (data && data.success === false) {
-        setApiError(
-          data.details ||
-            data.message ||
-            "Submission failed due to validation error.",
-        );
+      const kycIdFromRes = data?.data?.kycUid || data?.kycUid;
 
+      if (kycIdFromRes) {
+        setKycId(kycIdFromRes);
+      }
+
+      if (data && data.success === false) {
+        setApiError(data.details || data.message || "Submission failed.");
         return;
       }
 
-      console.log("Submission successful:", data);
       setSuccessMessage("Walker KYC submitted successfully.");
-      setFormData(initialFormData);
-      setSelectedPetId("");
+      // Notify parent → show summary
       setTimeout(() => {
-        navigate("/service-provider/petWalker");
-      }, 1000);
+        onKycSuccess && onKycSuccess();
+      }, 800);
     } catch (err) {
-      console.error("Submission error:", err);
       const backend = err?.response?.data;
-      let message = err?.message ?? "Unknown error during submission.";
+      let message = err?.message ?? "Unknown error.";
       if (backend) message = backend.details || backend.message || message;
       setApiError(`Submission failed: ${message}`);
     } finally {
@@ -426,51 +419,47 @@ const PetWalkerKYC = () => {
     }
   };
 
-  // ─── UPDATE (PUT/PATCH) ───────────────────────────────────────────────────
+  useEffect(() => {
+    console.log("🔥 CONTEXT UPDATED:", bookingData);
+  }, [bookingData]);
+
+  // ─── Update ───────────────────────────────────────────────────────────────
   const handleUpdate = async (e) => {
     e.preventDefault();
     setApiError(null);
     setSuccessMessage(null);
-
     const errors = validateForm();
     if (errors.length > 0) {
       setApiError(errors.join(" "));
       return;
     }
-
     if (!kycUid) {
       setApiError("KYC UID is missing. Cannot update.");
       return;
     }
 
     const payload = buildPayloadForBackend(formData);
-    console.log("Updating Walker KYC payload:", payload, "kycUid:", kycUid);
-
     setSubmitting(true);
     try {
-      // ✅ Integrate your update API here — pass kycUid + payload
-      // Example: const res = await useJwt.updateWalkerToClientKyc(kycUid, payload);
       const res = await useJwt.updateWalkerToClientKyc(kycUid, payload);
       const data = res?.data ?? res;
-
       if (data && data.success === false) {
-        setApiError(
-          data.details ||
-            data.message ||
-            "Update failed due to validation error.",
-        );
+        setApiError(data.details || data.message || "Update failed.");
         return;
       }
 
-      console.log("Update successful:", data);
+      const kycIdFromRes = data?.data?.kycUid || data?.kycUid || kycUid;
+
+      if (kycIdFromRes) {
+        setKycId(kycIdFromRes);
+      }
       setSuccessMessage("Walker KYC updated successfully.");
       setTimeout(() => {
-        navigate("/service-provider/petWalker");
-      }, 1000);
+        onKycSuccess && onKycSuccess();
+      }, 800);
     } catch (err) {
-      console.error("Update error:", err);
       const backend = err?.response?.data;
-      let message = err?.message ?? "Unknown error during update.";
+      let message = err?.message ?? "Unknown error.";
       if (backend) message = backend.details || backend.message || message;
       setApiError(`Update failed: ${message}`);
     } finally {
@@ -478,8 +467,34 @@ const PetWalkerKYC = () => {
     }
   };
 
-  // Today's date (YYYY-MM-DD) for min/max in date inputs
-  const today = new Date().toISOString().split("T")[0];
+  // ─── Render ───────────────────────────────────────────────────────────────
+  if (kycLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <svg
+          className="animate-spin h-8 w-8 text-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+        <span className="ml-3 text-gray-500">Loading KYC data…</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 py-8">
@@ -490,22 +505,20 @@ const PetWalkerKYC = () => {
         <p className="text-center text-gray-600 mb-1">
           Metavet Pet Walking Services
         </p>
-
-        {/* ─── Update Mode Badge ─── */}
+        {/* 
         {isUpdateMode && (
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full">
               ✏️ Update Mode — editing existing KYC
             </span>
           </div>
-        )}
+        )} */}
 
         {successMessage && (
           <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
             {successMessage}
           </div>
         )}
-
         {apiError && (
           <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
             {apiError}
@@ -516,18 +529,16 @@ const PetWalkerKYC = () => {
           onSubmit={isUpdateMode ? handleUpdate : handleSubmit}
           className="space-y-8"
         >
-          {/* ─── Pet & Routine Overview ─────────────────────────────────── */}
+          {/* ── Pet & Routine Overview ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Pet & Routine Overview
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
-                  Select your pet:
+                  Your selected pet:
                 </label>
-
                 {loadingPets ? (
                   <div className="text-sm text-gray-500">Loading pets...</div>
                 ) : petsError ? (
@@ -538,12 +549,9 @@ const PetWalkerKYC = () => {
                   <select
                     value={selectedPetId}
                     onChange={(e) => handlePetSelect(e.target.value)}
-                    // In update mode, pet is locked (KYC is per-pet)
-                    disabled={isUpdateMode}
+                    disabled={!!petUid}
                     className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
-                      isUpdateMode
-                        ? "bg-gray-100 cursor-not-allowed opacity-70"
-                        : ""
+                      petUid ? "bg-gray-100 cursor-not-allowed opacity-70" : ""
                     }`}
                   >
                     <option value="">— Select your pet —</option>
@@ -553,7 +561,6 @@ const PetWalkerKYC = () => {
                         {p.petBreed ? `— ${p.petBreed}` : ""}
                       </option>
                     ))}
-                    {/* Fallback: if update mode but pet not in list yet, show petUid */}
                     {isUpdateMode &&
                       selectedPetId &&
                       !pets.find(
@@ -565,26 +572,15 @@ const PetWalkerKYC = () => {
                       )}
                   </select>
                 )}
-                {isUpdateMode && (
+                {petUid && (
                   <p className="text-xs text-gray-400 mt-1">
-                    Pet cannot be changed when updating an existing KYC.
+                    Pet cannot be changed as it was selected from the previous
+                    step.
                   </p>
                 )}
               </div>
 
-              {/* Hidden fields — auto-filled from pet selection */}
-              <div className="hidden">
-                <input type="text" value={formData.petNames} readOnly />
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="hidden">
-                  <input type="text" value={formData.breedType} readOnly />
-                </div>
-                <div className="hidden">
-                  <input type="text" value={formData.age} readOnly />
-                </div>
-
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Energy Level:
@@ -672,7 +668,6 @@ const PetWalkerKYC = () => {
                         </span>
                       </label>
                     ))}
-
                     {formData.preferredWalkDuration === "Custom" && (
                       <input
                         type="text"
@@ -684,10 +679,8 @@ const PetWalkerKYC = () => {
                             /^[0-9]*$/u,
                           )
                         }
-                        placeholder="Please specify duration (e.g., 45)"
+                        placeholder="e.g., 45"
                         inputMode="numeric"
-                        pattern="^[0-9]+$"
-                        title="Numbers only"
                         className="ml-6 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       />
                     )}
@@ -720,7 +713,6 @@ const PetWalkerKYC = () => {
                         </span>
                       </label>
                     ))}
-
                     {formData.frequency === "Other" && (
                       <input
                         type="text"
@@ -773,20 +765,14 @@ const PetWalkerKYC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
-
-              {/* Hidden species field */}
-              <div className="hidden">
-                <input type="text" value={formData.petSpecies} readOnly />
-              </div>
             </div>
           </section>
 
-          {/* ─── Behavior & Handling ─────────────────────────────────────── */}
+          {/* ── Behavior & Handling ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Behavior & Handling
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -815,7 +801,6 @@ const PetWalkerKYC = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.leashBehavior.includes("Other") && (
                     <input
                       type="text"
@@ -849,7 +834,7 @@ const PetWalkerKYC = () => {
                   }
                   rows="2"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="e.g., skateboards, kids yelling, other dogs..."
+                  placeholder="e.g., skateboards, kids yelling..."
                 />
               </div>
 
@@ -899,7 +884,6 @@ const PetWalkerKYC = () => {
                         <span className="text-gray-700">{opt}</span>
                       </label>
                     ))}
-
                     {formData.handlingNotes.includes("Other") && (
                       <input
                         type="text"
@@ -940,44 +924,36 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* ─── Health & Safety ─────────────────────────────────────────── */}
+          {/* ── Health & Safety ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Health & Safety
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   Medical Conditions:
                 </label>
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="medicalConditions"
-                      checked={formData.medicalConditions === true}
-                      onChange={() =>
-                        handleInputChange("medicalConditions", true)
-                      }
-                      className="w-4 h-4 text-primary"
-                    />
-                    <span className="text-gray-700">Yes</span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="medicalConditions"
-                      checked={formData.medicalConditions === false}
-                      onChange={() =>
-                        handleInputChange("medicalConditions", false)
-                      }
-                      className="w-4 h-4 text-primary"
-                    />
-                    <span className="text-gray-700">No</span>
-                  </label>
-
+                  {[true, false].map((val) => (
+                    <label
+                      key={String(val)}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="medicalConditions"
+                        checked={formData.medicalConditions === val}
+                        onChange={() =>
+                          handleInputChange("medicalConditions", val)
+                        }
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-gray-700">
+                        {val ? "Yes" : "No"}
+                      </span>
+                    </label>
+                  ))}
                   {formData.medicalConditions === true && (
                     <textarea
                       value={formData.medicalConditionsDetails}
@@ -1001,28 +977,23 @@ const PetWalkerKYC = () => {
                   Medications:
                 </label>
                 <div className="space-y-2">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="medications"
-                      checked={formData.medications === true}
-                      onChange={() => handleInputChange("medications", true)}
-                      className="w-4 h-4 text-primary"
-                    />
-                    <span className="text-gray-700">Yes</span>
-                  </label>
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="medications"
-                      checked={formData.medications === false}
-                      onChange={() => handleInputChange("medications", false)}
-                      className="w-4 h-4 text-primary"
-                    />
-                    <span className="text-gray-700">No</span>
-                  </label>
-
+                  {[true, false].map((val) => (
+                    <label
+                      key={String(val)}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="medications"
+                        checked={formData.medications === val}
+                        onChange={() => handleInputChange("medications", val)}
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-gray-700">
+                        {val ? "Yes" : "No"}
+                      </span>
+                    </label>
+                  ))}
                   {formData.medications === true && (
                     <textarea
                       value={formData.medicationsDetails}
@@ -1066,12 +1037,11 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* ─── Access & Logistics ──────────────────────────────────────── */}
+          {/* ── Access & Logistics ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Access & Logistics
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
@@ -1180,19 +1150,18 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* ─── Services & Add-ons ──────────────────────────────────────── */}
+          {/* ── Services & Add-ons ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🟦 Services & Add-ons
             </h2>
-
             <div className="space-y-4">
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   Additional Services:
                 </label>
                 <div className="space-y-2">
-                  {["Feeding", "Water", "Towel Dry", "Medication"].map(
+                  {["Feeding", "Water", "Towel Dry", "Medication", "Other"].map(
                     (opt) => (
                       <label
                         key={opt}
@@ -1210,19 +1179,6 @@ const PetWalkerKYC = () => {
                       </label>
                     ),
                   )}
-
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.additionalServices.includes("Other")}
-                      onChange={() =>
-                        handleCheckboxArray("additionalServices", "Other")
-                      }
-                      className="w-4 h-4 text-primary rounded"
-                    />
-                    <span className="text-gray-700">Other</span>
-                  </label>
-
                   {formData.additionalServices.includes("Other") && (
                     <input
                       type="text"
@@ -1243,12 +1199,11 @@ const PetWalkerKYC = () => {
             </div>
           </section>
 
-          {/* ─── Consent & Signature ─────────────────────────────────────── */}
+          {/* ── Consent & Signature ── */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               ✅ Consent & Signature
             </h2>
-
             <div className="space-y-4">
               <label className="flex items-start space-x-2">
                 <input
@@ -1303,7 +1258,6 @@ const PetWalkerKYC = () => {
               {successMessage}
             </div>
           )}
-
           {apiError && (
             <div className="mb-4 text-red-700 bg-red-50 p-3 rounded">
               {apiError}

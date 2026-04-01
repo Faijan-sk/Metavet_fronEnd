@@ -1,7 +1,19 @@
 import {
-  Pencil, Save, Trash2, X, Calendar, Clock,
-  PawPrint, User, FileText, ChevronLeft, ChevronRight,
-  Scissors, MapPin, Star, Package
+  Pencil,
+  Save,
+  Trash2,
+  X,
+  Calendar,
+  Clock,
+  PawPrint,
+  User,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Scissors,
+  MapPin,
+  Star,
+  Package,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
@@ -65,11 +77,15 @@ const AppointmentListing = () => {
 
   const statusStyle = (status) => {
     switch (status) {
-      case "confirmed":  return "bg-[#d0ecea] text-[#2a8a85]";
-      case "completed":  return "bg-[#52B2AD] text-white";
-      case "cancelled":  return "bg-[#f0fafa] text-[#52B2AD] border border-[#52B2AD]";
+      case "confirmed":
+        return "bg-[#d0ecea] text-[#2a8a85]";
+      case "completed":
+        return "bg-[#52B2AD] text-white";
+      case "cancelled":
+        return "bg-[#f0fafa] text-[#52B2AD] border border-[#52B2AD]";
       case "pending":
-      default:           return "bg-[#e8f7f6] text-[#3a9e99]";
+      default:
+        return "bg-[#e8f7f6] text-[#3a9e99]";
     }
   };
 
@@ -78,20 +94,29 @@ const AppointmentListing = () => {
 
   const getPetIcon = (petType) => {
     switch ((petType || "").toLowerCase()) {
-      case "dog":    return "🐕";
-      case "cat":    return "🐈";
-      case "rabbit": return "🐰";
-      case "bird":   return "🐦";
-      default:       return "🐾";
+      case "dog":
+        return "🐕";
+      case "cat":
+        return "🐈";
+      case "rabbit":
+        return "🐰";
+      case "bird":
+        return "🐦";
+      default:
+        return "🐾";
     }
   };
 
   const barColor = (status) => {
     switch (status) {
-      case "completed": return "bg-[#52B2AD]";
-      case "cancelled": return "bg-[#2a8a85]";
-      case "confirmed": return "bg-[#7ececa]";
-      default:          return "bg-[#a8dcda]";
+      case "completed":
+        return "bg-[#52B2AD]";
+      case "cancelled":
+        return "bg-[#2a8a85]";
+      case "confirmed":
+        return "bg-[#7ececa]";
+      default:
+        return "bg-[#a8dcda]";
     }
   };
 
@@ -124,7 +149,7 @@ const AppointmentListing = () => {
 
   const handleSaveEdit = () => {
     setAppointments((prev) =>
-      prev.map((a) => (a.id === editAppointment.id ? editAppointment : a))
+      prev.map((a) => (a.id === editAppointment.id ? editAppointment : a)),
     );
     setEditAppointment(null);
   };
@@ -147,7 +172,10 @@ const AppointmentListing = () => {
 
   const totalPages = Math.ceil(appointments.length / itemsPerPage);
   const startIndex = currentPage * itemsPerPage;
-  const currentAppointments = appointments.slice(startIndex, startIndex + itemsPerPage);
+  const currentAppointments = appointments.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   const handlePrevious = () =>
     setCurrentPage((p) => (p > 0 ? p - 1 : totalPages - 1));
@@ -207,7 +235,9 @@ const AppointmentListing = () => {
               {/* Card header */}
               <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl">{getPetIcon(appointment.petType)}</div>
+                  <div className="text-3xl">
+                    {getPetIcon(appointment.petType)}
+                  </div>
                   <div>
                     <h3 className="font-bold text-lg text-gray-800">
                       Appointment #{appointment.id}
@@ -266,12 +296,20 @@ const AppointmentListing = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { label: "Pet Name",     name: "petName",     type: "text" },
-                        { label: "Groomer Name", name: "groomerName", type: "text" },
-                        { label: "Date",         name: "date",        type: "date" },
-                        { label: "Start Time",   name: "startTime",   type: "time" },
-                        { label: "End Time",     name: "endTime",     type: "time" },
-                        { label: "Notes",        name: "notes",       type: "text" },
+                        { label: "Pet Name", name: "petName", type: "text" },
+                        {
+                          label: "Groomer Name",
+                          name: "groomerName",
+                          type: "text",
+                        },
+                        { label: "Date", name: "date", type: "date" },
+                        {
+                          label: "Start Time",
+                          name: "startTime",
+                          type: "time",
+                        },
+                        { label: "End Time", name: "endTime", type: "time" },
+                        { label: "Notes", name: "notes", type: "text" },
                       ].map(({ label, name, type }) => (
                         <div key={name}>
                           <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -313,8 +351,12 @@ const AppointmentListing = () => {
                           <User size={14} className="text-[#52B2AD]" />
                           <span className="font-semibold">Groomer</span>
                         </div>
-                        <p className="font-medium text-gray-800">{appointment.groomerName}</p>
-                        <p className="text-xs text-gray-500">{appointment.groomerEmail}</p>
+                        <p className="font-medium text-gray-800">
+                          {appointment.groomerName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {appointment.groomerEmail}
+                        </p>
                       </div>
 
                       {/* Pet */}
@@ -323,9 +365,13 @@ const AppointmentListing = () => {
                           <PawPrint size={14} className="text-[#52B2AD]" />
                           <span className="font-semibold">Pet</span>
                         </div>
-                        <p className="font-medium text-gray-800">{appointment.petName}</p>
+                        <p className="font-medium text-gray-800">
+                          {appointment.petName}
+                        </p>
                         {appointment.petBreed && (
-                          <p className="text-xs text-gray-500">{appointment.petBreed}</p>
+                          <p className="text-xs text-gray-500">
+                            {appointment.petBreed}
+                          </p>
                         )}
                       </div>
 
@@ -335,15 +381,19 @@ const AppointmentListing = () => {
                           <Package size={14} className="text-[#52B2AD]" />
                           <span className="font-semibold">Service</span>
                         </div>
-                        <p className="font-medium text-gray-800">{appointment.serviceName}</p>
+                        <p className="font-medium text-gray-800">
+                          {appointment.serviceName}
+                        </p>
                         {appointment.serviceDuration && (
-                          <p className="text-xs text-gray-500">{appointment.serviceDuration} min</p>
+                          <p className="text-xs text-gray-500">
+                            {appointment.serviceDuration} min
+                          </p>
                         )}
-                        {appointment.servicePrice != null && (
+                        {/* {appointment.servicePrice != null && (
                           <p className="text-xs font-semibold text-[#52B2AD]">
                             ${appointment.servicePrice}
                           </p>
-                        )}
+                        )} */}
                       </div>
 
                       {/* Date */}
@@ -352,7 +402,9 @@ const AppointmentListing = () => {
                           <Calendar size={14} className="text-[#52B2AD]" />
                           <span className="font-semibold">Date</span>
                         </div>
-                        <p className="font-medium text-gray-800">{appointment.date}</p>
+                        <p className="font-medium text-gray-800">
+                          {appointment.date}
+                        </p>
                       </div>
 
                       {/* Time */}
@@ -362,7 +414,8 @@ const AppointmentListing = () => {
                           <span className="font-semibold">Time</span>
                         </div>
                         <p className="font-medium text-gray-800 text-sm">
-                          {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
+                          {formatTime(appointment.startTime)} –{" "}
+                          {formatTime(appointment.endTime)}
                         </p>
                       </div>
                     </div>
@@ -373,10 +426,17 @@ const AppointmentListing = () => {
                 {!isEditing && appointment.notes && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex items-start gap-2">
-                      <FileText size={16} className="text-[#52B2AD] mt-1 flex-shrink-0" />
+                      <FileText
+                        size={16}
+                        className="text-[#52B2AD] mt-1 flex-shrink-0"
+                      />
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-1">Notes</p>
-                        <p className="text-sm text-gray-700">{appointment.notes}</p>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">
+                          Notes
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          {appointment.notes}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -422,7 +482,8 @@ const AppointmentListing = () => {
 
           <div className="text-center mt-4">
             <p className="text-gray-600 text-sm">
-              Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
+              Showing {startIndex + 1}–
+              {Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
               {appointments.length} appointments
             </p>
           </div>

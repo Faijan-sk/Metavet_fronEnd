@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
 import AddPetForm from "./../../pets/AddPetForm";
 import {
-  AlertCircle,
-  CheckCircle,
   Plus,
   X,
   ChevronLeft,
@@ -12,17 +10,32 @@ import {
   Calendar,
   Clock,
   Scissors,
+  ArrowRight,
 } from "lucide-react";
+
+import { useGroomerAppointment } from "./../../../../context/GroomerAppointmentContext";
 
 function GroomerBookingModal({ groomer, isOpen, onClose }) {
   const navigate = useNavigate();
+
+  const {
+    setSerivceUid,
+    setServicetime,
+    setAppointmentData,
+    setServiceProviderUid,
+    setPetUid,
+    bookingData,
+  } = useGroomerAppointment();
+
+  useEffect(() => {
+    console.log("Groomer context  ---- >", bookingData);
+  }, [bookingData]);
 
   // ================= STATES =================
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState("");
   const [loading, setLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
-  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   const [availableDays, setAvailableDays] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -34,8 +47,6 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedService, setSelectedService] = useState("");
   const [selectedStartTime, setSelectedStartTime] = useState("");
-  const [kycRecord, setKycRecord] = useState({});
-  const [kycStatus, setKycStatus] = useState("idle");
 
   const [showAddPetModal, setShowAddPetModal] = useState(false);
 
@@ -89,7 +100,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
       }
     };
     fetchAvailableDays();
-  }, [isOpen, groomer?.uid]);
+  }, [isOpen, groomer?.id]);
 
   // ================= FETCH SLOTS & SERVICES WHEN DATE SELECTED =================
   useEffect(() => {
@@ -107,10 +118,13 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
           String(selectedDate.getMonth() + 1).padStart(2, "0"),
           String(selectedDate.getDate()).padStart(2, "0"),
         ].join("-");
+        setAppointmentData(dateStr);
+
         const response = await useJwt.getGroomerAvailableSlotServices(
           dateStr,
           groomer.id,
         );
+        setServiceProviderUid(groomer.id);
         setSlotsData(response.data);
       } catch (error) {
         console.error("Error fetching slots:", error);
@@ -120,40 +134,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     };
 
     fetchSlotsAndServices();
-  }, [selectedDate, groomer?.uid]);
-
-  // ================= FETCH KYC STATUS ON PET SELECT =================
-  useEffect(() => {
-    if (!selectedPet?.uid) {
-      setKycStatus("idle");
-      return;
-    }
-
-    const fetchKyc = async () => {
-      setKycStatus("loading");
-      try {
-        const response = await useJwt.getGroomerKycByPetUid(selectedPet.uid);
-        setKycRecord(response?.data?.data);
-        if (response.data?.success) {
-          setKycStatus("found");
-        } else {
-          setKycStatus("not_found");
-        }
-      } catch (error) {
-        const errorCode = error.response?.data?.errorCode;
-        if (error.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
-          setKycStatus("not_found");
-        } else {
-          setKycStatus("not_found");
-          console.error("KYC fetch error:", error);
-        }
-      }
-    };
-
-    fetchKyc();
-  }, [selectedPet]);
-
-  const isKycVerified = kycStatus === "found";
+  }, [selectedDate, groomer?.id]);
 
   if (!groomer || !isOpen) return null;
 
@@ -163,12 +144,10 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     setSelectedDate(null);
     setCalendarOpen(false);
     setBookingError("");
-    setBookingSuccess(false);
     setSlotsData(null);
     setSelectedSlot(null);
     setSelectedService("");
     setSelectedStartTime("");
-    setKycStatus("idle");
     setShowAddPetModal(false);
   };
 
@@ -185,6 +164,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     } else {
       const pet = pets.find((p) => p.id === parseInt(val));
       setSelectedPet(pet || "");
+      setPetUid(pet || null);
     }
   };
 
@@ -302,88 +282,32 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
     return cells;
   };
 
-  // ================= BOOK SESSION =================
+  // ================= SUBMIT =================
   const handleBookSession = async (e) => {
     e.preventDefault();
 
-    if (!selectedPet) {
-      setBookingError("Please select a pet");
-      return;
-    }
-    if (!selectedDate) {
-      setBookingError("Please select a date");
-      return;
-    }
-    if (!selectedSlot) {
-      setBookingError("Please select a time slot");
-      return;
-    }
-    if (!selectedStartTime) {
-      setBookingError("Please select a start time");
-      return;
-    }
-    if (!selectedService) {
-      setBookingError("Please select a service");
-      return;
-    }
+    if (!selectedDate) return setBookingError("Please select a date");
+    if (!selectedSlot) return setBookingError("Please select a time slot");
+    if (!selectedStartTime)
+      return setBookingError("Please select a start time");
+    if (!selectedService) return setBookingError("Please select a service");
+    if (!selectedPet) return setBookingError("Please select a pet");
 
     setLoading(true);
     setBookingError("");
 
-    try {
-      const payload = {
-        petUid: selectedPet.uid,
-        serviceProviderUid: groomer.id,
-        appointmentDate: [
-          selectedDate.getFullYear(),
-          String(selectedDate.getMonth() + 1).padStart(2, "0"),
-          String(selectedDate.getDate()).padStart(2, "0"),
-        ].join("-"),
-        startTime: selectedStartTime + ":00",
-        serviceUid: selectedService,
-        notes: "",
-        platForm: "WEB",
-        kycId: kycRecord?.kycUid,
-      };
-
-      console.log("Booking payload:", payload);
-      const response = await useJwt.BookGroomerAppointment(payload);
-      console.log("Booking response:", response);
-
-      if (response.data?.checkoutUrl) {
-        setBookingSuccess(true);
-        setTimeout(() => {
-          window.location.href = response.data.checkoutUrl;
-        }, 800);
-      } else {
-        setBookingError(
-          "Payment session could not be created. Please try again.",
-        );
-      }
-    } catch (error) {
-      console.error("Error booking session:", error);
-
-      if (error.response?.status === 409) {
-        const errData = error.response.data;
-        let msg = errData?.error || "This slot is already booked.";
-        if (errData?.details?.availableSlots?.length > 0) {
-          const slots = errData.details.availableSlots
-            .map((s) => `${s.startTime} – ${s.endTime}`)
-            .join(", ");
-          msg += ` Available slots: ${slots}`;
-        }
-        setBookingError(msg);
-      } else {
-        setBookingError(
-          error.response?.data?.error ||
-            error.response?.data?.message ||
-            "Failed to book session. Please try again.",
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
+    setTimeout(() => {
+      navigate("/groomer-appoinment");
+    }, 1000);
   };
+
+  const isSubmitDisabled =
+    loading ||
+    !selectedDate ||
+    !selectedSlot ||
+    !selectedStartTime ||
+    !selectedService ||
+    !selectedPet;
 
   // ================= JSX =================
   return (
@@ -414,115 +338,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
 
           {/* Body */}
           <form onSubmit={handleBookSession} className="px-6 py-5 space-y-5">
-            {/* PET SELECT */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">
-                Select Pet *
-              </label>
-              <select
-                value={selectedPet?.id || ""}
-                onChange={handlePetSelectChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-                required
-              >
-                <option value="">Select a pet</option>
-                {pets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.petName} • {p.petSpecies} ({p.petBreed})
-                  </option>
-                ))}
-                <option value="__add_new__">➕ Add New Pet</option>
-              </select>
-            </div>
-
-            {/* ================= KYC BANNER ================= */}
-
-            {/* Loading state */}
-            {kycStatus === "loading" && (
-              <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                <svg
-                  className="animate-spin h-4 w-4 text-[#52B2AD]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                <p className="text-sm text-gray-500">Checking KYC status…</p>
-              </div>
-            )}
-
-            {/* ✅ FIXED: KYC NOT FOUND → navigate() with petUid in state */}
-            {kycStatus === "not_found" && (
-              <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-400 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800 leading-tight">
-                      KYC Verification Required
-                    </p>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Complete your KYC to book a session
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    navigate("/groomerTo-client-kyc", {
-                      state: { petUid: selectedPet.uid },
-                    });
-                  }}
-                  className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Fill KYC
-                </button>
-              </div>
-            )}
-
-            {/* ✅ FIXED: KYC FOUND → navigate() with petUid in state */}
-            {kycStatus === "found" && (
-              <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-300 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800 leading-tight">
-                      KYC Verified
-                    </p>
-                    <p className="text-xs text-green-600 mt-0.5">
-                      Want to update your KYC information?
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    navigate("/groomerTo-client-kyc", {
-                      state: { petUid: selectedPet.uid },
-                    });
-                  }}
-                  className="shrink-0 bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Update KYC
-                </button>
-              </div>
-            )}
-
-            {/* DATE SELECTOR */}
+            {/* ===== 1. DATE SELECTOR ===== */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Select Date *
@@ -613,7 +429,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
               )}
             </div>
 
-            {/* SLOTS & SERVICES */}
+            {/* ===== 2. SLOTS & SERVICES ===== */}
             {selectedDate && (
               <>
                 {slotsLoading ? (
@@ -651,6 +467,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                       </span>
                     </div>
 
+                    {/* Time Slot */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-800 mb-2">
                         <Clock size={14} className="inline mr-1" />
@@ -690,6 +507,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                       </div>
                     </div>
 
+                    {/* Start Time */}
                     {selectedSlot && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-800 mb-1">
@@ -701,7 +519,10 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                           value={selectedStartTime}
                           min={selectedSlot.slotStartTime?.slice(0, 5)}
                           max={selectedSlot.slotEndTime?.slice(0, 5)}
-                          onChange={(e) => setSelectedStartTime(e.target.value)}
+                          onChange={(e) => {
+                            setSelectedStartTime(e.target.value);
+                            setServicetime(e.target.value + ":00");
+                          }}
                           className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] bg-gray-50"
                         />
                         <p className="text-xs text-gray-400 mt-1">
@@ -712,6 +533,7 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                       </div>
                     )}
 
+                    {/* Service */}
                     {selectedSlot && (
                       <div>
                         <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -725,7 +547,10 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                               <button
                                 type="button"
                                 key={svc.uid}
-                                onClick={() => setSelectedService(svc.uid)}
+                                onClick={() => {
+                                  setSelectedService(svc.uid);
+                                  setSerivceUid(svc);
+                                }}
                                 className={`px-3 py-3 rounded-xl border-2 text-left transition-all ${
                                   isActive
                                     ? "border-[#52B2AD] bg-[#52B2AD]/10 shadow-sm"
@@ -770,37 +595,31 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
               </>
             )}
 
+            {/* ===== 3. PET SELECT ===== */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
+                Select Pet *
+              </label>
+              <select
+                value={selectedPet?.id || ""}
+                onChange={handlePetSelectChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+                required
+              >
+                <option value="">Select a pet</option>
+                {pets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.petName} • {p.petSpecies} ({p.petBreed})
+                  </option>
+                ))}
+                <option value="__add_new__">➕ Add New Pet</option>
+              </select>
+            </div>
+
             {/* ERROR */}
             {bookingError && (
               <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">
                 {bookingError}
-              </div>
-            )}
-
-            {/* SUCCESS */}
-            {bookingSuccess && (
-              <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl flex items-center gap-2">
-                <svg
-                  className="animate-spin h-4 w-4 text-green-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Redirecting to payment…
               </div>
             )}
 
@@ -816,30 +635,14 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
 
               <button
                 type="submit"
-                disabled={
-                  loading ||
-                  bookingSuccess ||
-                  !selectedPet ||
-                  !selectedDate ||
-                  !selectedSlot ||
-                  !selectedStartTime ||
-                  !selectedService ||
-                  !isKycVerified
-                }
+                disabled={isSubmitDisabled}
                 className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                  loading ||
-                  bookingSuccess ||
-                  !selectedPet ||
-                  !selectedDate ||
-                  !selectedSlot ||
-                  !selectedStartTime ||
-                  !selectedService ||
-                  !isKycVerified
+                  isSubmitDisabled
                     ? "opacity-60 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
                 }`}
               >
-                {loading || bookingSuccess ? (
+                {loading ? (
                   <>
                     <svg
                       className="animate-spin h-4 w-4 text-white"
@@ -861,12 +664,12 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    {bookingSuccess ? "Redirecting…" : "Processing…"}
+                    Submitting…
                   </>
                 ) : (
                   <>
-                    <Plus size={16} />
-                    Book & Pay
+                    <ArrowRight size={16} />
+                    Next
                   </>
                 )}
               </button>
@@ -892,7 +695,6 @@ function GroomerBookingModal({ groomer, isOpen, onClose }) {
                 <X size={16} />
               </button>
             </div>
-
             <AddPetForm
               onClose={() => setShowAddPetModal(false)}
               onSubmit={handlePetAdded}

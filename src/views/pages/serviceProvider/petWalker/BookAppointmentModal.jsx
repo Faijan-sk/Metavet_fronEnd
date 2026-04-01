@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
-import AddPetForm from "./../../pets/AddPetForm"; // ✅ apna path check karo
+import AddPetForm from "./../../pets/AddPetForm";
+
+import { useWalkerAppointment } from "./../../../../context/WalkerAppointmentContext";
+
 import {
+  ArrowRight,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Clock,
   Plus,
   X,
-  AlertCircle,
-  CheckCircle,
 } from "lucide-react";
 
 const monthNames = [
@@ -30,21 +32,28 @@ const monthNames = [
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function BookWalkModal({ walker, onClose, kycVerified = false }) {
-  useEffect(() => {
-    console.log("wwwwwwwwwwwwwwwwwwww0", walker.name);
-  }, []);
+function BookWalkModal({ walker, onClose }) {
   if (!walker) return null;
+
+  // ================= CONTEXT =================
+  const {
+    bookingData,
+    setPetUid,
+    setAppointmentDate,
+    setSlotUid,
+    setPetWalkerDayUid,
+    setPetWalkerUid,
+  } = useWalkerAppointment();
+
+  useEffect(() => {
+    console.log("🔥 CONTEXT UPDATED:", bookingData);
+  }, [bookingData]);
 
   // ================= STATES =================
   const [walkerDays, setWalkerDays] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [pets, setPets] = useState([]);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const navigate = useNavigate();
-  const [kycRecord, setKycRecord] = useState(null);
   const [walkerDayUid, setWalkerDayUid] = useState(null);
 
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -52,33 +61,14 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
   const [slotsError, setSlotsError] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [bookingError, setBookingError] = useState("");
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-
-  const [kycStatus, setKycStatus] = useState("idle");
-
-  // ✅ NEW: Add Pet Modal state
+  const [pets, setPets] = useState([]);
+  const [selectedPet, setSelectedPet] = useState(null);
   const [showAddPetModal, setShowAddPetModal] = useState(false);
 
-  // ================= FETCH PETS — useCallback mein wrap =================
-  // ✅ CHANGED: fetchPets ko useCallback mein wrap kiya — re-fetch ke liye
-  const fetchPets = useCallback(async () => {
-    try {
-      const response = await useJwt.getAllPetsByOwner();
-      const petsList = response.data.data.map((pet) => ({
-        id: pet.id,
-        uid: pet.uid,
-        petName: pet.petName,
-        petSpecies: pet.petSpecies,
-        petBreed: pet.petBreed,
-      }));
-      setPets(petsList);
-    } catch (error) {
-      console.error("Error fetching pets:", error);
-    }
-  }, []);
+  const [bookingError, setBookingError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   // ================= FETCH WALKER DAYS =================
   useEffect(() => {
@@ -90,15 +80,8 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
         console.error("Error fetching walker days:", error);
       }
     };
-
     if (walker?.id) fetchDays();
   }, [walker?.id]);
-
-  // ================= FETCH PETS ON MOUNT =================
-  // ✅ CHANGED: fetchPets directly call (useCallback se already defined)
-  useEffect(() => {
-    fetchPets();
-  }, [fetchPets]);
 
   // ================= FETCH SLOTS =================
   useEffect(() => {
@@ -116,12 +99,19 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
           String(selectedDate.getMonth() + 1).padStart(2, "0"),
           String(selectedDate.getDate()).padStart(2, "0"),
         ].join("-");
+
         const response = await useJwt.getWalkerAvailableSlot(
           formattedDate,
           walkerDayUid,
           walker.id,
         );
+
         setAvailableSlots(response.data?.data || response.data || []);
+
+        // Store in context
+        setPetWalkerDayUid(walkerDayUid);
+        setAppointmentDate(formattedDate);
+        setPetWalkerUid(walker.id);
       } catch (error) {
         console.error("Error fetching slots:", error);
         setAvailableSlots([]);
@@ -134,40 +124,28 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
     fetchSlots();
   }, [selectedDate, walkerDayUid]);
 
-  // ================= FETCH KYC STATUS ON PET SELECT =================
-  useEffect(() => {
-    if (!selectedPet?.uid) {
-      setKycStatus("idle");
-      return;
+  // ================= FETCH PETS (only after slot selected) =================
+  const fetchPets = useCallback(async () => {
+    try {
+      const response = await useJwt.getAllPetsByOwner();
+      const petsList = response.data.data.map((pet) => ({
+        id: pet.id,
+        uid: pet.uid,
+        petName: pet.petName,
+        petSpecies: pet.petSpecies,
+        petBreed: pet.petBreed,
+      }));
+      setPets(petsList);
+    } catch (error) {
+      console.error("Error fetching pets:", error);
     }
+  }, []);
 
-    const fetchKyc = async () => {
-      setKycStatus("loading");
-      try {
-        const response = await useJwt.getWalkerToClientKycByPet(
-          selectedPet.uid,
-        );
-        if (response.data?.success) {
-          setKycStatus("found");
-          setKycRecord(response.data.data);
-        } else {
-          setKycStatus("not_found");
-        }
-      } catch (error) {
-        const errorCode = error.response?.data?.errorCode;
-        if (error.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
-          setKycStatus("not_found");
-        } else {
-          setKycStatus("not_found");
-          console.error("KYC fetch error:", error);
-        }
-      }
-    };
-
-    fetchKyc();
-  }, [selectedPet]);
-
-  const isKycVerified = kycStatus === "found";
+  useEffect(() => {
+    if (selectedSlot) {
+      fetchPets();
+    }
+  }, [selectedSlot, fetchPets]);
 
   // ================= HELPERS =================
   const today = new Date();
@@ -194,41 +172,40 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
   };
 
   const resetForm = () => {
-    setSelectedPet(null);
     setSelectedDate(null);
     setSelectedSlot(null);
-    setNotes("");
+    setSelectedPet(null);
     setWalkerDayUid(null);
     setAvailableSlots([]);
+    setPets([]);
     setBookingError("");
-    setBookingSuccess(false);
-    setKycStatus("idle");
-    setShowAddPetModal(false); // ✅ NEW
+    setLoading(false);
+    setShowAddPetModal(false);
   };
 
-  // ✅ NEW: Pet dropdown change handler
+  // ================= PET HANDLERS =================
   const handlePetSelectChange = (e) => {
     const val = e.target.value;
     if (val === "__add_new__") {
-      setSelectedPet(null); // dropdown reset
-      setShowAddPetModal(true); // modal open
+      setSelectedPet(null);
+      setShowAddPetModal(true);
     } else {
       const pet = pets.find((p) => p.id === parseInt(val));
       setSelectedPet(pet || null);
+      if (pet) setPetUid(pet);
     }
   };
 
-  // ✅ NEW: Pet successfully add hone ke baad
   const handlePetAdded = async () => {
-    setShowAddPetModal(false); // modal band
-    await fetchPets(); // list refresh
+    setShowAddPetModal(false);
+    await fetchPets();
   };
 
-  // ================= BOOK WALK =================
+  // ================= SUBMIT =================
   const handleBookWalk = async (e) => {
     e.preventDefault();
 
-    if (!selectedPet?.uid || !selectedDate || !selectedSlot || !walkerDayUid) {
+    if (!selectedDate || !selectedSlot || !selectedPet?.uid) {
       setBookingError("Please fill all required fields");
       return;
     }
@@ -236,44 +213,34 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
     setLoading(true);
     setBookingError("");
 
-    try {
-      const payload = {
-        petWalkerUid: selectedSlot.petWalker.uid,
-        petWalkerDayUid: selectedSlot.petWalkerDayUid,
-        slotUid: selectedSlot.slotUid,
-        kycId: kycRecord?.kycUid,
-        appointmentDate: [
-          selectedDate.getFullYear(),
-          String(selectedDate.getMonth() + 1).padStart(2, "0"),
-          String(selectedDate.getDate()).padStart(2, "0"),
-        ].join("-"),
-        petUid: selectedPet.uid,
-      };
+    const formattedDate = [
+      selectedDate.getFullYear(),
+      String(selectedDate.getMonth() + 1).padStart(2, "0"),
+      String(selectedDate.getDate()).padStart(2, "0"),
+    ].join("-");
 
-      // console.log("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWalekr ", payload);
+    // Store everything in context
+    setPetUid(selectedPet);
+    setSlotUid(selectedSlot);
+    setPetWalkerUid(selectedSlot.petWalker.uid);
+    setPetWalkerDayUid(selectedSlot.petWalkerDayUid);
+    setAppointmentDate(formattedDate);
 
-      const response = await useJwt.BookWalkerAppointment(payload);
+    console.log("📦 Booking Data stored in context:", {
+      petUid: selectedPet.uid,
+      slotUid: selectedSlot.slotUid,
+      petWalkerUid: selectedSlot.petWalker.uid,
+      petWalkerDayUid: selectedSlot.petWalkerDayUid,
+      appointmentDate: formattedDate,
+    });
 
-      const checkoutUrl =
-        response.data?.checkoutUrl || response.data?.data?.checkoutUrl;
-
-      setBookingSuccess(true);
-
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      } else {
-        setLoading(false);
-        resetForm();
-        if (onClose) onClose();
-      }
-    } catch (error) {
-      console.error("Error booking walk:", error);
-      setBookingError(
-        error.response?.data?.message ||
-          "Failed to book walk. Please try again.",
-      );
+    // 1 second delay then redirect
+    setTimeout(() => {
       setLoading(false);
-    }
+      resetForm();
+      onClose && onClose();
+      navigate("/walker-appointment");
+    }, 1000);
   };
 
   // ================= CALENDAR =================
@@ -324,7 +291,10 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
               setSelectedDate(dateObj);
               setCalendarOpen(false);
               setWalkerDayUid(matchedDay.petWalkerDayUid);
+              // Reset downstream when date changes
               setSelectedSlot(null);
+              setSelectedPet(null);
+              setPets([]);
             }
           }}
           className={`text-sm h-10 rounded-md transition font-medium
@@ -385,12 +355,11 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
 
           {/* Body */}
           <form onSubmit={handleBookWalk} className="px-6 py-5 space-y-5">
-            {/* DATE SELECTOR */}
+            {/* STEP 1 — DATE SELECTOR */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Select Date *
               </label>
-
               <button
                 type="button"
                 onClick={() => setCalendarOpen(!calendarOpen)}
@@ -460,7 +429,7 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
               )}
             </div>
 
-            {/* TIME SLOTS */}
+            {/* STEP 2 — TIME SLOTS (shows after date selected) */}
             {selectedDate && (
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -488,7 +457,13 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
                       <button
                         type="button"
                         key={slot.slotId}
-                        onClick={() => setSelectedSlot(slot)}
+                        onClick={() => {
+                          setSelectedSlot(slot);
+                          setSlotUid(slot);
+                          setPetWalkerUid(slot?.petWalker?.uid);
+                          // Reset pet when slot changes
+                          setSelectedPet(null);
+                        }}
                         className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium flex items-center justify-center gap-1.5 transition ${
                           selectedSlot?.slotId === slot.slotId
                             ? "bg-[#52B2AD] border-[#52B2AD] text-white"
@@ -505,118 +480,33 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
               </div>
             )}
 
-            {/* PET SELECT */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">
-                Select Pet *
-              </label>
-              {/* ✅ CHANGED: onChange → handlePetSelectChange, + "➕ Add New Pet" option */}
-              <select
-                value={selectedPet?.id || ""}
-                onChange={handlePetSelectChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
-                required
-              >
-                <option value="">Select a pet</option>
-                {pets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.petName} • {p.petSpecies} ({p.petBreed})
-                  </option>
-                ))}
-                {/* ✅ NEW: Hamesha last mein */}
-                <option value="__add_new__">➕ Add New Pet</option>
-              </select>
-            </div>
-
-            {/* KYC BANNER */}
-            {kycStatus === "loading" && (
-              <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                <svg
-                  className="animate-spin h-4 w-4 text-[#52B2AD]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
+            {/* STEP 3 — PET SELECT (shows after slot selected) */}
+            {selectedSlot && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-1">
+                  Select Pet *
+                </label>
+                <select
+                  value={selectedPet?.id || ""}
+                  onChange={handlePetSelectChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+                  required
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                <p className="text-sm text-gray-500">Checking KYC status…</p>
+                  <option value="">Select a pet</option>
+                  {pets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.petName} • {p.petSpecies} ({p.petBreed})
+                    </option>
+                  ))}
+                  <option value="__add_new__">➕ Add New Pet</option>
+                </select>
               </div>
             )}
 
-            {kycStatus === "not_found" && (
-              <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-400 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800 leading-tight">
-                      KYC Verification Required
-                    </p>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Complete your KYC to book a walk
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    window.location.href = "/walkerTo-client-Kyc";
-                  }}
-                  className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Fill KYC
-                </button>
-              </div>
-            )}
-
-            {kycStatus === "found" && (
-              <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-300 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800 leading-tight">
-                      KYC Verified
-                    </p>
-                    <p className="text-xs text-green-600 mt-0.5">
-                      Want to update your KYC information?
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    navigate("/walkerTo-client-Kyc", {
-                      state: { kycData: kycRecord },
-                    });
-                  }}
-                  className="shrink-0 bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Update KYC
-                </button>
-              </div>
-            )}
-
+            {/* ERROR */}
             {bookingError && (
               <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">
                 {bookingError}
-              </div>
-            )}
-            {bookingSuccess && (
-              <div className="text-sm text-green-600 bg-green-50 p-3 rounded-xl">
-                Walk booked successfully! Redirecting to payment...
               </div>
             )}
 
@@ -638,9 +528,9 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
 
               <button
                 type="submit"
-                disabled={loading || !selectedSlot || !isKycVerified}
+                disabled={loading || !selectedSlot || !selectedPet}
                 className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                  loading || !selectedSlot || !isKycVerified
+                  loading || !selectedSlot || !selectedPet
                     ? "opacity-60 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
                 }`}
@@ -667,12 +557,12 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    {bookingSuccess ? "Redirecting…" : "Booking…"}
+                    Submitting…
                   </>
                 ) : (
                   <>
-                    <Plus size={16} />
-                    Book Walk
+                    <ArrowRight size={16} />
+                    Next
                   </>
                 )}
               </button>
@@ -681,7 +571,7 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
         </div>
       </div>
 
-      {/* ✅ NEW: Add Pet Modal — BookWalkModal ke upar overlay */}
+      {/* Add Pet Modal */}
       {showAddPetModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
@@ -698,11 +588,10 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
                 <X size={16} />
               </button>
             </div>
-
             <AddPetForm
-              onClose={() => setShowAddPetModal(false)} // Cancel → sirf modal band
-              onSubmit={handlePetAdded} // Success → modal band + re-fetch
-              editPetData={null} // Hamesha add mode
+              onClose={() => setShowAddPetModal(false)}
+              onSubmit={handlePetAdded}
+              editPetData={null}
             />
           </div>
         </div>
@@ -712,3 +601,70 @@ function BookWalkModal({ walker, onClose, kycVerified = false }) {
 }
 
 export default BookWalkModal;
+/*
+
+yaha mai pahale pet select karta hu then vo pet kyc form ko send karta hu ye mera context ka data he pet kaise store ho raha he 
+
+appointmentDate
+: 
+"2026-03-31"
+kycId
+: 
+"0b15abfe-08b5-4e88-835e-ed4c2718693b"
+petUid
+: 
+id
+: 
+2
+petBreed
+: 
+"Marsh"
+petName
+: 
+"Croco"
+petSpecies
+: 
+"Crocodile"
+uid
+: 
+"c9c4466a-3758-4e27-ae5c-1d6b35651c69"
+[[Prototype]]
+: 
+Object
+petWalkerDayUid
+: 
+"e8522c01-07d4-4782-b8cc-bb9fe4dbc44c"
+petWalkerUid
+: 
+"70c91f7c-556a-4545-91f0-78129812558f"
+slotUid
+: 
+{id: 13, uid: 'ceea83d7-b717-46c0-994d-73005012395a', createdAt: '2026-03-25T16:54:16.276025', updatedAt: '2026-03-25T16:54:16.276025', petWalker: {…}, …}
+
+
+then kyc me uid se fetch karta hu kyc mai sirf itna chahta hu pet prefil dikhna chahiye tumhe koi or code chahoiye baki koi flow change mat karo kya tumhe get petka response du
+
+ye mere get pet byu owner ka responose he 
+
+
+{
+    "data": [
+        {
+            "id": 2,
+            "uid": "c9c4466a-3758-4e27-ae5c-1d6b35651c69",
+            "petName": "Croco",
+            "petSpecies": "Crocodile",
+            "petAge": 20,
+            "petBreed": "Marsh",
+            "petGender": "Male",
+            "petHeight": 20.00,
+            "petWeight": 20.00,
+            "isVaccinated": false,
+            "isNeutered": false,
+            "petImage": " yaha base64 aata he "
+            "petImageFilePath": "E:\\New-Metavet-Backend-Copy\\pet_images\\Croco\\pet_image_1774437996978_ab354356-f5da-4252-ac50-b7faca1a117c.jpeg"
+        },
+
+
+        or ye mera kyc ka code he pure code me change mat kao sirf batao koan koan se line me vhange karna he 
+*/

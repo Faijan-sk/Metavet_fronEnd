@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
@@ -8,9 +8,9 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import KycForm from "./../../kyc/walker-kyc/WalkerToClientKyc";
+import KycForm from "./../../kyc/behaviourist-kyc/behaviouristToClient";
 import useJwt from "../../../../enpoints/jwt/useJwt";
-import { useWalkerAppointment } from "./../../../../context/WalkerAppointmentContext";
+import { useBehaviouristAppointment } from "./../../../../context/BehaviouristAppointmentContext";
 
 // ─── Summary detail row ───────────────────────────────────────────────────────
 const DetailRow = ({ label, value }) => {
@@ -27,43 +27,75 @@ const DetailRow = ({ label, value }) => {
 
 function BookingPage() {
   const navigate = useNavigate();
-  const { bookingData, clearBookingData } = useWalkerAppointment();
+  const { bookingData, clearBookingData } = useBehaviouristAppointment();
 
   const [view, setView] = useState("kyc");
-
+  const [kycRecord, setKycRecord] = useState(null); // fullRecord object
+  const [kycUid, setKycUid] = useState(null); // kycUid string
+  const [kycFetched, setKycFetched] = useState(false); // fetch done?
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
 
-  // KycForm success → go to review summary
-  const handleKycSuccess = () => {
+  // ─── Pet ka KYC fetch karo on mount ─────────────────────────────────────
+  useEffect(() => {
+    const petUid = bookingData?.petUid?.uid;
+    if (!petUid) return;
+
+    const fetchKyc = async () => {
+      try {
+        const response = await useJwt.getBehavioToClientKycByPet(petUid);
+        if (response.data?.success && response.data?.data) {
+          const data = response.data.data;
+          // fullRecord contains the actual KYC fields
+          setKycRecord(data.fullRecord || null);
+          setKycUid(data.kycUid || data.fullRecord?.kycUid || null);
+        }
+      } catch (error) {
+        const status = error.response?.status;
+        const errorCode = error.response?.data?.errorCode;
+        if (status === 404 || errorCode === "KYC_NOT_FOUND") {
+          setKycRecord(null);
+          setKycUid(null);
+        } else {
+          console.error("KYC fetch error:", error);
+        }
+      } finally {
+        setKycFetched(true);
+      }
+    };
+
+    fetchKyc();
+  }, [bookingData?.petUid?.uid]);
+
+  // ─── KYC submit success → summary ───────────────────────────────────────
+  const handleKycSuccess = (savedKycUid) => {
+    if (savedKycUid) setKycUid(savedKycUid);
     setView("summary");
   };
 
-  // ─── Confirm & Book API call ─────────────────────────────────────────────
+  // ─── Confirm & Pay ───────────────────────────────────────────────────────
   const handleConfirmBooking = async () => {
     setBooking(true);
     setBookingError("");
 
     try {
       const payload = {
-        petWalkerUid: bookingData?.petWalkerUid,
-        petWalkerDayUid: bookingData?.petWalkerDayUid,
+        petUid: bookingData?.petUid?.uid,
+        serviceProviderUid: bookingData?.serviceProviderUid,
+        behaviouristDayUid: bookingData?.behaviouristDayUid,
         slotUid: bookingData?.slotUid?.uid,
         appointmentDate: bookingData?.appointmentDate,
-        petUid: bookingData?.petUid?.uid,
-        kycId: bookingData?.kycId,
+        kycId: kycUid,
       };
 
-      console.log("📦 Final booking payload:", payload);
+      console.log("📦 Behaviourist booking payload:", payload);
 
-      const response = await useJwt.BookWalkerAppointment(payload);
-
+      const response = await useJwt.bookBehaviouristAppointment(payload);
       const checkoutUrl =
         response.data?.checkoutUrl || response.data?.data?.checkoutUrl;
 
       if (checkoutUrl) {
         clearBookingData();
-
         window.location.href = checkoutUrl;
       } else {
         setView("booked");
@@ -79,7 +111,17 @@ function BookingPage() {
     }
   };
 
-  // ─── Booking Confirmed screen ────────────────────────────────────────────
+  // ─── Format time helper ──────────────────────────────────────────────────
+  const formatTime = (time) => {
+    if (!time) return null;
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  // ─── Booked screen ───────────────────────────────────────────────────────
   if (view === "booked") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -92,15 +134,15 @@ function BookingPage() {
             </div>
             <h1 className="text-2xl font-bold">You're All Set!</h1>
             <p className="text-white/80 text-sm mt-2">
-              Your walk has been successfully booked.
+              Your session has been successfully booked.
             </p>
           </div>
           <div className="px-8 py-8 flex flex-col gap-3">
             <button
-              onClick={() => navigate("/service-provider/petWalker")}
+              onClick={() => navigate("/service-provider/petBehaviourist")}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#52B2AD] to-[#42948f] text-white font-semibold text-sm hover:opacity-90 transition shadow-md"
             >
-              Browse More Walkers
+              Browse More Behaviourists
             </button>
             <button
               onClick={() => navigate("/")}
@@ -114,10 +156,13 @@ function BookingPage() {
     );
   }
 
-  // ─── Review & Confirm Summary ────────────────────────────────────────────
+  // ─── Summary screen ──────────────────────────────────────────────────────
   if (view === "summary") {
+    const slot = bookingData?.slotUid;
+    const pet = bookingData?.petUid;
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 ">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#52B2AD] to-[#42948f] px-8 py-8 text-white">
@@ -132,7 +177,7 @@ function BookingPage() {
             </h1>
             <p className="text-white/75 text-sm mt-1">
               Take a moment to confirm the details below before we lock in your
-              walk.
+              session.
             </p>
           </div>
 
@@ -147,13 +192,9 @@ function BookingPage() {
                 </span>
               </div>
               <DetailRow label="Date" value={bookingData?.appointmentDate} />
-              {/* <DetailRow label="Slot" value={bookingData?.slotUid} /> */}
-              <DetailRow
-                label="Day Schedule"
-                // value={bookingData?.petWalkerDayUid}
-              />
             </div>
 
+            {/* Slot */}
             <div className="bg-gray-50 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar className="w-4 h-4 text-[#52B2AD]" />
@@ -162,30 +203,11 @@ function BookingPage() {
                 </span>
               </div>
               <DetailRow
-                label="Start time"
-                value={bookingData?.slotUid?.startTime}
+                label="Start Time"
+                value={formatTime(slot?.startTime)}
               />
-
-              <DetailRow
-                label="Slot Duration"
-                value={
-                  bookingData?.slotUid?.petWalkerDay?.slotDurationMinutes +
-                  " Min"
-                }
-              />
-              {/* <DetailRow label="Slot" value={bookingData?.slotUid} /> */}
+              <DetailRow label="End Time" value={formatTime(slot?.endTime)} />
             </div>
-
-            {/* Walker */}
-            {/* <div className="bg-gray-50 rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <User className="w-4 h-4 text-[#52B2AD]" />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  Walker
-                </span>
-              </div>
-              <DetailRow label="Walker" value={bookingData?.petWalkerUid} />
-            </div> */}
 
             {/* Pet */}
             <div className="bg-gray-50 rounded-2xl p-5">
@@ -195,15 +217,9 @@ function BookingPage() {
                   Pet
                 </span>
               </div>
-              <DetailRow
-                label="Pet"
-                value={
-                  bookingData?.petUid?.petName +
-                  " (" +
-                  bookingData?.petUid?.petBreed +
-                  ")"
-                }
-              />
+              <DetailRow label="Name" value={pet?.petName || null} />
+              <DetailRow label="Species" value={pet?.petSpecies || null} />
+              <DetailRow label="Breed" value={pet?.petBreed || null} />
             </div>
           </div>
 
@@ -217,7 +233,7 @@ function BookingPage() {
           {/* CTA */}
           <div className="px-8 pb-8 space-y-3">
             <p className="text-center text-sm text-gray-500">
-              Ready to go? Tap below to confirm your walk booking.
+              Ready to go? Tap below to confirm your session booking.
             </p>
 
             <button
@@ -256,7 +272,7 @@ function BookingPage() {
                 </>
               ) : (
                 <>
-                  Yes, Book My Walk
+                  Yes, Book My Session
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -267,7 +283,7 @@ function BookingPage() {
               onClick={() => setView("kyc")}
               className="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium text-sm transition"
             >
-              ← Go Back & Edit
+              ← Go Back & Edit KYC
             </button>
           </div>
         </div>
@@ -276,9 +292,22 @@ function BookingPage() {
   }
 
   // ─── Default: KYC Form ───────────────────────────────────────────────────
+  // Wait until KYC fetch is done (only if petUid exists)
+  const petUid = bookingData?.petUid?.uid;
+
+  if (petUid && !kycFetched) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <KycForm
-      petUid={bookingData?.petUid?.uid}
+      lockedPetUid={petUid}
+      existingKycData={kycRecord}
+      existingKycUid={kycUid}
       onKycSuccess={handleKycSuccess}
     />
   );

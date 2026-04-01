@@ -1,79 +1,110 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
-const STORAGE_KEY = "walker_appointment_data";
+const WalkerAppointmentContext = createContext();
 
-const WalkerAppointmentContext = createContext(null);
+const STORAGE_KEY = "walker_booking_data";
 
-// Helper to rehydrate date strings back to Date objects
-const rehydrate = (data) => {
-  if (!data) return null;
-  return {
-    ...data,
-    selectedDate: data.selectedDate ? new Date(data.selectedDate) : null,
-  };
-};
-
-export const WalkerAppointmentProvider = ({ children }) => {
-  const [state, setState] = useState(() => {
-    // On first render, try to load from sessionStorage
+const WalkerProvider = ({ children }) => {
+  const [bookingData, setBookingData] = useState(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw
-        ? rehydrate(JSON.parse(raw))
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      return stored
+        ? JSON.parse(stored)
         : {
-            walkerInfo: null,
-            selectedDate: null,
-            walkerDayUid: null,
-            selectedSlot: null,
-            selectedPet: null,
+            petWalkerUid: null,
+            petWalkerDayUid: null,
+            slotUid: null,
+            kycId: null,
+            appointmentDate: null,
+            petUid: null,
           };
     } catch {
       return {
-        walkerInfo: null,
-        selectedDate: null,
-        walkerDayUid: null,
-        selectedSlot: null,
-        selectedPet: null,
+        petWalkerUid: null,
+        petWalkerDayUid: null,
+        slotUid: null,
+        kycId: null,
+        appointmentDate: null,
+        petUid: null,
       };
     }
   });
 
-  // Keep sessionStorage in sync whenever state changes
   useEffect(() => {
-    if (state.walkerInfo) {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } else {
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
-  }, [state]);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(bookingData));
+  }, [bookingData]);
 
-  const saveAppointmentData = ({ walkerInfo, date, dayUid, slot, pet }) => {
-    setState({
-      walkerInfo,
-      selectedDate: date,
-      walkerDayUid: dayUid,
-      selectedSlot: slot,
-      selectedPet: pet,
+  const setWalkerBookingData = (data) => {
+    setBookingData(data);
+  };
+
+  const clearBookingData = () => {
+    sessionStorage.removeItem(STORAGE_KEY);
+    setBookingData({
+      petWalkerUid: null,
+      petWalkerDayUid: null,
+      slotUid: null,
+      kycId: null,
+      appointmentDate: null,
+      petUid: null,
     });
   };
 
-  const clearAppointmentData = () => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setState({
-      walkerInfo: null,
-      selectedDate: null,
-      walkerDayUid: null,
-      selectedSlot: null,
-      selectedPet: null,
-    });
+  const setPetWalkerUid = (petWalkerUid) => {
+    setBookingData((prev) => ({
+      ...prev,
+      petWalkerUid,
+    }));
+  };
+
+  const setPetWalkerDayUid = (petWalkerDayUid) => {
+    setBookingData((prev) => ({
+      ...prev,
+      petWalkerDayUid,
+    }));
+  };
+
+  const setSlotUid = (slotUid) => {
+    setBookingData((prev) => ({
+      ...prev,
+
+      slotUid,
+    }));
+  };
+
+  const setKycId = (kycId) => {
+    setBookingData((prev) => ({
+      ...prev,
+      kycId,
+    }));
+  };
+
+  const setAppointmentDate = (appointmentDate) => {
+    setBookingData((prev) => ({
+      ...prev,
+      appointmentDate,
+    }));
+  };
+
+  const setPetUid = (petUid) => {
+    setBookingData((prev) => ({
+      ...prev,
+      petUid,
+    }));
   };
 
   return (
     <WalkerAppointmentContext.Provider
       value={{
-        ...state,
-        saveAppointmentData,
-        clearAppointmentData,
+        setPetUid,
+        setAppointmentDate,
+        setKycId,
+        setSlotUid,
+        setPetWalkerDayUid,
+        setPetWalkerUid,
+        clearBookingData,
+        setWalkerBookingData,
+        bookingData,
       }}
     >
       {children}
@@ -81,22 +112,6 @@ export const WalkerAppointmentProvider = ({ children }) => {
   );
 };
 
-export const useWalkerAppointment = () => {
-  const ctx = useContext(WalkerAppointmentContext);
-  if (!ctx) {
-    throw new Error(
-      "useWalkerAppointment must be used inside WalkerAppointmentProvider",
-    );
-  }
-  return ctx;
-};
+export const useWalkerAppointment = () => useContext(WalkerAppointmentContext);
 
-export default WalkerAppointmentContext;
-
-// import React, { createContext, useState, useContext, Children } from "react";
-
-// const walkerAppointmentContext = createContext();
-
-// const walekrProvider = ({ Children }) => {
-//   const [bookingData, setBookingData] = useState({});
-// };
+export default WalkerProvider;

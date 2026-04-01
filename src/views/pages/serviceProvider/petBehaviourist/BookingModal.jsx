@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
-import AddPetForm from "./../../pets/AddPetForm"; // ✅ Import — apna path check karo
+import AddPetForm from "./../../pets/AddPetForm";
 import {
-  AlertCircle,
+  ArrowRight,
   Calendar,
-  CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
   Plus,
   X,
 } from "lucide-react";
+
+import { useBehaviouristAppointment } from "./../../../../context/BehaviouristAppointmentContext";
 
 const monthNames = [
   "January",
@@ -37,26 +38,31 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [pets, setPets] = useState([]);
-  const [selectedPet, setSelectedPet] = useState({});
+  const [selectedPet, setSelectedPet] = useState(null);
   const [behaviouristDayId, setBehaviouristDayId] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bookingError, setBookingError] = useState("");
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [kycRecord, setKycRecord] = useState(null);
-  const [kycStatus, setKycStatus] = useState("idle");
-
-  // ✅ NEW: Add Pet Modal state
   const [showAddPetModal, setShowAddPetModal] = useState(false);
+
+  const {
+    setPetuid,
+    setServiceProviderUid,
+    setBehaviouristDayUid,
+    setSlotUid,
+    setAppointmentData,
+    bookingData,
+  } = useBehaviouristAppointment();
+
+  useEffect(() => {
+    console.log("JJJJJJJJJJJJJJJJJ", bookingData);
+  }, [bookingData]);
 
   const navigate = useNavigate();
 
-  // ================= FETCH PETS — useCallback mein wrap =================
-  // ✅ CHANGED: fetchPets ko useCallback mein wrap kiya — re-fetch ke liye
+  // ================= FETCH PETS =================
   const fetchPets = useCallback(async () => {
     try {
       const response = await useJwt.getAllPetsByOwner();
@@ -66,11 +72,10 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     }
   }, []);
 
-  // ================= FETCH PETS & DAYS =================
+  // ================= FETCH PETS & DAYS on open =================
   useEffect(() => {
     if (!isOpen) return;
 
-    // ✅ CHANGED: fetchPets directly call (useCallback se already defined)
     fetchPets();
 
     const fetchDays = async () => {
@@ -87,7 +92,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     fetchDays();
   }, [isOpen, fetchPets]);
 
-  // ================= FETCH SLOTS =================
+  // ================= FETCH SLOTS on date select =================
   useEffect(() => {
     if (!selectedDate || !behaviouristDayId || !behaviourist?.uid) return;
 
@@ -98,6 +103,8 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
 
       try {
         const formattedDate = formatLocalDate(selectedDate);
+        setAppointmentData(formattedDate);
+
         const response = await useJwt.getBehaviouristAvailableSlot(
           behaviourist.uid,
           behaviouristDayId,
@@ -115,48 +122,26 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     fetchSlots();
   }, [selectedDate, behaviouristDayId, behaviourist?.uid]);
 
-  // ================= FETCH KYC STATUS ON PET SELECT =================
-  useEffect(() => {
-    if (!selectedPet?.uid) {
-      setKycStatus("idle");
-      setKycRecord(null);
-      return;
-    }
-
-    const fetchKyc = async () => {
-      setKycStatus("loading");
-      setKycRecord(null);
-      try {
-        const response = await useJwt.getBehavioToClientKycByPet(
-          selectedPet.uid,
-        );
-        if (response.data?.success) {
-          setKycStatus("found");
-          setKycRecord(response.data.data);
-        } else {
-          setKycStatus("not_found");
-        }
-      } catch (error) {
-        const errorCode = error.response?.data?.errorCode;
-        if (error.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
-          setKycStatus("not_found");
-        } else {
-          setKycStatus("not_found");
-          console.error("KYC fetch error:", error);
-        }
-      }
-    };
-
-    fetchKyc();
-  }, [selectedPet]);
-
-  const isKycVerified = kycStatus === "found";
-
   if (!behaviourist || !isOpen) return null;
 
   // ================= HELPERS =================
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTime = (time) => {
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   const goToPreviousMonth = () =>
     setCurrentMonth(
@@ -168,27 +153,14 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
     );
 
-  const formatTime = (time) => {
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
-
   const resetForm = () => {
     setSelectedPet(null);
     setSelectedDate(null);
     setSelectedSlot(null);
-    setNotes("");
     setBehaviouristDayId(null);
     setAvailableSlots([]);
-    setBookingError("");
-    setBookingSuccess(false);
     setCalendarOpen(false);
-    setKycStatus("idle");
-    setKycRecord(null);
-    setShowAddPetModal(false); // ✅ NEW
+    setShowAddPetModal(false);
   };
 
   const handleClose = () => {
@@ -196,73 +168,46 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     onClose && onClose();
   };
 
-  // ✅ NEW: Pet dropdown change handler
+  // ================= PET SELECT =================
   const handlePetSelectChange = (e) => {
     const val = e.target.value;
     if (val === "__add_new__") {
-      setSelectedPet(null); // dropdown reset
-      setShowAddPetModal(true); // modal open
+      setSelectedPet(null);
+      setShowAddPetModal(true);
     } else {
       const pet = pets.find((p) => p.uid === val);
       setSelectedPet(pet || null);
+      setPetuid(pet || null); // ✅ context store
     }
   };
 
-  // ✅ NEW: Pet successfully add hone ke baad
   const handlePetAdded = async () => {
-    setShowAddPetModal(false); // modal band
-    await fetchPets(); // list refresh
+    setShowAddPetModal(false);
+    await fetchPets();
   };
 
-  // ================= BOOK SESSION =================
-  const handleBookSession = async (e) => {
+  // ================= SUBMIT → store context → 1s → redirect =================
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!selectedPet || !selectedDate || !selectedSlot || !behaviouristDayId) {
-      setBookingError("Please fill all required fields");
+    if (!selectedPet || !selectedDate || !selectedSlot || !behaviouristDayId)
       return;
-    }
 
     setLoading(true);
-    setBookingError("");
-    console.log("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK", kycRecord);
 
-    try {
-      const payload = {
-        petUid: selectedPet?.uid,
-        serviceProviderUid:
-          selectedSlot?.serviceProviderDay?.serviceProviderUid,
-        behaviouristDayUid: selectedSlot?.serviceProviderDay?.uid,
-        slotUid: selectedSlot?.uid,
-        appointmentDate: formatLocalDate(selectedDate),
-        notes: notes || undefined,
-        kycId: kycRecord?.kycUid,
-      };
+    // ✅ Store all context values before redirect
+    setPetuid(selectedPet);
+    setServiceProviderUid(selectedSlot?.serviceProviderUid);
+    setBehaviouristDayUid(selectedSlot?.serviceProviderDay?.uid);
+    setSlotUid(selectedSlot);
+    setAppointmentData(formatLocalDate(selectedDate));
 
-      console.log("PPPPPPPPPPPPPPPPPPPP for behaviourist", payload);
-
-      const response = await useJwt.bookBehaviouristAppointment(payload);
-      const { checkoutUrl } = response.data;
-
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      }
-
-      setBookingSuccess(true);
-
-      setTimeout(() => {
-        resetForm();
-        onClose && onClose();
-      }, 1500);
-    } catch (error) {
-      console.error("Error booking session:", error);
-      setBookingError(
-        error.response?.data?.message ||
-          "Failed to book session. Please try again.",
-      );
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+      resetForm();
+      onClose && onClose();
+      navigate("/behaviourist-appointment");
+    }, 1000);
   };
 
   // ================= CALENDAR =================
@@ -311,6 +256,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
               setSelectedDate(dateObj);
               setBehaviouristDayId(matchedDay.uid);
               setSelectedSlot(null);
+              setBehaviouristDayUid(matchedDay.uid); // ✅ context store
             }
           }}
           className={`text-sm h-10 rounded-md transition font-medium
@@ -332,13 +278,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     return cells;
   };
 
-  const formatLocalDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
   // ================= JSX =================
   return (
     <>
@@ -347,7 +286,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         onClick={(e) => e.target === e.currentTarget && handleClose()}
       >
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
-          {/* Header — unchanged */}
+          {/* Header */}
           <div className="sticky top-0 bg-white rounded-t-3xl px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between z-10">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
@@ -367,13 +306,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
           </div>
 
           {/* Body */}
-          <form onSubmit={handleBookSession} className="px-6 py-5 space-y-5">
-            {/* DATE SELECTOR — unchanged */}
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+            {/* DATE SELECTOR */}
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Select Date *
               </label>
-
               <button
                 type="button"
                 onClick={() => setCalendarOpen(!calendarOpen)}
@@ -443,7 +381,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
               )}
             </div>
 
-            {/* TIME SLOTS — unchanged */}
+            {/* TIME SLOTS */}
             {selectedDate && (
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -471,7 +409,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                       <button
                         type="button"
                         key={slot.slotId}
-                        onClick={() => setSelectedSlot(slot)}
+                        onClick={() => {
+                          setSelectedSlot(slot);
+                          setSlotUid(slot); // ✅ context
+                          setBehaviouristDayUid(slot?.serviceProviderDay?.uid); // ✅ context
+                          setServiceProviderUid(slot?.serviceProviderUid); // ✅ context
+                        }}
                         className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium flex items-center justify-center gap-1.5 transition ${
                           selectedSlot?.slotId === slot.slotId
                             ? "bg-[#52B2AD] border-[#52B2AD] text-white"
@@ -493,7 +436,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
               <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Select Pet *
               </label>
-              {/* ✅ CHANGED: onChange → handlePetSelectChange, + "➕ Add New Pet" option */}
               <select
                 value={selectedPet?.uid || ""}
                 onChange={handlePetSelectChange}
@@ -506,99 +448,11 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                     {p.petName} • {p.petSpecies} ({p.petBreed})
                   </option>
                 ))}
-                {/* ✅ NEW: Hamesha last mein */}
                 <option value="__add_new__">➕ Add New Pet</option>
               </select>
             </div>
 
-            {/* KYC BANNER — unchanged */}
-            {kycStatus === "loading" && (
-              <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                <svg
-                  className="animate-spin h-4 w-4 text-[#52B2AD]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                <p className="text-sm text-gray-500">Checking KYC status…</p>
-              </div>
-            )}
-
-            {kycStatus === "not_found" && (
-              <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-400 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800 leading-tight">
-                      KYC Verification Required
-                    </p>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Complete your KYC to book a session
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    window.location.href = "/behaviouristTo-client-kyc";
-                  }}
-                  className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Fill KYC
-                </button>
-              </div>
-            )}
-
-            {kycStatus === "found" && (
-              <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-300 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800 leading-tight">
-                      KYC Verified
-                    </p>
-                    <p className="text-xs text-green-600 mt-0.5">
-                      Want to update your KYC information?
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose && onClose();
-                    navigate("/behaviouristTo-client-kyc", {
-                      state: { kycData: kycRecord },
-                    });
-                  }}
-                  className="shrink-0 bg-green-500 hover:bg-green-600 text-white text-xs font-medium px-3.5 py-1.5 rounded-lg transition"
-                >
-                  Update KYC
-                </button>
-              </div>
-            )}
-
-            {bookingError && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">
-                {bookingError}
-              </div>
-            )}
-
-            {/* ACTION BUTTONS — unchanged */}
+            {/* ACTION BUTTONS */}
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -610,9 +464,9 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
 
               <button
                 type="submit"
-                disabled={loading || !selectedSlot || !isKycVerified}
+                disabled={loading || !selectedSlot || !selectedPet}
                 className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                  loading || !selectedSlot || !isKycVerified
+                  loading || !selectedSlot || !selectedPet
                     ? "opacity-60 cursor-not-allowed bg-gray-400"
                     : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
                 }`}
@@ -639,12 +493,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Booking…
+                    Submitting…
                   </>
                 ) : (
                   <>
-                    <Plus size={16} />
-                    Pay Now and Book
+                    <ArrowRight size={16} />
+                    Next
                   </>
                 )}
               </button>
@@ -653,7 +507,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         </div>
       </div>
 
-      {/* ✅ NEW: Add Pet Modal — BookingModal ke upar overlay */}
+      {/* Add Pet Modal */}
       {showAddPetModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
@@ -670,11 +524,10 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                 <X size={16} />
               </button>
             </div>
-
             <AddPetForm
-              onClose={() => setShowAddPetModal(false)} // Cancel → sirf modal band
-              onSubmit={handlePetAdded} // Success → modal band + re-fetch
-              editPetData={null} // Hamesha add mode
+              onClose={() => setShowAddPetModal(false)}
+              onSubmit={handlePetAdded}
+              editPetData={null}
             />
           </div>
         </div>

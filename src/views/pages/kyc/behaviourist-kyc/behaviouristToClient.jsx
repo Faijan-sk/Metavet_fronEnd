@@ -1,19 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
 import { useNavigate } from "react-router-dom";
 
-const PetBehaviorForm = () => {
-  // ================= LOCATION STATE (Update Mode) =================
+// ============= context import  ==============
+import { useBehaviouristAppointment } from "./../../../../context/BehaviouristAppointmentContext";
+
+const PetBehaviorForm = ({
+  onKycSuccess = null,
+  existingKycUid = null,
+  existingKycData = null,
+  lockedPetUid = null,
+}) => {
+  const prevUidRef = useRef();
+  const { bookingData, setKycId } = useBehaviouristAppointment();
+
+  // kycId from context (set after fetch)
+  const kycId = bookingData?.kycId || null;
+
+  // ================= LOCATION STATE (Direct Update Mode) =================
   const location = useLocation();
-  const kycData = location.state?.kycData; // { kycStatus, petUid, fullRecord, kycUid }
-  const isUpdateMode = !!kycData;
+  const kycData = location.state?.kycData;
+
+  // isUpdateMode: direct route se kycData aaya ho, ya existingKycUid prop aaya ho
+  const isUpdateMode = !!kycData || !!existingKycUid;
 
   const [formData, setFormData] = useState({
-    // NOT SENT TO BACKEND, only for UI
     selectedPetUid: "",
 
-    // Step 1: Behavioral Concern Overview
+    // Step 1
     behavioralChallenges: [],
     aggressionBiteDescription: "",
     otherBehaviorDescription: "",
@@ -21,14 +36,14 @@ const PetBehaviorForm = () => {
     behaviorFrequency: "",
     specificSituationsDescription: "",
 
-    // Step 2: Triggers & Context
+    // Step 2
     knownTriggers: "",
     behaviorProgress: "",
     behaviorProgressContext: "",
     aggressiveBehaviors: [],
     seriousIncidents: "",
 
-    // Step 3: Training & Tools History
+    // Step 3
     workedWithTrainer: null,
     trainerApproaches: "",
     currentTrainingTools: [],
@@ -36,7 +51,7 @@ const PetBehaviorForm = () => {
     petMotivation: "",
     favoriteRewards: "",
 
-    // Step 4: Routine & Environment
+    // Step 4
     walksPerDay: "",
     offLeashTime: "",
     timeAlone: "",
@@ -49,7 +64,7 @@ const PetBehaviorForm = () => {
     homeEnvironment: "",
     homeEnvironmentOther: "",
 
-    // Step 5: Goals & Expectations
+    // Step 5
     successOutcome: "",
     openToAdjustments: "",
     preferredSessionType: "",
@@ -67,8 +82,7 @@ const PetBehaviorForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: "", message: "" });
 
-  // ---------- Helpers ----------
-
+  // ─── Helpers ────────────────────────────────────────────────────────────
   const handleCheckboxArray = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -87,14 +101,151 @@ const PetBehaviorForm = () => {
     }
   };
 
-  // ---------- SUBMIT ----------
+  // ─── Helper: map fullRecord fields to formData ───────────────────────────
+  const mapRecordToForm = (r, petUidOverride) => ({
+    selectedPetUid: petUidOverride || r.petUid || "",
 
+    behavioralChallenges: r.behavioralChallenges
+      ? r.behavioralChallenges.split(",").map((s) => s.trim())
+      : [],
+    aggressionBiteDescription: r.aggressionBiteDescription || "",
+    otherBehaviorDescription: r.otherBehaviorDescription || "",
+    behaviorStartTime: r.behaviorStartTime || "",
+    behaviorFrequency: r.behaviorFrequency || "",
+    specificSituationsDescription: r.specificSituationsDescription || "",
+
+    knownTriggers: r.knownTriggers || "",
+    behaviorProgress: r.behaviorProgress || "",
+    behaviorProgressContext: r.behaviorProgressContext || "",
+    aggressiveBehaviors: r.aggressiveBehaviors
+      ? r.aggressiveBehaviors.split(",").map((s) => s.trim())
+      : [],
+    seriousIncidents: r.seriousIncidents || "",
+
+    workedWithTrainer: r.workedWithTrainer ?? null,
+    trainerApproaches: r.trainerApproaches || "",
+    currentTrainingTools: r.currentTrainingTools
+      ? r.currentTrainingTools.split(",").map((s) => s.trim())
+      : [],
+    otherTrainingTool: r.otherTrainingTool || "",
+    petMotivation: r.petMotivation || "",
+    favoriteRewards: r.favoriteRewards || "",
+
+    walksPerDay: r.walksPerDay || "",
+    offLeashTime: r.offLeashTime || "",
+    timeAlone: r.timeAlone || "",
+    exerciseStimulation: r.exerciseStimulation || "",
+    otherPets: r.otherPets ?? null,
+    otherPetsDetails: r.otherPetsDetails || "",
+    childrenInHome: r.childrenInHome ?? null,
+    childrenAges: r.childrenAges || "",
+    petResponseWithChildren: r.petResponseWithChildren || "",
+    homeEnvironment: r.homeEnvironment || "",
+    homeEnvironmentOther: r.homeEnvironmentOther || "",
+
+    successOutcome: r.successOutcome || "",
+    openToAdjustments: r.openToAdjustments || "",
+    preferredSessionType: r.preferredSessionType || "",
+    additionalNotes: r.additionalNotes || "",
+
+    consentAccuracy: r.consentAccuracy || false,
+  });
+
+  // ─── FETCH PETS ON MOUNT ─────────────────────────────────────────────────
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchPetByOwner() {
+      setPetsLoading(true);
+      setPetsError(null);
+      try {
+        const response = await useJwt.getAllPetsByOwner();
+        let petList = [];
+
+        if (Array.isArray(response)) {
+          petList = response;
+        } else if (response && Array.isArray(response.data)) {
+          petList = response.data;
+        } else if (
+          response &&
+          response.data &&
+          Array.isArray(response.data.data)
+        ) {
+          petList = response.data.data;
+        } else if (response && Array.isArray(response.pets)) {
+          petList = response.pets;
+        } else if (
+          response &&
+          response.data &&
+          typeof response.data === "object"
+        ) {
+          const possible = Object.values(response.data)
+            .filter((v) => Array.isArray(v))
+            .flat();
+          if (possible.length) petList = possible;
+        }
+
+        if (!Array.isArray(petList)) petList = [];
+
+        if (mounted) {
+          setPets(petList);
+          if (petList.length === 1 && !isUpdateMode && !lockedPetUid) {
+            const first = petList[0];
+            const uidVal = first.uid || first.id || "";
+            setFormData((prev) => ({ ...prev, selectedPetUid: uidVal }));
+          }
+          if (petList.length === 0) {
+            console.warn(
+              "getAllPetsByOwner returned no pet array. Raw response:",
+              response,
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching pets:", err);
+        if (mounted) setPetsError("Unable to fetch pets. Please try again.");
+      } finally {
+        if (mounted) setPetsLoading(false);
+      }
+    }
+
+    fetchPetByOwner();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ─── LOCKED PET PRE-SELECT (BookingPage flow) ────────────────────────────
+  useEffect(() => {
+    if (!lockedPetUid) return;
+    setFormData((prev) => ({ ...prev, selectedPetUid: lockedPetUid }));
+  }, [lockedPetUid]);
+
+  // ─── PRE-FILL: existingKycData prop (BookingPage flow) ──────────────────
+  // This is passed from BookingPage after fetch — highest priority for booking flow
+  useEffect(() => {
+    if (!existingKycData) return;
+    setFormData((prev) => ({
+      ...prev,
+      ...mapRecordToForm(existingKycData, lockedPetUid || prev.selectedPetUid),
+    }));
+  }, [existingKycData]);
+
+  // ─── PRE-FILL: location.state (direct update route) ─────────────────────
+  useEffect(() => {
+    if (!kycData?.fullRecord) return;
+    setFormData((prev) => ({
+      ...prev,
+      ...mapRecordToForm(kycData.fullRecord, kycData.petUid),
+    }));
+  }, []); // sirf mount pe
+
+  // ─── SUBMIT ──────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitStatus({ type: "", message: "" });
 
-    // ---------- FRONTEND VALIDATIONS ----------
-
+    // ── Validations ──
     if (!formData.selectedPetUid) {
       setSubmitStatus({
         type: "error",
@@ -102,7 +253,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       !Array.isArray(formData.behavioralChallenges) ||
       formData.behavioralChallenges.length === 0
@@ -113,7 +263,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (!formData.behaviorStartTime) {
       setSubmitStatus({
         type: "error",
@@ -121,7 +270,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (!formData.behaviorFrequency) {
       setSubmitStatus({
         type: "error",
@@ -129,7 +277,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.behavioralChallenges.includes("Aggression") &&
       !formData.aggressionBiteDescription.trim()
@@ -140,7 +287,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.behavioralChallenges.includes("Other") &&
       !formData.otherBehaviorDescription.trim()
@@ -151,7 +297,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.behaviorFrequency === "Only in specific situations" &&
       !formData.specificSituationsDescription.trim()
@@ -163,7 +308,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.workedWithTrainer === null) {
       setSubmitStatus({
         type: "error",
@@ -172,7 +316,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.workedWithTrainer === true &&
       !formData.trainerApproaches.trim()
@@ -184,7 +327,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.currentTrainingTools.includes("Other") &&
       !formData.otherTrainingTool.trim()
@@ -195,7 +337,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.petMotivation === "Yes" && !formData.favoriteRewards.trim()) {
       setSubmitStatus({
         type: "error",
@@ -203,7 +344,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.otherPets === null) {
       setSubmitStatus({
         type: "error",
@@ -211,7 +351,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.otherPets === true && !formData.otherPetsDetails.trim()) {
       setSubmitStatus({
         type: "error",
@@ -219,7 +358,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.childrenInHome === null) {
       setSubmitStatus({
         type: "error",
@@ -227,7 +365,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (formData.childrenInHome === true) {
       if (!formData.childrenAges.trim()) {
         setSubmitStatus({
@@ -244,7 +381,6 @@ const PetBehaviorForm = () => {
         return;
       }
     }
-
     if (!formData.homeEnvironment) {
       setSubmitStatus({
         type: "error",
@@ -252,7 +388,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (
       formData.homeEnvironment === "Other" &&
       !formData.homeEnvironmentOther.trim()
@@ -263,7 +398,6 @@ const PetBehaviorForm = () => {
       });
       return;
     }
-
     if (!formData.consentAccuracy) {
       setSubmitStatus({
         type: "error",
@@ -276,11 +410,10 @@ const PetBehaviorForm = () => {
     setIsSubmitting(true);
 
     try {
-      // ---------- BUILD PAYLOAD ----------
+      // ── Build Payload ──
       const payload = {
         petUid: formData.selectedPetUid,
 
-        // Step 1
         behavioralChallenges: Array.isArray(formData.behavioralChallenges)
           ? formData.behavioralChallenges
           : formData.behavioralChallenges
@@ -293,7 +426,6 @@ const PetBehaviorForm = () => {
         specificSituationsDescription:
           formData.specificSituationsDescription || null,
 
-        // Step 2
         knownTriggers: formData.knownTriggers || null,
         behaviorProgress: formData.behaviorProgress || null,
         behaviorProgressContext: formData.behaviorProgressContext || null,
@@ -304,7 +436,6 @@ const PetBehaviorForm = () => {
             : [],
         seriousIncidents: formData.seriousIncidents || null,
 
-        // Step 3
         workedWithTrainer: formData.workedWithTrainer,
         trainerApproaches: formData.trainerApproaches || null,
         currentTrainingTools: Array.isArray(formData.currentTrainingTools)
@@ -316,7 +447,6 @@ const PetBehaviorForm = () => {
         petMotivation: formData.petMotivation || null,
         favoriteRewards: formData.favoriteRewards || null,
 
-        // Step 4
         walksPerDay: formData.walksPerDay || null,
         offLeashTime: formData.offLeashTime || null,
         timeAlone: formData.timeAlone || null,
@@ -329,23 +459,24 @@ const PetBehaviorForm = () => {
         homeEnvironment: formData.homeEnvironment || "",
         homeEnvironmentOther: formData.homeEnvironmentOther || null,
 
-        // Step 5
         successOutcome: formData.successOutcome || null,
         openToAdjustments: formData.openToAdjustments || null,
         preferredSessionType: formData.preferredSessionType || null,
         additionalNotes: formData.additionalNotes || null,
 
-        // Consent
         consentAccuracy: formData.consentAccuracy,
       };
 
-      // ✅ UPDATE MODE: updateBehaviouristToClientKyc, CREATE MODE: behaviouristToClientKyc
-      const apiResponse = isUpdateMode
-        ? await useJwt.updateBehavioToClientKyc(kycData.kycUid, payload)
+      // ── Determine update UID ──
+      // Priority: existingKycUid prop (from BookingPage) > location.state kycUid > context kycId
+      const updateUid = existingKycUid || kycData?.kycUid || kycId || null;
+
+      const apiResponse = updateUid
+        ? await useJwt.updateBehavioToClientKyc(updateUid, payload)
         : await useJwt.behaviouristToClientKyc(payload);
 
       let success = false;
-      let backendMessage = isUpdateMode
+      let backendMessage = updateUid
         ? "Behaviorist KYC updated successfully."
         : "Behaviorist KYC created successfully.";
       let responseData = null;
@@ -353,21 +484,27 @@ const PetBehaviorForm = () => {
       if (apiResponse && apiResponse.data) {
         responseData = apiResponse.data;
         success = apiResponse.data.success !== false;
-        if (apiResponse.data.message) {
-          backendMessage = apiResponse.data.message;
-        }
+        if (apiResponse.data.message) backendMessage = apiResponse.data.message;
       } else {
         responseData = apiResponse;
         success = true;
       }
 
       if (success) {
-        setSubmitStatus({
-          type: "success",
-          message: backendMessage,
-        });
+        setSubmitStatus({ type: "success", message: backendMessage });
 
-        // Reset form fields (pet selection stays)
+        // ── Saved KYC uid extract karo ──
+        const savedKycUid =
+          apiResponse?.data?.data?.kycUid ||
+          apiResponse?.data?.data?.uid ||
+          updateUid;
+
+        // Context mein save karo
+        if (savedKycUid) {
+          setKycId(savedKycUid);
+        }
+
+        // Form reset (pet selection stays)
         setFormData((prev) => ({
           ...prev,
           behavioralChallenges: [],
@@ -405,9 +542,13 @@ const PetBehaviorForm = () => {
           consentAccuracy: false,
         }));
 
-        setTimeout(() => {
-          navigate("/service-provider/petBehaviourist");
-        }, 1000);
+        if (onKycSuccess) {
+          // BookingPage flow → callback se summary pe jao
+          setTimeout(() => onKycSuccess(savedKycUid), 800);
+        } else {
+          // Direct route flow → existing behaviour
+          setTimeout(() => navigate("/service-provider/petBehaviourist"), 1000);
+        }
       } else {
         const msg =
           (responseData && responseData.message) ||
@@ -417,163 +558,19 @@ const PetBehaviorForm = () => {
     } catch (error) {
       console.error("Error submitting form:", error);
       const msg =
-        (error &&
-          error.response &&
-          error.response.data &&
-          error.response.data.message) ||
+        error?.response?.data?.message ||
         error.message ||
         "Failed to submit form. Please try again.";
-      setSubmitStatus({
-        type: "error",
-        message: msg,
-      });
+      setSubmitStatus({ type: "error", message: msg });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ---------- FETCH PETS ON MOUNT ----------
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchPetByOwner() {
-      setPetsLoading(true);
-      setPetsError(null);
-      try {
-        const response = await useJwt.getAllPetsByOwner();
-
-        let petList = [];
-
-        if (Array.isArray(response)) {
-          petList = response;
-        } else if (response && Array.isArray(response.data)) {
-          petList = response.data;
-        } else if (
-          response &&
-          response.data &&
-          Array.isArray(response.data.data)
-        ) {
-          petList = response.data.data;
-        } else if (response && Array.isArray(response.pets)) {
-          petList = response.pets;
-        } else if (
-          response &&
-          response.data &&
-          typeof response.data === "object"
-        ) {
-          const possible = Object.values(response.data)
-            .filter((v) => Array.isArray(v))
-            .flat();
-          if (possible.length) petList = possible;
-        }
-
-        if (!Array.isArray(petList)) {
-          petList = [];
-        }
-
-        if (mounted) {
-          setPets(petList);
-          if (petList.length === 1 && !isUpdateMode) {
-            const first = petList[0];
-            const uidVal = first.uid || first.id || "";
-            setFormData((prev) => ({
-              ...prev,
-              selectedPetUid: uidVal,
-            }));
-          }
-          if (petList.length === 0) {
-            console.warn(
-              "getAllPetsByOwner returned no pet array. Raw response:",
-              response,
-            );
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching pets:", err);
-        if (mounted) {
-          setPetsError("Unable to fetch pets. Please try again.");
-        }
-      } finally {
-        if (mounted) setPetsLoading(false);
-      }
-    }
-
-    fetchPetByOwner();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // ================= PRE-FILL FORM IN UPDATE MODE =================
-  useEffect(() => {
-    if (!kycData?.fullRecord) return;
-    const r = kycData.fullRecord;
-
-    setFormData((prev) => ({
-      ...prev,
-      selectedPetUid: kycData.petUid || "",
-
-      // Step 1
-      behavioralChallenges: r.behavioralChallenges
-        ? r.behavioralChallenges.split(",").map((s) => s.trim())
-        : [],
-      aggressionBiteDescription: r.aggressionBiteDescription || "",
-      otherBehaviorDescription: r.otherBehaviorDescription || "",
-      behaviorStartTime: r.behaviorStartTime || "",
-      behaviorFrequency: r.behaviorFrequency || "",
-      specificSituationsDescription: r.specificSituationsDescription || "",
-
-      // Step 2
-      knownTriggers: r.knownTriggers || "",
-      behaviorProgress: r.behaviorProgress || "",
-      behaviorProgressContext: r.behaviorProgressContext || "",
-      aggressiveBehaviors: r.aggressiveBehaviors
-        ? r.aggressiveBehaviors.split(",").map((s) => s.trim())
-        : [],
-      seriousIncidents: r.seriousIncidents || "",
-
-      // Step 3
-      workedWithTrainer: r.workedWithTrainer,
-      trainerApproaches: r.trainerApproaches || "",
-      currentTrainingTools: r.currentTrainingTools
-        ? r.currentTrainingTools.split(",").map((s) => s.trim())
-        : [],
-      otherTrainingTool: r.otherTrainingTool || "",
-      petMotivation: r.petMotivation || "",
-      favoriteRewards: r.favoriteRewards || "",
-
-      // Step 4
-      walksPerDay: r.walksPerDay || "",
-      offLeashTime: r.offLeashTime || "",
-      timeAlone: r.timeAlone || "",
-      exerciseStimulation: r.exerciseStimulation || "",
-      otherPets: r.otherPets,
-      otherPetsDetails: r.otherPetsDetails || "",
-      childrenInHome: r.childrenInHome,
-      childrenAges: r.childrenAges || "",
-      petResponseWithChildren: r.petResponseWithChildren || "",
-      homeEnvironment: r.homeEnvironment || "",
-      homeEnvironmentOther: r.homeEnvironmentOther || "",
-
-      // Step 5
-      successOutcome: r.successOutcome || "",
-      openToAdjustments: r.openToAdjustments || "",
-      preferredSessionType: r.preferredSessionType || "",
-      additionalNotes: r.additionalNotes || "",
-
-      // Consent
-      consentAccuracy: r.consentAccuracy || false,
-    }));
-  }, []); // Sirf mount pe ek baar — kycData location state se aata hai, change nahi hota
-
-  // ---------- RENDER ----------
-
+  // ─── RENDER ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
-        {/* ✅ Title changes based on mode */}
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center text-gray-800">
           {isUpdateMode
             ? "✏️ Update Pet Behaviourist KYC"
@@ -600,7 +597,7 @@ const PetBehaviorForm = () => {
         {/* PET SELECT DROPDOWN */}
         <div className="mb-6">
           <label className="block font-medium text-gray-700 mb-2">
-            Select pet *
+            Your selected pet *
           </label>
           {petsLoading ? (
             <div className="text-gray-600">Loading pets...</div>
@@ -611,13 +608,17 @@ const PetBehaviorForm = () => {
           ) : (
             <select
               value={formData.selectedPetUid}
-              onChange={(e) =>
+              onChange={(e) => {
+                if (lockedPetUid) return; // locked — change nahi hone do
                 setFormData((prev) => ({
                   ...prev,
                   selectedPetUid: e.target.value,
-                }))
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                }));
+              }}
+              disabled={!!lockedPetUid}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                         focus:ring-2 focus:ring-primary focus:border-primary
+                         disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
             >
               <option value="">-- Select a pet --</option>
               {Array.isArray(pets) &&
@@ -641,14 +642,12 @@ const PetBehaviorForm = () => {
 
         {/* =================== FORM =================== */}
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Step 1: Behavioral Concern Overview */}
+          {/* Step 1 */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 1: Behavioral Concern Overview
             </h2>
-
             <div className="space-y-4">
-              {/* 1. Behavioral challenges */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. What behavioral challenge(s) are you seeking help with? *
@@ -679,7 +678,6 @@ const PetBehaviorForm = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.behavioralChallenges.includes("Aggression") && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
@@ -700,7 +698,6 @@ const PetBehaviorForm = () => {
                       />
                     </div>
                   )}
-
                   {formData.behavioralChallenges.includes("Other") && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
@@ -723,7 +720,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* 2. behaviorStartTime */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. When did the behavior first begin? *
@@ -751,7 +747,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* 3. behaviorFrequency */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. How frequently does the issue occur? *
@@ -777,7 +772,6 @@ const PetBehaviorForm = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.behaviorFrequency ===
                     "Only in specific situations" && (
                     <div className="ml-6 mt-2">
@@ -800,14 +794,12 @@ const PetBehaviorForm = () => {
             </div>
           </section>
 
-          {/* Step 2: Triggers & Context */}
+          {/* Step 2 */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 2: Triggers & Context
             </h2>
-
             <div className="space-y-4">
-              {/* knownTriggers */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. Are there known triggers for the behavior?
@@ -826,7 +818,6 @@ const PetBehaviorForm = () => {
                 />
               </div>
 
-              {/* behaviorProgress */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Has the behavior worsened or improved over time?
@@ -864,7 +855,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* aggressiveBehaviors */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Has your pet shown any aggressive behavior?
@@ -895,7 +885,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* seriousIncidents */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   4. Please describe any serious incidents or close calls, if
@@ -917,14 +906,12 @@ const PetBehaviorForm = () => {
             </div>
           </section>
 
-          {/* Step 3: Training & Tools History */}
+          {/* Step 3 */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 3: Training & Tools History
             </h2>
-
             <div className="space-y-4">
-              {/* workedWithTrainer */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. Have you worked with a trainer or behaviourist before? *
@@ -950,7 +937,6 @@ const PetBehaviorForm = () => {
                     />
                     <span className="text-gray-700">No</span>
                   </label>
-
                   {formData.workedWithTrainer === true && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
@@ -973,7 +959,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* currentTrainingTools */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Are you currently using any training tools or methods?
@@ -1003,7 +988,6 @@ const PetBehaviorForm = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.currentTrainingTools.includes("Other") && (
                     <div className="ml-6 mt-2">
                       <input
@@ -1023,7 +1007,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* petMotivation */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Is your pet food or toy motivated?
@@ -1044,7 +1027,6 @@ const PetBehaviorForm = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.petMotivation === "Yes" && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
@@ -1069,14 +1051,12 @@ const PetBehaviorForm = () => {
             </div>
           </section>
 
-          {/* Step 4: Routine & Environment */}
+          {/* Step 4 */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 4: Routine & Environment
             </h2>
-
             <div className="space-y-4">
-              {/* Daily routine */}
               <div>
                 <label className="block font-medium text-gray-700 mb-3">
                   1. Describe your pet&apos;s daily routine:
@@ -1151,7 +1131,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* otherPets */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Other pets in the household? *
@@ -1177,7 +1156,6 @@ const PetBehaviorForm = () => {
                     />
                     <span className="text-gray-700">No</span>
                   </label>
-
                   {formData.otherPets === true && (
                     <div className="ml-6 mt-2">
                       <label className="block text-sm text-gray-600 mb-1">
@@ -1200,7 +1178,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* childrenInHome */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Are there children in the home? *
@@ -1226,7 +1203,6 @@ const PetBehaviorForm = () => {
                     />
                     <span className="text-gray-700">No</span>
                   </label>
-
                   {formData.childrenInHome === true && (
                     <div className="ml-6 mt-2 space-y-2">
                       <div>
@@ -1268,7 +1244,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* homeEnvironment */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   4. What kind of home environment do you live in? *
@@ -1294,7 +1269,6 @@ const PetBehaviorForm = () => {
                       <span className="text-gray-700">{opt}</span>
                     </label>
                   ))}
-
                   {formData.homeEnvironment === "Other" && (
                     <div className="ml-6 mt-2">
                       <input
@@ -1316,14 +1290,12 @@ const PetBehaviorForm = () => {
             </div>
           </section>
 
-          {/* Step 5: Goals & Expectations */}
+          {/* Step 5 */}
           <section>
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               🔹 Step 5: Goals & Expectations
             </h2>
-
             <div className="space-y-4">
-              {/* successOutcome */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   1. What would a successful outcome look like to you?
@@ -1342,7 +1314,6 @@ const PetBehaviorForm = () => {
                 />
               </div>
 
-              {/* openToAdjustments */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   2. Are you open to adjusting your routine or environment?
@@ -1366,7 +1337,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* preferredSessionType */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   3. Preferred session type:
@@ -1392,7 +1362,6 @@ const PetBehaviorForm = () => {
                 </div>
               </div>
 
-              {/* additionalNotes */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   4. Any other notes, concerns, or expectations you&apos;d like
@@ -1419,7 +1388,6 @@ const PetBehaviorForm = () => {
             <h2 className="text-xl font-semibold mb-4 text-primary border-b-2 border-primary pb-2">
               ✅ Consent
             </h2>
-
             <div className="space-y-4">
               <label className="flex items-start space-x-2">
                 <input
@@ -1454,7 +1422,7 @@ const PetBehaviorForm = () => {
             </div>
           )}
 
-          {/* Submit button */}
+          {/* Submit Button */}
           <div className="pt-6">
             <button
               type="submit"
@@ -1469,7 +1437,7 @@ const PetBehaviorForm = () => {
                 ? "Submitting..."
                 : isUpdateMode
                   ? "Update KYC"
-                  : "Submit Behavior Consultation Form"}
+                  : "Submit Kyc"}
             </button>
           </div>
         </form>

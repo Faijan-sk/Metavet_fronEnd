@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useJwt from "../../../../enpoints/jwt/useJwt";
+
+//============import context
+import { useGroomerAppointment } from "./../../../../context/GroomerAppointmentContext";
 
 const HEALTH_CONDITION_MAP = {
   "Skin issues": "SKIN_ISSUES",
@@ -97,7 +100,6 @@ const buildFormFromRecord = (record) => ({
   otherService: record.otherService || "",
   groomingLocation: record.groomingLocation || "",
   appointmentDate: record.appointmentDate || "",
-  // backend "10:00:00" → "10:00"
   appointmentTime: record.appointmentTime
     ? record.appointmentTime.slice(0, 5)
     : "",
@@ -105,12 +107,12 @@ const buildFormFromRecord = (record) => ({
   addOns: reverseMapArray(record.addOns, ADDON_REVERSE_MAP),
 });
 
-const Index = () => {
+// ─── Props:
+//   petUid       → context se aaya hua selected pet ka uid (required)
+//   onKycSuccess → KYC create/update hone ke baad call hoga (BookingPage me summary dikhane ke liye)
+// ────────────────────────────────────────────────────────────────────────────
+const GroomerToClientKyc = ({ petUid, onKycSuccess }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // petUid jo GroomerBookingModal ne navigate state mein bheja
-  const petUid = location.state?.petUid;
 
   // "loading" | "create" | "update" | "error"
   const [pageStatus, setPageStatus] = useState("loading");
@@ -122,8 +124,14 @@ const Index = () => {
   const [apiError, setApiError] = useState("");
   const [apiSuccess, setApiSuccess] = useState("");
 
-  // ─── Auto-fetch KYC on mount using petUid from route state ───────────────
+  const { setKycId, bookingData } = useGroomerAppointment();
   useEffect(() => {
+    console.log("Groomer context  ---- >", bookingData);
+  }, [bookingData]);
+
+  // ─── Auto-fetch KYC on mount using petUid prop ────────────────────────────
+  useEffect(() => {
+    // petUid prop nahi aaya → error
     if (!petUid) {
       setPageStatus("error");
       return;
@@ -136,10 +144,14 @@ const Index = () => {
         const data = response?.data;
 
         if (data?.success && data?.data?.fullRecord) {
+          // KYC mili → pre-fill form, update mode
           setExistingKycUid(data.data.kycUid);
+          setKycId(data.data.kycUid);
+
           setFormData(buildFormFromRecord(data.data.fullRecord));
           setPageStatus("update");
         } else {
+          // KYC nahi mili → create mode
           setPageStatus("create");
         }
       } catch (error) {
@@ -159,7 +171,7 @@ const Index = () => {
     fetchKyc();
   }, [petUid]);
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
+  // ─── Handlers ──────────────────────────────────────────────────────────────
   const handleCheckboxChange = (field, value) => {
     setFormData((prev) => {
       const exists = prev[field].includes(value);
@@ -209,7 +221,7 @@ const Index = () => {
     addOns: mapEnumArray(formData.addOns, ADDON_MAP),
   });
 
-  // ─── Validation ───────────────────────────────────────────────────────────
+  // ─── Validation ────────────────────────────────────────────────────────────
   const validateForm = () => {
     const newErrors = {};
     if (!formData.groomingFrequency)
@@ -255,7 +267,7 @@ const Index = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
+  // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError("");
@@ -264,16 +276,34 @@ const Index = () => {
     setSubmitting(true);
     try {
       const payload = buildPayload();
+
       if (pageStatus === "update" && existingKycUid) {
-        await useJwt.updateGroomerToClientKyc(existingKycUid, payload);
+        // KYC mili thi → UPDATE
+        const response = await useJwt.updateGroomerToClientKyc(
+          existingKycUid,
+          payload,
+        );
         setApiSuccess("KYC updated successfully!");
+
+        setKycId(response?.data?.data?.kycUid);
       } else {
-        await useJwt.groomerToClientKyc(payload);
+        // KYC nahi mili thi → CREATE
+        const response = await useJwt.groomerToClientKyc(payload);
         setApiSuccess("KYC submitted successfully!");
+
+        setKycId(response?.data?.data?.kycUid);
       }
+
       setErrors({});
-      setTimeout(() => {}, 1000);
-      setTimeout(() => navigate("/service-provider/petGroomer"), 1200);
+
+      // Success ke baad → BookingPage ko batao ki KYC ho gayi (summary dikhao)
+      setTimeout(() => {
+        if (typeof onKycSuccess === "function") {
+          onKycSuccess(); // parent BookingPage ka callback → view = "summary"
+        } else {
+          navigate("/service-provider/petGroomer"); // fallback agar standalone use ho
+        }
+      }, 800);
     } catch (error) {
       console.error("Submission error:", error);
       const apiRes = error?.response?.data;
@@ -288,7 +318,7 @@ const Index = () => {
     }
   };
 
-  // ─── Loading screen ───────────────────────────────────────────────────────
+  // ─── Loading screen ────────────────────────────────────────────────────────
   if (pageStatus === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -319,7 +349,7 @@ const Index = () => {
     );
   }
 
-  // ─── Error screen (petUid nahi aya) ──────────────────────────────────────
+  // ─── Error screen (petUid prop nahi aaya) ─────────────────────────────────
   if (pageStatus === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -342,7 +372,7 @@ const Index = () => {
     );
   }
 
-  // ─── Main Form ────────────────────────────────────────────────────────────
+  // ─── Main Form ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
@@ -353,16 +383,6 @@ const Index = () => {
           Metavet Pet Grooming Services
         </p>
 
-        {/* KYC Mode Banner */}
-        {/* {pageStatus === "update" && (
-          <div className="mb-5 px-4 py-3 rounded-lg bg-blue-50 border border-blue-300 text-blue-800 text-sm flex items-center gap-2">
-            <span className="text-base">✏️</span>
-            <span>
-              <strong>KYC record found.</strong> Form is pre-filled with your
-              existing data. Make changes and click <strong>Update KYC</strong>.
-            </span>
-          </div>
-        )} */}
         {pageStatus === "create" && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm flex items-center gap-2">
             <span className="text-base">📋</span>
@@ -383,6 +403,15 @@ const Index = () => {
             {apiError}
           </div>
         )}
+
+        {/* ── Selected Pet Display (locked — context se aaya, change nahi kar sakte) ── */}
+        {/* <div className="mb-6 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm flex items-center gap-2">
+          <span className="text-base">🐾</span>
+          <span>
+            <strong>Selected Pet:</strong> This KYC is being filled for the pet
+            you selected during booking. To change the pet, please go back.
+          </span>
+        </div> */}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* ── Step 1: Grooming Preferences ── */}
@@ -925,6 +954,7 @@ const Index = () => {
               </div>
             </div>
           </section>
+
           {apiSuccess && (
             <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-300 text-green-800 text-sm">
               {apiSuccess}
@@ -935,6 +965,7 @@ const Index = () => {
               {apiError}
             </div>
           )}
+
           {/* ── Submit ── */}
           <div className="pt-6">
             <button
@@ -983,4 +1014,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default GroomerToClientKyc;
