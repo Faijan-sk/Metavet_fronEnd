@@ -3,14 +3,13 @@ import jwtDefaultConfig from "./jwtDefaultConfig";
 // import jwt from '../../../enpoints/jwt/useJwt'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = "http://192.168.1.7:8080/";
+// axios.defaults.baseURL = "http://192.168.1.16:8080/";
 axios.defaults.baseURL = "http://34.170.68.167:8080/";
 // axios.defaults.baseURL = "http://192.168.29.199:8080/";
 
 export default class JwtService {
   //service file
 
-  // ** jwtConfig <= Will be used by this service
   jwtConfig = { ...jwtDefaultConfig };
 
   // ** For Refreshing Token
@@ -629,5 +628,3 @@ export default class JwtService {
     );
   }
 }
-//hey
-//yes done

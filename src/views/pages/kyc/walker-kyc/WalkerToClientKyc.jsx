@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import useJwt from "./../../../../enpoints/jwt/useJwt";
 import { useWalkerAppointment } from "./../../../../context/WalkerAppointmentContext";
 
-// ─── Initial empty form ───────────────────────────────────────────────────────
 const initialFormData = {
   petUid: "",
   petNames: "",
@@ -51,6 +50,7 @@ const parseArrayField = (val) => {
     .filter(Boolean);
 };
 
+// ─── Backend se aaya enum value directly use karo (already uppercase) ────────
 const mapKycToFormData = (fullRecord) => {
   if (!fullRecord) return null;
   return {
@@ -62,18 +62,12 @@ const mapKycToFormData = (fullRecord) => {
         ? String(fullRecord.age)
         : "",
     petSpecies: fullRecord.petSpecies ?? "",
-    energyLevel: fullRecord.energyLevel
-      ? fullRecord.energyLevel.charAt(0).toUpperCase() +
-        fullRecord.energyLevel.slice(1).toLowerCase()
-      : "",
-    walkingExperience: fullRecord.walkingExperience
-      ? fullRecord.walkingExperience.charAt(0).toUpperCase() +
-        fullRecord.walkingExperience.slice(1).toLowerCase()
-      : "",
-    preferredWalkType: fullRecord.preferredWalkType
-      ? fullRecord.preferredWalkType.charAt(0).toUpperCase() +
-        fullRecord.preferredWalkType.slice(1).toLowerCase()
-      : "",
+    // ✅ Backend enum values as-is: LOW, MEDIUM, HIGH
+    energyLevel: fullRecord.energyLevel ?? "",
+    // ✅ Backend enum values as-is: BEGINNER, INTERMEDIATE, WELL_TRAINED, REACTIVE
+    walkingExperience: fullRecord.walkingExperience ?? "",
+    // ✅ Backend enum values as-is: SOLO, GROUP, EITHER
+    preferredWalkType: fullRecord.preferredWalkType ?? "",
     preferredWalkDuration: fullRecord.preferredWalkDuration ?? "",
     customWalkDuration:
       fullRecord.customWalkDuration !== null &&
@@ -116,11 +110,6 @@ const mapKycToFormData = (fullRecord) => {
   };
 };
 
-/**
- * Props:
- *   petUid        — string: pre-selected pet uid (from context)
- *   onKycSuccess  — function(): called after successful create/update
- */
 const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
@@ -137,10 +126,8 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
   const [successMessage, setSuccessMessage] = useState(null);
 
   const today = new Date().toISOString().split("T")[0];
-
   const { setKycId, bookingData } = useWalkerAppointment();
 
-  // ─── Fetch all pets on mount ─────────────────────────────────────────────
   useEffect(() => {
     async function fetchPetsByOwner() {
       try {
@@ -165,7 +152,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     fetchPetsByOwner();
   }, []);
 
-  // ─── When petUid prop arrives (from context), auto-select & fetch KYC ───
   useEffect(() => {
     if (!petUid || petManuallyChanged) return;
     const uid = typeof petUid === "object" ? petUid.uid : petUid;
@@ -173,14 +159,12 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     fetchKycForPet(uid);
   }, [petUid]);
 
-  // ─── When pets list loads and petUid is set, populate pet fields ─────────
   useEffect(() => {
     if (!petUid || pets.length === 0) return;
     const uid = typeof petUid === "object" ? petUid.uid : petUid;
     populatePetFields(uid);
   }, [pets, petUid]);
 
-  // ─── Fetch KYC by petUid ─────────────────────────────────────────────────
   const fetchKycForPet = async (uid) => {
     if (!uid) return;
     setKycLoading(true);
@@ -196,7 +180,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
           if (mapped) setFormData(mapped);
         }
       } else {
-        // KYC not found — show empty form
         setIsUpdateMode(false);
         setKycUid(null);
         setFormData((prev) => ({ ...initialFormData, petUid: uid }));
@@ -204,7 +187,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     } catch (err) {
       const errorCode = err.response?.data?.errorCode;
       if (err.response?.status === 404 || errorCode === "KYC_NOT_FOUND") {
-        // No KYC yet — fresh form
         setIsUpdateMode(false);
         setKycUid(null);
         setFormData((prev) => ({ ...initialFormData, petUid: uid }));
@@ -218,7 +200,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     }
   };
 
-  // ─── Populate pet name/breed/age/species into form ───────────────────────
   const populatePetFields = (identifier) => {
     const pet = pets.find(
       (p) =>
@@ -239,9 +220,8 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     }));
   };
 
-  // ─── Manual pet select from dropdown ─────────────────────────────────────
   const handlePetSelect = (petIdentifier) => {
-    setPetManuallyChanged(true); // user ne khud change kiya
+    setPetManuallyChanged(true);
     setSelectedPetId(petIdentifier);
     if (!petIdentifier) {
       setFormData({ ...initialFormData });
@@ -253,7 +233,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     fetchKycForPet(petIdentifier);
   };
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
   const setIfValid = (field, value, regex) => {
     if (value === "" || regex.test(value)) {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -276,7 +255,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ─── Build payload ────────────────────────────────────────────────────────
   const buildPayloadForBackend = (raw) => {
     const ageNum = raw.age === "" || raw.age === null ? null : Number(raw.age);
     const customDurNum =
@@ -324,7 +302,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     };
   };
 
-  // ─── Validation ──────────────────────────────────────────────────────────
   const validateForm = () => {
     const errors = [];
     if (!formData.petUid) errors.push("Please select your pet.");
@@ -376,7 +353,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     return errors;
   };
 
-  // ─── Submit (CREATE) ──────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError(null);
@@ -386,26 +362,18 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
       setApiError(errors.join(" "));
       return;
     }
-
     const payload = buildPayloadForBackend(formData);
     setSubmitting(true);
     try {
       const res = await useJwt.walkerToClientKyc(payload);
       const data = res?.data ?? res;
-
       const kycIdFromRes = data?.data?.kycUid || data?.kycUid;
-
-      if (kycIdFromRes) {
-        setKycId(kycIdFromRes);
-      }
-
+      if (kycIdFromRes) setKycId(kycIdFromRes);
       if (data && data.success === false) {
         setApiError(data.details || data.message || "Submission failed.");
         return;
       }
-
       setSuccessMessage("Walker KYC submitted successfully.");
-      // Notify parent → show summary
       setTimeout(() => {
         onKycSuccess && onKycSuccess();
       }, 800);
@@ -423,7 +391,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     console.log("🔥 CONTEXT UPDATED:", bookingData);
   }, [bookingData]);
 
-  // ─── Update ───────────────────────────────────────────────────────────────
   const handleUpdate = async (e) => {
     e.preventDefault();
     setApiError(null);
@@ -437,7 +404,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
       setApiError("KYC UID is missing. Cannot update.");
       return;
     }
-
     const payload = buildPayloadForBackend(formData);
     setSubmitting(true);
     try {
@@ -447,12 +413,8 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
         setApiError(data.details || data.message || "Update failed.");
         return;
       }
-
       const kycIdFromRes = data?.data?.kycUid || data?.kycUid || kycUid;
-
-      if (kycIdFromRes) {
-        setKycId(kycIdFromRes);
-      }
+      if (kycIdFromRes) setKycId(kycIdFromRes);
       setSuccessMessage("Walker KYC updated successfully.");
       setTimeout(() => {
         onKycSuccess && onKycSuccess();
@@ -467,7 +429,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   if (kycLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -505,14 +466,6 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
         <p className="text-center text-gray-600 mb-1">
           Metavet Pet Walking Services
         </p>
-        {/* 
-        {isUpdateMode && (
-          <div className="flex justify-center mb-4">
-            <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full">
-              ✏️ Update Mode — editing existing KYC
-            </span>
-          </div>
-        )} */}
 
         {successMessage && (
           <div className="mb-4 text-green-700 bg-green-50 p-3 rounded">
@@ -550,9 +503,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     value={selectedPetId}
                     onChange={(e) => handlePetSelect(e.target.value)}
                     disabled={!!petUid}
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
-                      petUid ? "bg-gray-100 cursor-not-allowed opacity-70" : ""
-                    }`}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${petUid ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
                   >
                     <option value="">— Select your pet —</option>
                     {pets.map((p) => (
@@ -581,6 +532,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ✅ Energy Level — exact enum values: LOW, MEDIUM, HIGH */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Energy Level:
@@ -593,12 +545,13 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
                   </select>
                 </div>
 
+                {/* ✅ Walking Experience — exact enum values: BEGINNER, INTERMEDIATE, WELL_TRAINED, REACTIVE */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Walking Experience:
@@ -611,13 +564,15 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>Beginner</option>
-                    <option>Intermediate</option>
-                    <option>Well-trained</option>
-                    <option>Reactive</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+
+                    <option value="Well Trained">Well-trained</option>
+                    <option value="Reactive">Reactive</option>
                   </select>
                 </div>
 
+                {/* ✅ Preferred Walk Type — exact enum values: SOLO, GROUP, EITHER */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Preferred Walk Type:
@@ -630,9 +585,9 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>Solo</option>
-                    <option>Group</option>
-                    <option>Either</option>
+                    <option value="Solo">Solo</option>
+                    <option value="Group">Group</option>
+                    <option value="Either">Either</option>
                   </select>
                 </div>
               </div>
@@ -731,6 +686,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                   </div>
                 </div>
 
+                {/* ✅ Preferred Time of Day — string field, no enum, values same as before */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Preferred Time of Day:
@@ -743,10 +699,10 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>Morning</option>
-                    <option>Midday</option>
-                    <option>Evening</option>
-                    <option>Flexible</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Midday">Midday</option>
+                    <option value="Evening">Evening</option>
+                    <option value="Flexible">Flexible</option>
                   </select>
                 </div>
               </div>
@@ -839,6 +795,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ✅ Social Compatibility — string field, values same as before */}
                 <div>
                   <label className="block font-medium text-gray-700 mb-2">
                     Social Compatibility:
@@ -851,9 +808,9 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="">Select</option>
-                    <option>Friendly</option>
-                    <option>Solo only</option>
-                    <option>Unsure</option>
+                    <option value="Friendly">Friendly</option>
+                    <option value="Solo only">Solo only</option>
+                    <option value="Unsure">Unsure</option>
                   </select>
                 </div>
 
@@ -1043,6 +1000,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
               🟦 Access & Logistics
             </h2>
             <div className="space-y-4">
+              {/* ✅ Starting Location — string field, values same */}
               <div>
                 <label className="block font-medium text-gray-700 mb-2">
                   Starting Location:
@@ -1055,10 +1013,10 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 >
                   <option value="">Select</option>
-                  <option>Home</option>
-                  <option>Apartment</option>
-                  <option>Workplace</option>
-                  <option>Other</option>
+                  <option value="Home">Home</option>
+                  <option value="Apartment">Apartment</option>
+                  <option value="Workplace">Workplace</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
@@ -1268,11 +1226,7 @@ const PetWalkerKYC = ({ petUid, onKycSuccess }) => {
             <button
               type="submit"
               disabled={submitting}
-              className={`w-full ${
-                submitting
-                  ? "opacity-60 cursor-not-allowed"
-                  : "bg-primary hover:opacity-90"
-              } text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
+              className={`w-full ${submitting ? "opacity-60 cursor-not-allowed" : "bg-primary hover:opacity-90"} text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary`}
             >
               {submitting
                 ? isUpdateMode

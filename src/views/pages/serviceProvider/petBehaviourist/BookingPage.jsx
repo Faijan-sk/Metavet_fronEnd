@@ -39,6 +39,7 @@ function BookingPage() {
   // ─── Pet ka KYC fetch karo on mount ─────────────────────────────────────
   useEffect(() => {
     const petUid = bookingData?.petUid?.uid;
+
     if (!petUid) return;
 
     const fetchKyc = async () => {
@@ -306,7 +307,7 @@ function BookingPage() {
   return (
     <KycForm
       lockedPetUid={petUid}
-      existingKycData={kycRecord}
+      // existingKycData={kycRecord}
       existingKycUid={kycUid}
       onKycSuccess={handleKycSuccess}
     />

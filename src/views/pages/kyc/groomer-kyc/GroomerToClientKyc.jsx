@@ -383,7 +383,7 @@ const GroomerToClientKyc = ({ petUid, onKycSuccess }) => {
           Metavet Pet Grooming Services
         </p>
 
-        {pageStatus === "create" && (
+        {/* {pageStatus === "create" && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm flex items-center gap-2">
             <span className="text-base">📋</span>
             <span>
@@ -391,7 +391,7 @@ const GroomerToClientKyc = ({ petUid, onKycSuccess }) => {
               below to create one.
             </span>
           </div>
-        )}
+        )} */}
 
         {apiSuccess && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 border border-green-300 text-green-800 text-sm">
