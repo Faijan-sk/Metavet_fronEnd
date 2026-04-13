@@ -1,5 +1,4 @@
 import {
-  Pencil,
   Save,
   Trash2,
   X,
@@ -11,19 +10,106 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  Plus,
+  MoreVertical,
+  AlertTriangle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import CancelAppointmentModal from "./../petServicesAppointment/CancelAppointmentModal";
 
 const dr =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
 
+// ─── Three Dot Menu Component ────────────────────────────────────────────────
+const ThreeDotMenu = ({ onCancelClick }) => {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={menuRef} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          background: open ? "#f0faf9" : "transparent",
+          border: "1px solid",
+          borderColor: open ? "#52B2AD" : "#e5e7eb",
+          borderRadius: "50%",
+          width: "36px",
+          height: "36px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "#52B2AD",
+          transition: "all 0.2s",
+        }}
+        title="Options"
+      >
+        <MoreVertical size={18} />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "42px",
+            right: "0",
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            zIndex: 100,
+            minWidth: "180px",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => {
+              setOpen(false);
+              onCancelClick();
+            }}
+            style={{
+              width: "100%",
+              padding: "10px 16px",
+              border: "none",
+              background: "white",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "14px",
+              color: "#dc2626",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+          >
+            <Trash2 size={15} color="#dc2626" />
+            Cancel Appointment
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main AppointmentListing Component ──────────────────────────────────────
 const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
   const [editAppointment, setEditAppointment] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
 
-  const handleEdit = (appointment) => setEditAppointment({ ...appointment });
   const handleSaveEdit = () => {
     if (onUpdate) onUpdate(editAppointment);
     setEditAppointment(null);
@@ -93,6 +179,18 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
 
   return (
     <div>
+      {/* Cancel Modal */}
+      {cancelTarget && (
+        <CancelAppointmentModal
+          appointment={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirmCancel={(appt, reason) => {
+            if (onDelete) onDelete(appt, reason);
+          }}
+          appointmentType={"DOCTOR"}
+        />
+      )}
+
       {/* Appointments Grid */}
       <div className="space-y-6 mb-8">
         {currentAppointments.map((appointment, index) => {
@@ -102,9 +200,15 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
               key={appointment.id || index}
               className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
             >
-              {/* Colored Side Bar */}
+              {/* Colored Top Bar */}
               <div
-                className={`h-2 ${actualStatus === "completed" ? "bg-[#42948f]" : actualStatus === "cancelled" ? "bg-[#52B2AD]/40" : "bg-[#52B2AD]"}`}
+                className={`h-2 ${
+                  actualStatus === "completed"
+                    ? "bg-[#42948f]"
+                    : actualStatus === "cancelled"
+                      ? "bg-[#52B2AD]/40"
+                      : "bg-[#52B2AD]"
+                }`}
               />
 
               {/* Card Header */}
@@ -126,7 +230,7 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   {editAppointment?.id === appointment.id ? (
                     <>
                       <button
@@ -145,14 +249,14 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                       </button>
                     </>
                   ) : (
-                    <>
-                      {/* <button onClick={() => handleEdit(appointment)} className="p-2.5 rounded-full bg-[#52B2AD]/10 text-[#52B2AD] hover:bg-[#52B2AD]/20 transition-all transform hover:scale-110" title="Edit">
-                        <Pencil size={20} />
-                      </button>
-                      <button onClick={() => onDelete && onDelete(appointment)} className="p-2.5 rounded-full bg-[#52B2AD]/10 text-[#2d7a76] hover:bg-[#52B2AD]/20 transition-all transform hover:scale-110" title="Cancel Appointment">
-                        <Trash2 size={20} />
-                      </button> */}
-                    </>
+                    /* ⋮ Three Dot Menu — only for non-cancelled appointments */
+                    actualStatus !== "cancelled" && (
+                      <ThreeDotMenu
+                        onCancelClick={() =>
+                          setCancelTarget({ ...appointment })
+                        }
+                      />
+                    )
                   )}
                 </div>
               </div>
@@ -160,7 +264,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
               {/* Card Content */}
               <div className="p-6">
                 {editAppointment?.id === appointment.id ? (
-                  // Edit Mode
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -214,14 +317,13 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                     </div>
                   </div>
                 ) : (
-                  // View Mode — same layout as original
                   <div className="flex items-start gap-6">
                     {/* Doctor Image */}
                     <div className="flex-shrink-0">
                       <div className="relative">
                         <img
                           src={dr}
-                          alt={appointment.doctorName}
+                          alt={appointment.doctorFirstName}
                           className="w-20 h-20 rounded-full border-4 border-[#52B2AD] shadow-lg object-cover bg-white"
                         />
                         <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-[#42948f] rounded-full border-2 border-white flex items-center justify-center">
@@ -230,9 +332,8 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                       </div>
                     </div>
 
-                    {/* Details Grid — same 6-col layout */}
+                    {/* Details Grid */}
                     <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                      {/* Doctor */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <User size={14} className="text-[#52B2AD]" />
@@ -252,7 +353,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                         )}
                       </div>
 
-                      {/* Pet */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <PawPrint size={14} className="text-[#52B2AD]" />
@@ -278,7 +378,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                         )}
                       </div>
 
-                      {/* Hospital */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <span className="text-[#52B2AD]">🏥</span>
@@ -289,7 +388,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                         </p>
                       </div>
 
-                      {/* Date */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <Calendar size={14} className="text-[#52B2AD]" />
@@ -300,7 +398,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                         </p>
                       </div>
 
-                      {/* Time Slot */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <Clock size={14} className="text-[#52B2AD]" />
@@ -311,7 +408,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                         </p>
                       </div>
 
-                      {/* Fees */}
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
                           <span className="text-[#52B2AD] font-bold">₹</span>
@@ -325,7 +421,7 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                   </div>
                 )}
 
-                {/* Bottom section — doctor bio + hospital address */}
+                {/* Bottom — doctor bio + hospital address */}
                 {!editAppointment &&
                   (appointment.hospitalAddress || appointment.doctorBio) && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
@@ -363,25 +459,6 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
                           </div>
                         )}
                       </div>
-
-                      {/* Action Buttons */}
-                      {/* <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
-                        <button
-                          onClick={() => handleViewMedicalHistory(appointment)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#52B2AD] border border-[#52B2AD] rounded-lg hover:bg-[#52B2AD] hover:text-white transition-colors"
-                        >
-                          <FileText size={15} />
-                          View Medical History
-                        </button>
-
-                        <button
-                          onClick={() => handleAddPrescription(appointment)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#52B2AD] rounded-lg hover:bg-[#3d9a95] transition-colors"
-                        >
-                          <Plus size={15} />
-                          Add Prescription
-                        </button>
-                      </div> */}
                     </div>
                   )}
               </div>
@@ -422,7 +499,7 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
       {appointments.length > itemsPerPage && (
         <div className="text-center mt-4">
           <p className="text-gray-600 text-sm">
-            Showing {startIndex + 1}-{Math.min(endIndex, appointments.length)}{" "}
+            Showing {startIndex + 1}–{Math.min(endIndex, appointments.length)}{" "}
             of {appointments.length} appointments
           </p>
         </div>

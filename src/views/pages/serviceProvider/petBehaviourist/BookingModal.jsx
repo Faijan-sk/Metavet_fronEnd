@@ -56,10 +56,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     bookingData,
   } = useBehaviouristAppointment();
 
-  useEffect(() => {
-    console.log("JJJJJJJJJJJJJJJJJ", bookingData);
-  }, [bookingData]);
-
   const navigate = useNavigate();
 
   // ================= FETCH PETS =================
@@ -75,9 +71,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
   // ================= FETCH PETS & DAYS on open =================
   useEffect(() => {
     if (!isOpen) return;
-
     fetchPets();
-
     const fetchDays = async () => {
       try {
         const response = await useJwt.getBehaviouristAvailableDay(
@@ -88,9 +82,8 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         console.error("Error fetching days:", error);
       }
     };
-
     fetchDays();
-  }, [isOpen, fetchPets]);
+  }, [isOpen, fetchPets, behaviourist?.uid]);
 
   // ================= FETCH SLOTS on date select =================
   useEffect(() => {
@@ -103,8 +96,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
 
       try {
         const formattedDate = formatLocalDate(selectedDate);
-        setAppointmentData(formattedDate);
-
         const response = await useJwt.getBehaviouristAvailableSlot(
           behaviourist.uid,
           behaviouristDayId,
@@ -147,7 +138,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1),
     );
-
   const goToNextMonth = () =>
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
@@ -168,7 +158,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     onClose && onClose();
   };
 
-  // ================= PET SELECT =================
   const handlePetSelectChange = (e) => {
     const val = e.target.value;
     if (val === "__add_new__") {
@@ -177,7 +166,7 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     } else {
       const pet = pets.find((p) => p.uid === val);
       setSelectedPet(pet || null);
-      setPetuid(pet || null); // ✅ context store
+      setPetuid(pet || null);
     }
   };
 
@@ -186,16 +175,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     await fetchPets();
   };
 
-  // ================= SUBMIT → store context → 1s → redirect =================
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!selectedPet || !selectedDate || !selectedSlot || !behaviouristDayId)
       return;
 
     setLoading(true);
-
-    // ✅ Store all context values before redirect
     setPetuid(selectedPet);
     setServiceProviderUid(selectedSlot?.serviceProviderUid);
     setBehaviouristDayUid(selectedSlot?.serviceProviderDay?.uid);
@@ -210,7 +195,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
     }, 1000);
   };
 
-  // ================= CALENDAR =================
   const renderCalendarCells = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -229,14 +213,12 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
       );
     });
 
-    for (let i = 0; i < firstDayOfMonth; i++) {
+    for (let i = 0; i < firstDayOfMonth; i++)
       cells.push(<div key={`empty-${i}`} />);
-    }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(year, month, day);
       dateObj.setHours(0, 0, 0, 0);
-
       const isPast = dateObj < today;
       const dayName = dateObj
         .toLocaleDateString("en-US", { weekday: "long" })
@@ -256,17 +238,11 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
               setSelectedDate(dateObj);
               setBehaviouristDayId(matchedDay.uid);
               setSelectedSlot(null);
-              setBehaviouristDayUid(matchedDay.uid); // ✅ context store
+              setBehaviouristDayUid(matchedDay.uid);
             }
           }}
           className={`text-sm h-10 rounded-md transition font-medium
-            ${
-              isSelected
-                ? "bg-[#52B2AD] text-white"
-                : isAvailable
-                  ? "bg-[#52B2AD]/15 text-[#2b8f8a] hover:bg-[#52B2AD]/25"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }
+            ${isSelected ? "bg-[#52B2AD] text-white" : isAvailable ? "bg-[#52B2AD]/15 text-[#2b8f8a] hover:bg-[#52B2AD]/25" : "bg-gray-100 text-gray-400 cursor-not-allowed"}
             ${isPast ? "opacity-50" : ""}
           `}
         >
@@ -274,11 +250,9 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
         </button>,
       );
     }
-
     return cells;
   };
 
-  // ================= JSX =================
   return (
     <>
       <div
@@ -305,141 +279,16 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
             </button>
           </div>
 
-          {/* Body */}
-          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
-            {/* DATE SELECTOR */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">
-                Select Date *
-              </label>
-              <button
-                type="button"
-                onClick={() => setCalendarOpen(!calendarOpen)}
-                className={`w-full px-3 py-2.5 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
-                  selectedDate
-                    ? "border-[#52B2AD] bg-[#52B2AD]/5"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                }`}
-              >
-                <span
-                  className={selectedDate ? "text-gray-900" : "text-gray-400"}
-                >
-                  {selectedDate
-                    ? selectedDate.toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : "Choose a date"}
-                </span>
-                <Calendar size={16} className="text-[#52B2AD]" />
-              </button>
-
-              {calendarOpen && (
-                <div className="mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-inner p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <button
-                      type="button"
-                      onClick={goToPreviousMonth}
-                      className="p-1 hover:bg-gray-100 rounded-lg"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="font-semibold text-sm">
-                      {monthNames[currentMonth.getMonth()]}{" "}
-                      {currentMonth.getFullYear()}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={goToNextMonth}
-                      className="p-1 hover:bg-gray-100 rounded-lg"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded bg-[#52B2AD]/20 inline-block" />{" "}
-                      Available
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded bg-[#52B2AD] inline-block" />{" "}
-                      Selected
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded bg-gray-100 inline-block" />{" "}
-                      Unavailable
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1">
-                    {renderCalendarCells()}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* TIME SLOTS */}
-            {selectedDate && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Select Time Slot *
-                </label>
-
-                {slotsLoading && (
-                  <div className="text-sm text-gray-500">
-                    Loading available slots…
-                  </div>
-                )}
-                {slotsError && (
-                  <div className="text-sm text-red-600">{slotsError}</div>
-                )}
-                {!slotsLoading &&
-                  !slotsError &&
-                  availableSlots.length === 0 && (
-                    <div className="text-sm text-gray-500">
-                      No slots available for this date.
-                    </div>
-                  )}
-                {!slotsLoading && !slotsError && availableSlots.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        type="button"
-                        key={slot.slotId}
-                        onClick={() => {
-                          setSelectedSlot(slot);
-                          setSlotUid(slot); // ✅ context
-                          setBehaviouristDayUid(slot?.serviceProviderDay?.uid); // ✅ context
-                          setServiceProviderUid(slot?.serviceProviderUid); // ✅ context
-                        }}
-                        className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium flex items-center justify-center gap-1.5 transition ${
-                          selectedSlot?.slotId === slot.slotId
-                            ? "bg-[#52B2AD] border-[#52B2AD] text-white"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-[#52B2AD]/50"
-                        }`}
-                      >
-                        <Clock size={14} />
-                        {formatTime(slot.startTime)} –{" "}
-                        {formatTime(slot.endTime)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PET SELECT */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6">
+            {/* PET SELECT - Always Visible */}
+            <div className={!selectedPet ? "min-h-[250px]" : ""}>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Select Pet *
               </label>
               <select
                 value={selectedPet?.uid || ""}
                 onChange={handlePetSelectChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD]"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-black text-sm focus:ring-2 focus:ring-[#52B2AD] focus:border-[#52B2AD] outline-none transition"
                 required
               >
                 <option value="">Select a pet</option>
@@ -450,59 +299,160 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                 ))}
                 <option value="__add_new__">➕ Add New Pet</option>
               </select>
+              {!selectedPet && (
+                <div className="mt-6 p-4 bg-[#52B2AD]/5 rounded-xl border border-[#52B2AD]/10">
+                  <p className="text-sm text-[#2b8f8a] text-center font-medium">
+                    Please select your pet first to view available dates and
+                    time slots.
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* ACTION BUTTONS */}
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition text-sm font-medium text-gray-700"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={loading || !selectedSlot || !selectedPet}
-                className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
-                  loading || !selectedSlot || !selectedPet
-                    ? "opacity-60 cursor-not-allowed bg-gray-400"
-                    : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
-                }`}
-              >
-                {loading ? (
-                  <>
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
+            {/* CONDITIONAL RENDERING: Only show when pet is selected */}
+            {selectedPet && (
+              <div className="animate-fadeIn space-y-5">
+                {/* DATE SELECTOR */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-1">
+                    Select Date *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarOpen(!calendarOpen)}
+                    className={`w-full px-3 py-2.5 border-2 rounded-xl text-left text-sm flex justify-between items-center transition ${
+                      selectedDate
+                        ? "border-[#52B2AD] bg-[#52B2AD]/5"
+                        : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={
+                        selectedDate ? "text-gray-900" : "text-gray-400"
+                      }
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Submitting…
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight size={16} />
-                    Next
-                  </>
+                      {selectedDate
+                        ? selectedDate.toLocaleDateString("en-GB", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "Choose a date"}
+                    </span>
+                    <Calendar size={16} className="text-[#52B2AD]" />
+                  </button>
+
+                  {calendarOpen && (
+                    <div className="mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-inner p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <button
+                          type="button"
+                          onClick={goToPreviousMonth}
+                          className="p-1 hover:bg-gray-100 rounded-lg"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        <div className="font-semibold text-sm">
+                          {monthNames[currentMonth.getMonth()]}{" "}
+                          {currentMonth.getFullYear()}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={goToNextMonth}
+                          className="p-1 hover:bg-gray-100 rounded-lg"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {renderCalendarCells()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* TIME SLOTS */}
+                {selectedDate && (
+                  <div className="animate-fadeIn">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      Select Time Slot *
+                    </label>
+                    {slotsLoading && (
+                      <div className="text-sm text-gray-500">
+                        Loading slots…
+                      </div>
+                    )}
+                    {slotsError && (
+                      <div className="text-sm text-red-600">{slotsError}</div>
+                    )}
+                    {!slotsLoading &&
+                      !slotsError &&
+                      availableSlots.length === 0 && (
+                        <div className="text-sm text-gray-500">
+                          No slots available for this date.
+                        </div>
+                      )}
+                    {!slotsLoading &&
+                      !slotsError &&
+                      availableSlots.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {availableSlots.map((slot) => (
+                            <button
+                              type="button"
+                              key={slot.slotId}
+                              onClick={() => {
+                                setSelectedSlot(slot);
+                                setSlotUid(slot);
+                                setBehaviouristDayUid(
+                                  slot?.serviceProviderDay?.uid,
+                                );
+                                setServiceProviderUid(slot?.serviceProviderUid);
+                              }}
+                              className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium flex items-center justify-center gap-1.5 transition ${
+                                selectedSlot?.slotId === slot.slotId
+                                  ? "bg-[#52B2AD] border-[#52B2AD] text-white"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-[#52B2AD]/50"
+                              }`}
+                            >
+                              <Clock size={14} />
+                              {formatTime(slot.startTime)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
                 )}
-              </button>
-            </div>
+
+                {/* ACTION BUTTONS */}
+                <div className="flex items-center justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-5 py-2.5 rounded-xl bg-gray-100 text-sm font-medium text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !selectedSlot}
+                    className={`px-6 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition ${
+                      loading || !selectedSlot
+                        ? "opacity-60 cursor-not-allowed bg-gray-400"
+                        : "bg-gradient-to-r from-[#52B2AD] to-[#42948f] hover:scale-[1.02] shadow-lg"
+                    }`}
+                  >
+                    {loading ? (
+                      "Submitting…"
+                    ) : (
+                      <>
+                        <ArrowRight size={16} /> Next
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -519,7 +469,6 @@ function BookingModal({ behaviourist, isOpen, onClose }) {
                 type="button"
                 className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
                 onClick={() => setShowAddPetModal(false)}
-                aria-label="Close"
               >
                 <X size={16} />
               </button>

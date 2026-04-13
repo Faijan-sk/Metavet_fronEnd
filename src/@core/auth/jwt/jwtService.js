@@ -3,7 +3,7 @@ import jwtDefaultConfig from "./jwtDefaultConfig";
 // import jwt from '../../../enpoints/jwt/useJwt'
 
 // PRODUCTION GCP Configuration - PORT 8080 add kiya gaya hai
-// axios.defaults.baseURL = "http://192.168.1.16:8080/";
+// axios.defaults.baseURL = "http://192.168.1.11:8080/";
 axios.defaults.baseURL = "http://34.170.68.167:8080/";
 // axios.defaults.baseURL = "http://192.168.29.199:8080/";
 
@@ -626,5 +626,19 @@ export default class JwtService {
       this.jwtConfig.updateGroomerToClientKyc.replace("{uid}", uid),
       payload,
     );
+  }
+
+  refundAppointment(sessionId, reason) {
+    return axios.post(
+      this.jwtConfig.refundAppointmentEndpoint.replace(
+        "{sessionId}",
+        sessionId,
+      ),
+      reason,
+    );
+  }
+
+  getGroomerAppointmentCombined() {
+    return axios.get(this.jwtConfig.getGroomerAppointmentsForCombined);
   }
 }

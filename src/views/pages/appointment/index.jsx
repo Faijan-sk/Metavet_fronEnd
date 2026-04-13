@@ -248,105 +248,105 @@ const Appointment = () => {
     </div>
   );
 
-  const DeleteConfirmationModal = ({
-    appointment,
-    onConfirm,
-    onCancel,
-    isDeleting,
-  }) => (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-    >
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-        <div className="p-6">
-          <div className="flex justify-center mb-4">
-            <div className="bg-red-100 rounded-full p-3">
-              <AlertTriangle className="w-12 h-12 text-red-600" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
-            Cancel Appointment?
-          </h2>
-          <p className="text-center text-gray-600 mb-6">
-            Are you sure you want to cancel this appointment? This action cannot
-            be undone.
-          </p>
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Appointment ID:</span>
-              <span className="font-semibold">#{appointment.id}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Pet:</span>
-              <span className="font-semibold">
-                {appointment.petName} ({appointment.petSpecies})
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Doctor:</span>
-              <span className="font-semibold">{appointment.doctorName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Specialization:</span>
-              <span className="font-semibold">
-                {appointment.doctorSpecialization}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Date:</span>
-              <span className="font-semibold">{appointment.date}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Time:</span>
-              <span className="font-semibold">{appointment.time}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Hospital:</span>
-              <span className="font-semibold">{appointment.hospitalName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Fees:</span>
-              <span className="font-semibold text-[#52B2AD]">
-                ₹{appointment.appointmentFees}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition-colors disabled:opacity-50"
-            >
-              Keep Appointment
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isDeleting}
-              className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isDeleting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                <>
-                  <AlertTriangle size={18} />
-                  Yes, Cancel
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // const DeleteConfirmationModal = ({
+  //   appointment,
+  //   onConfirm,
+  //   onCancel,
+  //   isDeleting,
+  // }) => (
+  //   <div
+  //     className="fixed inset-0 z-50 flex items-center justify-center"
+  //     aria-modal="true"
+  //     role="dialog"
+  //   >
+  //     <div
+  //       className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+  //       onClick={onCancel}
+  //     />
+  //     <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+  //       <div className="p-6">
+  //         <div className="flex justify-center mb-4">
+  //           <div className="bg-red-100 rounded-full p-3">
+  //             <AlertTriangle className="w-12 h-12 text-red-600" />
+  //           </div>
+  //         </div>
+  //         <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">
+  //           Cancel Appointment?
+  //         </h2>
+  //         <p className="text-center text-gray-600 mb-6">
+  //           Are you sure you want to cancel this appointment? This action cannot
+  //           be undone.
+  //         </p>
+  //         <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2 text-sm">
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Appointment ID:</span>
+  //             <span className="font-semibold">#{appointment.id}</span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Pet:</span>
+  //             <span className="font-semibold">
+  //               {appointment.petName} ({appointment.petSpecies})
+  //             </span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Doctor:</span>
+  //             <span className="font-semibold">{appointment.doctorName}</span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Specialization:</span>
+  //             <span className="font-semibold">
+  //               {appointment.doctorSpecialization}
+  //             </span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Date:</span>
+  //             <span className="font-semibold">{appointment.date}</span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Time:</span>
+  //             <span className="font-semibold">{appointment.time}</span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Hospital:</span>
+  //             <span className="font-semibold">{appointment.hospitalName}</span>
+  //           </div>
+  //           <div className="flex justify-between">
+  //             <span className="text-gray-600">Fees:</span>
+  //             <span className="font-semibold text-[#52B2AD]">
+  //               ₹{appointment.appointmentFees}
+  //             </span>
+  //           </div>
+  //         </div>
+  //         <div className="flex gap-3">
+  //           <button
+  //             onClick={onCancel}
+  //             disabled={isDeleting}
+  //             className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold transition-colors disabled:opacity-50"
+  //           >
+  //             Keep Appointment
+  //           </button>
+  //           <button
+  //             onClick={onConfirm}
+  //             disabled={isDeleting}
+  //             className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+  //           >
+  //             {isDeleting ? (
+  //               <>
+  //                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+  //                 Cancelling...
+  //               </>
+  //             ) : (
+  //               <>
+  //                 <AlertTriangle size={18} />
+  //                 Yes, Cancel
+  //               </>
+  //             )}
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
 
   if (loading) {
     return (
@@ -508,14 +508,14 @@ const Appointment = () => {
         </div>
       )}
 
-      {deleteConfirmModal && (
-        <DeleteConfirmationModal
+      {/* {deleteConfirmModal && (
+        <deleteConfirmModal
           appointment={deleteConfirmModal}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteConfirmModal(null)}
           isDeleting={isDeleting}
         />
-      )}
+      )} */}
     </div>
   );
 };

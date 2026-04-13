@@ -214,6 +214,28 @@ function BookingPage() {
             </div>
           )}
 
+          <div className="md:col-span-2 p-4 bg-amber-50 rounded-xl border border-amber-200 mx-5 my-2">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-5 h-5 text-amber-500 mt-0.5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  stroke="#f59e0b"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p className="text-sm text-amber-700 font-medium">
+                Cancellation within 24 hours of appointment will not be eligible
+                for a refund.
+              </p>
+            </div>
+          </div>
+
           {/* CTA */}
           <div className="px-8 pb-8 space-y-3">
             <p className="text-center text-sm text-gray-500">

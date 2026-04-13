@@ -1,459 +1,570 @@
 import {
-  Pencil,
-  Save,
-  Trash2,
-  X,
   Calendar,
   Clock,
-  PawPrint,
-  User,
-  FileText,
   ChevronLeft,
   ChevronRight,
   Scissors,
   MapPin,
-  Star,
-  Package,
+  XCircle,
+  MoreVertical,
+  Trash2,
+  IndianRupee,
+  Timer,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
+import CancelAppointmentModal from "./../../petServicesAppointment/CancelAppointmentModal";
 
-const AppointmentListing = () => {
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editAppointment, setEditAppointment] = useState(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 3;
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-  // ── helpers ──────────────────────────────────────────────────────────────
+const formatTime = (t) => {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+};
 
-  /** Format "10:30:00" → "10:30 AM" */
-  const formatTime = (timeStr) => {
-    if (!timeStr) return "";
-    const [h, m] = timeStr.split(":").map(Number);
-    const suffix = h >= 12 ? "PM" : "AM";
-    const hour = h % 12 || 12;
-    return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
-  };
-
-  /** Map raw API object → display-friendly shape */
-  const mapApiAppointment = (appt) => ({
-    id: appt.id,
-    uid: appt.uid,
-    groomerName:
-      `${appt.serviceProvider?.owner?.firstName ?? ""} ${appt.serviceProvider?.owner?.lastName ?? ""}`.trim(),
-    groomerEmail: appt.serviceProvider?.owner?.email ?? "",
-    petName: appt.pet?.petName ?? "—",
-    petType: appt.pet?.petSpecies ?? "",
-    petBreed: appt.pet?.petBreed ?? "",
-    serviceName: appt.service?.serviceName ?? "—",
-    serviceDuration: appt.service?.durationMinutes ?? null,
-    servicePrice: appt.service?.price ?? null,
-    date: appt.appointmentDate ?? "",
-    startTime: appt.startTime ?? "",
-    endTime: appt.endTime ?? "",
-    status: appt.status ?? "PENDING",
-    notes: appt.notes ?? "",
-    // keep raw for edits
-    _raw: appt,
+const formatDate = (d) => {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
+};
 
-  const isPastDate = (dateString) => {
-    if (!dateString) return false;
-    const d = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    d.setHours(0, 0, 0, 0);
-    return d < today;
-  };
+const isPast = (dateStr) => {
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return d < today;
+};
 
-  const getActualStatus = (appt) => {
-    const s = appt.status?.toUpperCase();
-    if (s === "CANCELLED") return "cancelled";
-    if (isPastDate(appt.date) && s !== "CANCELLED") return "completed";
-    if (s === "CONFIRMED") return "confirmed";
-    return "pending";
-  };
+const getStatus = (appt) => {
+  if (appt.status?.toUpperCase() === "CANCELLED") return "cancelled";
+  if (isPast(appt.appointmentDate)) return "completed";
+  return "upcoming";
+};
 
-  const statusStyle = (status) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-[#d0ecea] text-[#2a8a85]";
-      case "completed":
-        return "bg-[#52B2AD] text-white";
-      case "cancelled":
-        return "bg-[#f0fafa] text-[#52B2AD] border border-[#52B2AD]";
-      case "pending":
-      default:
-        return "bg-[#e8f7f6] text-[#3a9e99]";
-    }
-  };
+const getPetIcon = (species) => {
+  switch ((species || "").toLowerCase()) {
+    case "dog":
+      return "🐕";
+    case "cat":
+      return "🐈";
+    case "rabbit":
+      return "🐰";
+    case "bird":
+      return "🐦";
+    default:
+      return "🐾";
+  }
+};
 
-  const statusLabel = (status) =>
-    status.charAt(0).toUpperCase() + status.slice(1);
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-  const getPetIcon = (petType) => {
-    switch ((petType || "").toLowerCase()) {
-      case "dog":
-        return "🐕";
-      case "cat":
-        return "🐈";
-      case "rabbit":
-        return "🐰";
-      case "bird":
-        return "🐦";
-      default:
-        return "🐾";
-    }
-  };
+const PRIMARY = "#52B2AD";
+const PRIMARY_LIGHT = "#EAF6F5";
+const PRIMARY_MID = "#A8D8D6";
+const ITEMS_PER_PAGE = 3;
 
-  const barColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "bg-[#52B2AD]";
-      case "cancelled":
-        return "bg-[#2a8a85]";
-      case "confirmed":
-        return "bg-[#7ececa]";
-      default:
-        return "bg-[#a8dcda]";
-    }
-  };
+const STATUS_CONFIG = {
+  upcoming: {
+    label: "Upcoming",
+    barStyle: { background: PRIMARY },
+    badgeStyle: {
+      background: "#EAF6F5",
+      color: PRIMARY,
+      border: "1px solid #52B2AD",
+    },
+  },
+  completed: {
+    label: "Completed",
+    barStyle: { background: PRIMARY_MID },
+    badgeStyle: {
+      background: "#F0FAF9",
+      color: "#3D8F8A",
+      border: "1px solid #A8D8D6",
+    },
+  },
+  cancelled: {
+    label: "Cancelled",
+    barStyle: { background: "#D4EDEB" },
+    badgeStyle: {
+      background: "#F5F5F5",
+      color: "#888",
+      border: "1px solid #ddd",
+    },
+  },
+};
 
-  const avatarSvg =
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2352B2AD'/%3E%3C/svg%3E";
+// ── Map new API response → display shape ──────────────────────────────────────
+// New API: /groomer/appointment/combined-appointments
+// appt.slot = { startTime, serviceFees, slotDuration, serviceName }
+// appt.pet  = { petName, petSpecies, petBreed, petGender, petAge, healthStatus, uid }
+// appt.user = { firstName, lastName, email, fullPhoneNumber }
+// appt.serviceProvider = { serviceProviderUuid, serviceType, name, address }
 
-  // ── data fetching ─────────────────────────────────────────────────────────
+const mapAppointment = (appt) => ({
+  ...appt,
+  id: appt.appointmentId,
+  uid: appt.appointmentId,
+  appointmentDate: appt.appointmentDate,
+  status: appt.status,
+
+  // slot
+  slotStart: appt.slot?.startTime ?? null,
+  slotDuration: appt.slot?.slotDuration ?? null,
+  serviceFees: appt.slot?.serviceFees ?? null,
+  serviceName: appt.slot?.serviceName ?? "—",
+
+  // pet
+  petName: appt.pet?.petName ?? null,
+  petSpecies: appt.pet?.petSpecies ?? null,
+  petBreed: appt.pet?.petBreed ?? null,
+  petGender: appt.pet?.petGender ?? null,
+  petAge: appt.pet?.petAge ?? null,
+  healthStatus: appt.pet?.healthStatus ?? null,
+
+  // owner / user
+  ownerName: appt.user
+    ? `${appt.user.firstName ?? ""} ${appt.user.lastName ?? ""}`.trim()
+    : "—",
+  ownerEmail: appt.user?.email ?? null,
+  ownerPhone: appt.user?.fullPhoneNumber ?? null,
+
+  // service provider
+  providerName: appt.serviceProvider?.name ?? "—",
+  serviceType: appt.serviceProvider?.serviceType ?? "—",
+  providerAddress: appt.serviceProvider?.address ?? "",
+
+  // CancelAppointmentModal compatibility
+  doctorFirstName: appt.serviceProvider?.name ?? "—",
+  doctorLastName: "",
+  time: appt.slot?.startTime ? formatTime(appt.slot.startTime) : "—",
+  date: appt.appointmentDate,
+});
+
+// ── Three Dot Menu ────────────────────────────────────────────────────────────
+
+const ThreeDotMenu = ({ onCancelClick }) => {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={menuRef} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          background: open ? "#f0faf9" : "transparent",
+          border: "1px solid",
+          borderColor: open ? PRIMARY : "#e5e7eb",
+          borderRadius: "50%",
+          width: "36px",
+          height: "36px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: PRIMARY,
+          transition: "all 0.2s",
+        }}
+        title="Options"
+      >
+        <MoreVertical size={18} />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "42px",
+            right: "0",
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            zIndex: 100,
+            minWidth: "180px",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => {
+              setOpen(false);
+              onCancelClick();
+            }}
+            style={{
+              width: "100%",
+              padding: "10px 16px",
+              border: "none",
+              background: "white",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "14px",
+              color: "#dc2626",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+          >
+            <Trash2 size={15} color="#dc2626" />
+            Cancel Appointment
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── InfoRow ───────────────────────────────────────────────────────────────────
+
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-xs text-gray-400">{label}</span>
+    <span className="text-sm font-semibold text-gray-700">{value || "—"}</span>
+  </div>
+);
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+export default function GroomerAppointmentListing({ onDelete }) {
+  const [raw, setRaw] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [cancelTarget, setCancelTarget] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        setLoading(true);
-        const response = await useJwt.getGroomerBookedAppointmentForClient();
-        const data = response?.data ?? [];
-        setAppointments(data.map(mapApiAppointment));
-      } catch (err) {
-        console.error("Failed to fetch groomer appointments:", err);
-        setAppointments([]);
+        const response = await useJwt.getGroomerAppointmentCombined();
+        const data = response?.data || {};
+        setRaw((data.appointments || []).map(mapAppointment));
+      } catch {
+        setError("Could not load appointments.");
       } finally {
         setLoading(false);
       }
     };
-    fetchAppointments();
+    fetchData();
   }, []);
 
-  // ── edit handlers ─────────────────────────────────────────────────────────
-
-  const handleEdit = (appt) => setEditAppointment({ ...appt });
-  const handleCancelEdit = () => setEditAppointment(null);
-
-  const handleSaveEdit = () => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === editAppointment.id ? editAppointment : a)),
-    );
-    setEditAppointment(null);
-  };
-
-  const handleDelete = (appt) => {
-    setAppointments((prev) => prev.filter((a) => a.id !== appt.id));
-    const newTotal = appointments.length - 1;
-    const newTotalPages = Math.ceil(newTotal / itemsPerPage);
-    if (currentPage >= newTotalPages && currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditAppointment((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // ── pagination ────────────────────────────────────────────────────────────
-
-  const totalPages = Math.ceil(appointments.length / itemsPerPage);
-  const startIndex = currentPage * itemsPerPage;
-  const currentAppointments = appointments.slice(
-    startIndex,
-    startIndex + itemsPerPage,
+  const totalPages = Math.ceil(raw.length / ITEMS_PER_PAGE);
+  const visible = raw.slice(
+    page * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE + ITEMS_PER_PAGE,
   );
-
-  const handlePrevious = () =>
-    setCurrentPage((p) => (p > 0 ? p - 1 : totalPages - 1));
-  const handleNext = () =>
-    setCurrentPage((p) => (p < totalPages - 1 ? p + 1 : 0));
-
-  // ── render ────────────────────────────────────────────────────────────────
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#52B2AD] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 font-medium">Loading appointments…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!appointments.length) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 text-gray-400">
-        <Scissors size={48} className="text-[#52B2AD] opacity-40" />
-        <p className="text-xl font-semibold">No grooming appointments found.</p>
-        <p className="text-sm">Book your first session to get started!</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
+      {/* Cancel Modal */}
+      {cancelTarget && (
+        <CancelAppointmentModal
+          appointmentType="GROOMER"
+          appointment={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirmCancel={(appt, reason) => {
+            if (onDelete) onDelete(appt, reason);
+            setRaw((prev) =>
+              prev.map((a) =>
+                a.id === appt.id ? { ...a, status: "CANCELLED" } : a,
+              ),
+            );
+            setCancelTarget(null);
+          }}
+        />
+      )}
+
+      {/* ── Header ── */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <Scissors className="text-[#52B2AD]" size={32} />
-          Pet Groomer Appointments
+          <Scissors style={{ color: PRIMARY }} size={32} />
+          Groomer Appointments
         </h1>
         <p className="text-gray-500 mt-1">
-          Manage your pet's grooming sessions
+          {raw.length > 0
+            ? `${raw.length} appointment${raw.length !== 1 ? "s" : ""} booked`
+            : "Manage your pet grooming sessions"}
         </p>
       </div>
 
-      {/* Cards */}
-      <div className="space-y-6 mb-8">
-        {currentAppointments.map((appointment, index) => {
-          const actualStatus = getActualStatus(appointment);
-          const isEditing = editAppointment?.id === appointment.id;
+      {/* ── Loading ── */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <div
+            className="w-12 h-12 rounded-full border-4 animate-spin"
+            style={{ borderColor: PRIMARY_MID, borderTopColor: PRIMARY }}
+          />
+          <p className="text-gray-500 text-sm">Loading appointments…</p>
+        </div>
+      )}
 
-          return (
-            <div
-              key={appointment.id ?? index}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
-            >
-              {/* Colored top bar */}
-              <div className={`h-2 ${barColor(actualStatus)}`} />
+      {/* ── Error ── */}
+      {!loading && error && (
+        <div
+          className="text-center py-20 rounded-2xl border"
+          style={{
+            background: PRIMARY_LIGHT,
+            borderColor: PRIMARY_MID,
+            color: "#3D8F8A",
+          }}
+        >
+          <XCircle size={36} className="mx-auto mb-3 opacity-60" />
+          <p className="font-semibold">{error}</p>
+        </div>
+      )}
 
-              {/* Card header */}
-              <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">
-                    {getPetIcon(appointment.petType)}
+      {/* ── Empty ── */}
+      {!loading && !error && raw.length === 0 && (
+        <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <Scissors
+            size={48}
+            className="mx-auto mb-4"
+            style={{ color: PRIMARY_MID }}
+          />
+          <p className="text-gray-500 font-medium text-xl">
+            No groomer appointments found.
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Book a session with a pet groomer to get started.
+          </p>
+        </div>
+      )}
+
+      {/* ── Cards ── */}
+      {!loading && !error && visible.length > 0 && (
+        <div className="space-y-6 mb-8">
+          {visible.map((appt, index) => {
+            const status = getStatus(appt);
+            const cfg = STATUS_CONFIG[status];
+
+            return (
+              <div
+                key={appt.uid || index}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
+              >
+                {/* Top color bar */}
+                <div className="h-2" style={cfg.barStyle} />
+
+                {/* Card Header */}
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">
+                      {appt.petSpecies ? getPetIcon(appt.petSpecies) : "🐾"}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-800">
+                        {appt.petName || appt.serviceName}
+                      </h3>
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1"
+                        style={cfg.badgeStyle}
+                      >
+                        {cfg.label}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">
-                      Appointment #{appointment.id}
-                    </h3>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${statusStyle(actualStatus)}`}
-                    >
-                      {statusLabel(actualStatus)}
+
+                  {/* Right — ID badge + Three Dot */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                      #{appt.id?.slice(0, 8) || index + 1}
                     </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={handleSaveEdit}
-                        className="p-2.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-all transform hover:scale-110"
-                        title="Save"
-                      >
-                        <Save size={20} />
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="p-2.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all transform hover:scale-110"
-                        title="Cancel"
-                      >
-                        <X size={20} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {/* <button
-                        onClick={() => handleEdit(appointment)}
-                        className="p-2.5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-all transform hover:scale-110"
-                        title="Edit"
-                      >
-                        <Pencil size={20} />
-                      </button> */}
-                      {/* <button
-                        onClick={() => handleDelete(appointment)}
-                        className="p-2.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-all transform hover:scale-110"
-                        title="Delete"
-                      >
-                        <Trash2 size={20} />
-                      </button> */}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Card body */}
-              <div className="p-6">
-                {isEditing ? (
-                  /* ── Edit mode ── */
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { label: "Pet Name", name: "petName", type: "text" },
-                        {
-                          label: "Groomer Name",
-                          name: "groomerName",
-                          type: "text",
-                        },
-                        { label: "Date", name: "date", type: "date" },
-                        {
-                          label: "Start Time",
-                          name: "startTime",
-                          type: "time",
-                        },
-                        { label: "End Time", name: "endTime", type: "time" },
-                        { label: "Notes", name: "notes", type: "text" },
-                      ].map(({ label, name, type }) => (
-                        <div key={name}>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">
-                            {label}
-                          </label>
-                          <input
-                            type={type}
-                            name={name}
-                            value={editAppointment[name] ?? ""}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#52B2AD] focus:border-transparent"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  /* ── View mode ── */
-                  <div className="flex items-start gap-6">
-                    {/* Groomer avatar */}
-                    <div className="flex-shrink-0">
-                      <div className="relative">
-                        <img
-                          src={avatarSvg}
-                          alt={appointment.groomerName}
-                          className="w-20 h-20 rounded-full border-4 border-[#52B2AD] shadow-lg object-cover bg-white"
-                        />
-                        <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-teal-500 rounded-full border-2 border-white flex items-center justify-center">
-                          <Scissors className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Details grid */}
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {/* Groomer */}
-                      <div>
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <User size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Groomer</span>
-                        </div>
-                        <p className="font-medium text-gray-800">
-                          {appointment.groomerName}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {appointment.groomerEmail}
-                        </p>
-                      </div>
-
-                      {/* Pet */}
-                      <div>
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <PawPrint size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Pet</span>
-                        </div>
-                        <p className="font-medium text-gray-800">
-                          {appointment.petName}
-                        </p>
-                        {appointment.petBreed && (
-                          <p className="text-xs text-gray-500">
-                            {appointment.petBreed}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Service */}
-                      <div>
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <Package size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Service</span>
-                        </div>
-                        <p className="font-medium text-gray-800">
-                          {appointment.serviceName}
-                        </p>
-                        {appointment.serviceDuration && (
-                          <p className="text-xs text-gray-500">
-                            {appointment.serviceDuration} min
-                          </p>
-                        )}
-                        {/* {appointment.servicePrice != null && (
-                          <p className="text-xs font-semibold text-[#52B2AD]">
-                            ${appointment.servicePrice}
-                          </p>
-                        )} */}
-                      </div>
-
-                      {/* Date */}
-                      <div>
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <Calendar size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Date</span>
-                        </div>
-                        <p className="font-medium text-gray-800">
-                          {appointment.date}
-                        </p>
-                      </div>
-
-                      {/* Time */}
-                      <div>
-                        <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <Clock size={14} className="text-[#52B2AD]" />
-                          <span className="font-semibold">Time</span>
-                        </div>
-                        <p className="font-medium text-gray-800 text-sm">
-                          {formatTime(appointment.startTime)} –{" "}
-                          {formatTime(appointment.endTime)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes row */}
-                {!isEditing && appointment.notes && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex items-start gap-2">
-                      <FileText
-                        size={16}
-                        className="text-[#52B2AD] mt-1 flex-shrink-0"
+                    {status !== "cancelled" && (
+                      <ThreeDotMenu
+                        onCancelClick={() => setCancelTarget(appt)}
                       />
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Body — 2 columns */}
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Pet Details */}
+                  <div
+                    className="rounded-xl p-4 border"
+                    style={{
+                      background: PRIMARY_LIGHT,
+                      borderColor: PRIMARY_MID,
+                    }}
+                  >
+                    <p
+                      className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                      style={{ color: "#42948f" }}
+                    >
+                      <span>🐾</span> Pet Details
+                    </p>
+                    {appt.petName ? (
+                      <div className="space-y-2">
+                        <InfoRow label="Name" value={appt.petName} />
+                        <InfoRow label="Species" value={appt.petSpecies} />
+                        <InfoRow label="Breed" value={appt.petBreed} />
+                        <InfoRow
+                          label="Gender / Age"
+                          value={
+                            [
+                              appt.petGender,
+                              appt.petAge !== null ? `${appt.petAge} yrs` : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "—"
+                          }
+                        />
+                        {appt.healthStatus && (
+                          <div
+                            className="pt-2 border-t mt-1"
+                            style={{ borderColor: PRIMARY_MID }}
+                          >
+                            <span className="text-xs text-gray-500 block mb-0.5">
+                              Health Status
+                            </span>
+                            <span className="text-xs text-gray-700">
+                              {appt.healthStatus}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">
+                        No pet information provided.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Service Provider Details */}
+                  <div
+                    className="rounded-xl p-4 border"
+                    style={{
+                      background: PRIMARY_LIGHT,
+                      borderColor: PRIMARY_MID,
+                    }}
+                  >
+                    <p
+                      className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                      style={{ color: "#42948f" }}
+                    >
+                      <Scissors size={13} /> Groomer Details
+                    </p>
+                    <div className="space-y-2">
+                      <InfoRow label="Groomer" value={appt.providerName} />
+                      <InfoRow label="Service" value={appt.serviceName} />
+                      <InfoRow
+                        label="Duration"
+                        value={
+                          appt.slotDuration ? `${appt.slotDuration} min` : null
+                        }
+                      />
+                      <InfoRow
+                        label="Fees"
+                        value={
+                          appt.serviceFees != null
+                            ? `₹${appt.serviceFees}`
+                            : null
+                        }
+                      />
+                      {appt.providerAddress && (
+                        <div className="flex items-start gap-2 pt-1">
+                          <MapPin
+                            size={13}
+                            style={{ color: PRIMARY }}
+                            className="mt-0.5 flex-shrink-0"
+                          />
+                          <span className="text-xs text-gray-600 leading-relaxed">
+                            {appt.providerAddress}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slot Footer */}
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Date */}
+                    <div
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{
+                        background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+                      }}
+                    >
+                      <div
+                        className="rounded-lg p-2 flex-shrink-0"
+                        style={{ background: PRIMARY }}
+                      >
+                        <Calendar size={16} className="text-white" />
+                      </div>
                       <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-1">
-                          Notes
+                        <p className="text-xs text-gray-500 font-medium">
+                          Appointment Date
                         </p>
-                        <p className="text-sm text-gray-700">
-                          {appointment.notes}
+                        <p className="text-sm font-bold text-gray-800">
+                          {formatDate(appt.appointmentDate)}
                         </p>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* Pagination */}
-      {appointments.length > itemsPerPage && (
+                    {/* Time */}
+                    <div
+                      className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{
+                        background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+                      }}
+                    >
+                      <div
+                        className="rounded-lg p-2 flex-shrink-0"
+                        style={{ background: "#42948f" }}
+                      >
+                        <Clock size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Start Time
+                        </p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {appt.slotStart ? formatTime(appt.slotStart) : "—"}
+                        </p>
+                        {appt.slotDuration && (
+                          <p className="text-xs" style={{ color: "#42948f" }}>
+                            {appt.slotDuration} min session
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
         <>
           <div className="flex items-center justify-center gap-6 mt-8">
             <button
-              onClick={handlePrevious}
-              className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-3 rounded-full text-white transition-all transform hover:scale-110 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+              style={{ background: PRIMARY }}
+              title="Previous"
             >
               <ChevronLeft size={24} />
             </button>
@@ -462,35 +573,38 @@ const AppointmentListing = () => {
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setCurrentPage(i)}
-                  className={`transition-all duration-300 rounded-full ${
-                    currentPage === i
-                      ? "w-10 h-3 bg-[#52B2AD]"
-                      : "w-3 h-3 bg-gray-300 hover:bg-gray-400"
-                  }`}
+                  onClick={() => setPage(i)}
+                  className="transition-all duration-300 rounded-full"
+                  style={{
+                    width: i === page ? "2.5rem" : "0.75rem",
+                    height: "0.75rem",
+                    background: i === page ? PRIMARY : PRIMARY_MID,
+                  }}
+                  title={`Page ${i + 1}`}
                 />
               ))}
             </div>
 
             <button
-              onClick={handleNext}
-              className="p-3 rounded-full bg-[#52B2AD] text-white hover:bg-[#42948f] transition-all transform hover:scale-110 shadow-lg"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-3 rounded-full text-white transition-all transform hover:scale-110 shadow-lg disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+              style={{ background: PRIMARY }}
+              title="Next"
             >
               <ChevronRight size={24} />
             </button>
           </div>
 
           <div className="text-center mt-4">
-            <p className="text-gray-600 text-sm">
-              Showing {startIndex + 1}–
-              {Math.min(startIndex + itemsPerPage, appointments.length)} of{" "}
-              {appointments.length} appointments
+            <p className="text-gray-500 text-sm">
+              Showing {page * ITEMS_PER_PAGE + 1}–
+              {Math.min((page + 1) * ITEMS_PER_PAGE, raw.length)} of{" "}
+              {raw.length} appointments
             </p>
           </div>
         </>
       )}
     </div>
   );
-};
-
-export default AppointmentListing;
+}

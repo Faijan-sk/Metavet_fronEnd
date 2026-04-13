@@ -6,9 +6,12 @@ import {
   Footprints,
   MapPin,
   XCircle,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useJwt from "../../../../enpoints/jwt/useJwt";
+import CancelAppointmentModal from "./../../petServicesAppointment/CancelAppointmentModal";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,62 +49,167 @@ const getStatus = (appt) => {
 
 const getPetIcon = (species) => {
   switch ((species || "").toLowerCase()) {
-    case "dog":    return "🐕";
-    case "cat":    return "🐈";
-    case "rabbit": return "🐰";
-    case "bird":   return "🐦";
-    default:       return "🐾";
+    case "dog":
+      return "🐕";
+    case "cat":
+      return "🐈";
+    case "rabbit":
+      return "🐰";
+    case "bird":
+      return "🐦";
+    default:
+      return "🐾";
   }
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PRIMARY       = "#52B2AD";
+const PRIMARY = "#52B2AD";
 const PRIMARY_LIGHT = "#EAF6F5";
-const PRIMARY_MID   = "#A8D8D6";
+const PRIMARY_MID = "#A8D8D6";
 const ITEMS_PER_PAGE = 3;
 
 const STATUS_CONFIG = {
-  upcoming:  {
+  upcoming: {
     label: "Upcoming",
-    barStyle:   { background: PRIMARY },
-    badgeStyle: { background: "#EAF6F5", color: PRIMARY, border: "1px solid #52B2AD" },
+    barStyle: { background: PRIMARY },
+    badgeStyle: {
+      background: "#EAF6F5",
+      color: PRIMARY,
+      border: "1px solid #52B2AD",
+    },
   },
   completed: {
     label: "Completed",
-    barStyle:   { background: PRIMARY_MID },
-    badgeStyle: { background: "#F0FAF9", color: "#3D8F8A", border: "1px solid #A8D8D6" },
+    barStyle: { background: PRIMARY_MID },
+    badgeStyle: {
+      background: "#F0FAF9",
+      color: "#3D8F8A",
+      border: "1px solid #A8D8D6",
+    },
   },
   cancelled: {
     label: "Cancelled",
-    barStyle:   { background: "#D4EDEB" },
-    badgeStyle: { background: "#F5F5F5", color: "#888", border: "1px solid #ddd" },
+    barStyle: { background: "#D4EDEB" },
+    badgeStyle: {
+      background: "#F5F5F5",
+      color: "#888",
+      border: "1px solid #ddd",
+    },
   },
 };
 
 // ── Map API response → display shape ─────────────────────────────────────────
 
 const mapAppointment = (appt) => ({
-  uid:             appt.appointmentId,
-  id:              appt.appointmentId,
+  ...appt,
+  uid: appt.appointmentId,
+  id: appt.appointmentId,
   appointmentDate: appt.appointmentDate,
-  status:          appt.status,
-  // Slot
-  slotStart:       appt.slot?.startTime,
-  slotEnd:         appt.slot?.endTime,
-  dayOfWeek:       appt.slot?.dayOfWeek,
-  // Pet (nullable)
-  petName:         appt.pet?.petName     || null,
-  petSpecies:      appt.pet?.petSpecies  || null,
-  petBreed:        appt.pet?.petBreed    || null,
-  petGender:       appt.pet?.petGender   || null,
-  petAge:          appt.pet?.petAge      ?? null,
-  healthStatus:    appt.pet?.healthStatus || null,
-  // Service Provider
-  providerName:    appt.serviceProvider?.name        || "—",
-  serviceType:     appt.serviceProvider?.serviceType || "—",
-  providerAddress: appt.serviceProvider?.address     || "",
+  status: appt.status,
+  slotStart: appt.slot?.startTime,
+  slotEnd: appt.slot?.endTime,
+  dayOfWeek: appt.slot?.dayOfWeek,
+  petName: appt.pet?.petName || null,
+  petSpecies: appt.pet?.petSpecies || null,
+  petBreed: appt.pet?.petBreed || null,
+  petGender: appt.pet?.petGender || null,
+  petAge: appt.pet?.petAge ?? null,
+  healthStatus: appt.pet?.healthStatus || null,
+  providerName: appt.serviceProvider?.name || "—",
+  serviceType: appt.serviceProvider?.serviceType || "—",
+  providerAddress: appt.serviceProvider?.address || "",
+  // For CancelAppointmentModal compatibility
+  doctorFirstName: appt.serviceProvider?.name || "—",
+  doctorLastName: "",
+  time: appt.slot?.startTime ? formatTime(appt.slot.startTime) : "—",
+  date: appt.appointmentDate,
 });
+
+// ── Three Dot Menu Component ──────────────────────────────────────────────────
+
+const ThreeDotMenu = ({ onCancelClick }) => {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={menuRef} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          background: open ? "#f0faf9" : "transparent",
+          border: "1px solid",
+          borderColor: open ? PRIMARY : "#e5e7eb",
+          borderRadius: "50%",
+          width: "36px",
+          height: "36px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: PRIMARY,
+          transition: "all 0.2s",
+        }}
+        title="Options"
+      >
+        <MoreVertical size={18} />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "42px",
+            right: "0",
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            zIndex: 100,
+            minWidth: "180px",
+            overflow: "hidden",
+          }}
+        >
+          <button
+            onClick={() => {
+              setOpen(false);
+              onCancelClick();
+            }}
+            style={{
+              width: "100%",
+              padding: "10px 16px",
+              border: "none",
+              background: "white",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "14px",
+              color: "#dc2626",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+          >
+            <Trash2 size={15} color="#dc2626" />
+            Cancel Appointment
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -114,11 +222,12 @@ const InfoRow = ({ label, value }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function WalkerAppointmentListing() {
-  const [raw, setRaw]       = useState([]);
+export default function WalkerAppointmentListing({ onDelete }) {
+  const [raw, setRaw] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
-  const [page, setPage]     = useState(0);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,10 +245,31 @@ export default function WalkerAppointmentListing() {
   }, []);
 
   const totalPages = Math.ceil(raw.length / ITEMS_PER_PAGE);
-  const visible    = raw.slice(page * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
+  const visible = raw.slice(
+    page * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE + ITEMS_PER_PAGE,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {/* Cancel Modal */}
+      {cancelTarget && (
+        <CancelAppointmentModal
+          appointmentType={"WALKER"}
+          appointment={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirmCancel={(appt, reason) => {
+            if (onDelete) onDelete(appt, reason);
+            // Locally mark as cancelled
+            setRaw((prev) =>
+              prev.map((a) =>
+                a.id === appt.id ? { ...a, status: "CANCELLED" } : a,
+              ),
+            );
+            setCancelTarget(null);
+          }}
+        />
+      )}
 
       {/* ── Header ── */}
       <div className="mb-8">
@@ -169,7 +299,11 @@ export default function WalkerAppointmentListing() {
       {!loading && error && (
         <div
           className="text-center py-20 rounded-2xl border"
-          style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID, color: "#3D8F8A" }}
+          style={{
+            background: PRIMARY_LIGHT,
+            borderColor: PRIMARY_MID,
+            color: "#3D8F8A",
+          }}
         >
           <XCircle size={36} className="mx-auto mb-3 opacity-60" />
           <p className="font-semibold">{error}</p>
@@ -179,9 +313,17 @@ export default function WalkerAppointmentListing() {
       {/* ── Empty ── */}
       {!loading && !error && raw.length === 0 && (
         <div className="text-center py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <Footprints size={48} className="mx-auto mb-4" style={{ color: PRIMARY_MID }} />
-          <p className="text-gray-500 font-medium text-xl">No walker appointments found.</p>
-          <p className="text-sm text-gray-400 mt-2">Book a session with a pet walker to get started.</p>
+          <Footprints
+            size={48}
+            className="mx-auto mb-4"
+            style={{ color: PRIMARY_MID }}
+          />
+          <p className="text-gray-500 font-medium text-xl">
+            No walker appointments found.
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Book a session with a pet walker to get started.
+          </p>
         </div>
       )}
 
@@ -190,7 +332,7 @@ export default function WalkerAppointmentListing() {
         <div className="space-y-6 mb-8">
           {visible.map((appt, index) => {
             const status = getStatus(appt);
-            const cfg    = STATUS_CONFIG[status];
+            const cfg = STATUS_CONFIG[status];
 
             return (
               <div
@@ -219,19 +361,30 @@ export default function WalkerAppointmentListing() {
                     </div>
                   </div>
 
-                  {/* Short ID badge */}
-                  <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                    #{appt.id?.slice(0, 8) || index + 1}
-                  </span>
+                  {/* Right side — ID badge + Three Dot Menu */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400 font-mono bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                      #{appt.id?.slice(0, 8) || index + 1}
+                    </span>
+
+                    {/* Three Dot — only for non-cancelled appointments */}
+                    {status !== "cancelled" && (
+                      <ThreeDotMenu
+                        onCancelClick={() => setCancelTarget(appt)}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 {/* Card Body */}
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                  {/* ── Pet Details ── */}
+                  {/* Pet Details */}
                   <div
                     className="rounded-xl p-4 border"
-                    style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+                    style={{
+                      background: PRIMARY_LIGHT,
+                      borderColor: PRIMARY_MID,
+                    }}
                   >
                     <p
                       className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
@@ -241,9 +394,9 @@ export default function WalkerAppointmentListing() {
                     </p>
                     {appt.petName ? (
                       <div className="space-y-2">
-                        <InfoRow label="Name"    value={appt.petName} />
+                        <InfoRow label="Name" value={appt.petName} />
                         <InfoRow label="Species" value={appt.petSpecies} />
-                        <InfoRow label="Breed"   value={appt.petBreed} />
+                        <InfoRow label="Breed" value={appt.petBreed} />
                         <InfoRow
                           label="Gender / Age"
                           value={
@@ -260,20 +413,29 @@ export default function WalkerAppointmentListing() {
                             className="pt-2 border-t mt-1"
                             style={{ borderColor: PRIMARY_MID }}
                           >
-                            <span className="text-xs text-gray-500 block mb-0.5">Health Status</span>
-                            <span className="text-xs text-gray-700">{appt.healthStatus}</span>
+                            <span className="text-xs text-gray-500 block mb-0.5">
+                              Health Status
+                            </span>
+                            <span className="text-xs text-gray-700">
+                              {appt.healthStatus}
+                            </span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">No pet information provided.</p>
+                      <p className="text-sm text-gray-400 italic">
+                        No pet information provided.
+                      </p>
                     )}
                   </div>
 
-                  {/* ── Service Provider Details ── */}
+                  {/* Service Provider Details */}
                   <div
                     className="rounded-xl p-4 border"
-                    style={{ background: PRIMARY_LIGHT, borderColor: PRIMARY_MID }}
+                    style={{
+                      background: PRIMARY_LIGHT,
+                      borderColor: PRIMARY_MID,
+                    }}
                   >
                     <p
                       className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5"
@@ -282,14 +444,18 @@ export default function WalkerAppointmentListing() {
                       <Footprints size={13} /> Service Provider
                     </p>
                     <div className="space-y-2">
-                      <InfoRow label="Name"    value={appt.providerName} />
+                      <InfoRow label="Name" value={appt.providerName} />
                       <InfoRow
                         label="Service"
                         value={appt.serviceType?.replace(/_/g, " ")}
                       />
                       {appt.providerAddress && (
                         <div className="flex items-start gap-2 pt-1">
-                          <MapPin size={13} style={{ color: PRIMARY }} className="mt-0.5 flex-shrink-0" />
+                          <MapPin
+                            size={13}
+                            style={{ color: PRIMARY }}
+                            className="mt-0.5 flex-shrink-0"
+                          />
                           <span className="text-xs text-gray-600 leading-relaxed">
                             {appt.providerAddress}
                           </span>
@@ -299,13 +465,14 @@ export default function WalkerAppointmentListing() {
                   </div>
                 </div>
 
-                {/* ── Slot Footer ── */}
+                {/* Slot Footer */}
                 <div className="px-6 pb-6">
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Date */}
                     <div
                       className="flex items-center gap-3 rounded-xl px-4 py-3"
-                      style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
+                      style={{
+                        background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+                      }}
                     >
                       <div
                         className="rounded-lg p-2 flex-shrink-0"
@@ -314,22 +481,29 @@ export default function WalkerAppointmentListing() {
                         <Calendar size={16} className="text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 font-medium">Appointment Date</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Appointment Date
+                        </p>
                         <p className="text-sm font-bold text-gray-800">
                           {formatDate(appt.appointmentDate)}
                         </p>
                         {appt.dayOfWeek && (
-                          <p className="text-xs font-medium capitalize" style={{ color: "#42948f" }}>
-                            {appt.dayOfWeek.charAt(0) + appt.dayOfWeek.slice(1).toLowerCase()}
+                          <p
+                            className="text-xs font-medium capitalize"
+                            style={{ color: "#42948f" }}
+                          >
+                            {appt.dayOfWeek.charAt(0) +
+                              appt.dayOfWeek.slice(1).toLowerCase()}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    {/* Time Slot */}
                     <div
                       className="flex items-center gap-3 rounded-xl px-4 py-3"
-                      style={{ background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)` }}
+                      style={{
+                        background: `linear-gradient(to right, ${PRIMARY_LIGHT}, #f0faf9)`,
+                      }}
                     >
                       <div
                         className="rounded-lg p-2 flex-shrink-0"
@@ -338,7 +512,9 @@ export default function WalkerAppointmentListing() {
                         <Clock size={16} className="text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 font-medium">Time Slot</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Time Slot
+                        </p>
                         <p className="text-sm font-bold text-gray-800">
                           {appt.slotStart && appt.slotEnd
                             ? `${formatTime(appt.slotStart)} – ${formatTime(appt.slotEnd)}`
@@ -375,8 +551,8 @@ export default function WalkerAppointmentListing() {
                   onClick={() => setPage(i)}
                   className="transition-all duration-300 rounded-full"
                   style={{
-                    width:      i === page ? "2.5rem" : "0.75rem",
-                    height:     "0.75rem",
+                    width: i === page ? "2.5rem" : "0.75rem",
+                    height: "0.75rem",
                     background: i === page ? PRIMARY : PRIMARY_MID,
                   }}
                   title={`Page ${i + 1}`}
@@ -397,7 +573,9 @@ export default function WalkerAppointmentListing() {
 
           <div className="text-center mt-4">
             <p className="text-gray-500 text-sm">
-              Showing {page * ITEMS_PER_PAGE + 1}–{Math.min((page + 1) * ITEMS_PER_PAGE, raw.length)} of {raw.length} appointments
+              Showing {page * ITEMS_PER_PAGE + 1}–
+              {Math.min((page + 1) * ITEMS_PER_PAGE, raw.length)} of{" "}
+              {raw.length} appointments
             </p>
           </div>
         </>

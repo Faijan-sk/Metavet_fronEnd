@@ -138,4 +138,7 @@ export default {
   verifyPaymentCommonEndpoint: "/clients/verify/{sessionId}",
   updateBehaviKycBehaviToClient: "/api/behaviorist-kyc/{uid}",
   updateGroomerToClientKyc: "/api/groomer-kyc/{uid}",
+  refundAppointmentEndpoint: "/api/refunds/{sessionId}",
+  getGroomerAppointmentsForCombined:
+    "/groomer/appointment/combined-appointments",
 };
