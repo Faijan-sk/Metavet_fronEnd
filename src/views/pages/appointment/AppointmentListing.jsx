@@ -410,11 +410,11 @@ const AppointmentListing = ({ appointments, onUpdate, onDelete }) => {
 
                       <div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
-                          <span className="text-[#52B2AD] font-bold">₹</span>
+                          <span className="text-[#52B2AD] font-bold">$</span>
                           <span className="font-semibold">Fees</span>
                         </div>
                         <p className="font-bold text-[#52B2AD]">
-                          ₹{appointment.appointmentFees ?? 0}
+                          ${appointment.appointmentFees ?? 0}
                         </p>
                       </div>
                     </div>

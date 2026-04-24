@@ -1,4 +1,11 @@
-import { AlertTriangle, ArrowLeft, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Trash2,
+  X,
+  CheckCircle,
+  Loader2,
+} from "lucide-react"; // Loader2 add kiya loading icon ke liye
 import React, { useEffect, useState } from "react";
 
 //===import useJwt
@@ -12,6 +19,8 @@ function CancelAppointmentModal({
 }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Loading state for API execution
   const [sessionId, setSessionId] = useState("");
   const [apptDate, setApptDate] = useState("");
 
@@ -39,6 +48,9 @@ function CancelAppointmentModal({
       return;
     }
 
+    setIsLoading(true); // Disable button immediately
+    setError("");
+
     try {
       const payload = { reason: reason.trim() };
 
@@ -48,23 +60,31 @@ function CancelAppointmentModal({
 
       // ❌ Backend error
       if (response?.data?.error) {
-        setError(response.data.error); // 👈 SHOW BACKEND ERROR
+        setError(response.data.error);
+        setIsLoading(false); // Enable button if error occurs
         return;
       }
 
       // ✅ Success
-      onConfirmCancel(appointment, reason.trim());
-      onClose();
+      setSuccessMessage(
+        "Refund successfully initiated and appointment cancelled.",
+      );
+
+      setTimeout(() => {
+        onConfirmCancel(appointment, reason.trim());
+        onClose();
+        setIsLoading(false);
+      }, 1000);
     } catch (err) {
       console.error(err);
+      setIsLoading(false); // Enable button if catch error occurs
 
-      // Axios error handling
       const backendError =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         "Something went wrong";
 
-      setError(backendError); // 👈 SHOW ERROR
+      setError(backendError);
     }
   };
 
@@ -77,7 +97,6 @@ function CancelAppointmentModal({
     const diffInMs = appointmentDate - now;
     const diffInHours = diffInMs / (1000 * 60 * 60);
 
-    // ❌ Past OR within 24 hrs
     return diffInHours <= 24;
   };
 
@@ -125,6 +144,7 @@ function CancelAppointmentModal({
           </div>
           <button
             onClick={onClose}
+            disabled={isLoading} // Prevent close while loading
             style={{
               background: "rgba(255,255,255,0.2)",
               border: "none",
@@ -134,7 +154,7 @@ function CancelAppointmentModal({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: "pointer",
+              cursor: isLoading ? "not-allowed" : "pointer",
               color: "white",
             }}
           >
@@ -144,8 +164,7 @@ function CancelAppointmentModal({
 
         {/* Modal Body */}
         <div style={{ padding: "1.5rem" }}>
-          {/* Appointment Info Summary */}
-
+          {/* Appointment Info Summaries */}
           {appointmentType == "DOCTOR" && (
             <div
               style={{
@@ -256,13 +275,10 @@ function CancelAppointmentModal({
                 Date: {appointment.appointmentDate} &nbsp;|&nbsp; Time:{" "}
                 {appointment?.slot?.startTime}
               </p>
-              {/* <p style={{ margin: "0 0 2px 0", color: "#555" }}>
-                Fees: ${appointment?.serviceFees}
-              </p> */}
             </div>
           )}
 
-          {/* ⚠️ 24hr Refund Warning */}
+          {/* Refund Warning */}
           <div
             style={{
               background: "#fff8e1",
@@ -324,6 +340,7 @@ function CancelAppointmentModal({
             </label>
             <textarea
               value={reason}
+              disabled={isLoading}
               onChange={(e) => {
                 setReason(e.target.value);
                 if (e.target.value.trim()) setError("");
@@ -342,15 +359,11 @@ function CancelAppointmentModal({
                 fontFamily: "inherit",
                 boxSizing: "border-box",
                 transition: "border-color 0.2s",
-              }}
-              onFocus={(e) => {
-                if (!error) e.target.style.borderColor = "#52B2AD";
-              }}
-              onBlur={(e) => {
-                if (!error) e.target.style.borderColor = "#d1d5db";
+                backgroundColor: isLoading ? "#f9fafb" : "white",
               }}
             />
           </div>
+
           {error && (
             <div
               style={{
@@ -366,12 +379,33 @@ function CancelAppointmentModal({
             </div>
           )}
 
+          {successMessage && (
+            <div
+              style={{
+                background: "#ecfdf5",
+                color: "#059669",
+                padding: "10px",
+                borderRadius: "8px",
+                marginBottom: "10px",
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                border: "1px solid #10b981",
+              }}
+            >
+              <CheckCircle size={16} />
+              {successMessage}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div
             style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}
           >
             <button
               onClick={onClose}
+              disabled={isLoading}
               style={{
                 padding: "10px 20px",
                 border: "1.5px solid #d1d5db",
@@ -380,33 +414,48 @@ function CancelAppointmentModal({
                 color: "#374151",
                 fontSize: "14px",
                 fontWeight: "500",
-                cursor: "pointer",
+                cursor: isLoading ? "not-allowed" : "pointer",
               }}
             >
-              <ArrowLeft />
+              <ArrowLeft
+                size={16}
+                style={{ verticalAlign: "middle", marginRight: "4px" }}
+              />
               Back
             </button>
             <button
               onClick={handleCancel}
-              disabled={isCancellationDisabled()}
+              disabled={
+                isCancellationDisabled() || !!successMessage || isLoading
+              }
               style={{
                 padding: "10px 20px",
                 border: "none",
                 borderRadius: "8px",
-                background: isCancellationDisabled() ? "#9ca3af" : "#e53e3e",
+                background:
+                  isCancellationDisabled() || isLoading ? "#9ca3af" : "#e53e3e",
                 color: "white",
                 fontSize: "14px",
                 fontWeight: "600",
-                cursor: isCancellationDisabled() ? "not-allowed" : "pointer",
+                cursor:
+                  isCancellationDisabled() || !!successMessage || isLoading
+                    ? "not-allowed"
+                    : "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
               }}
             >
-              <Trash2 size={15} />
-              {isCancellationDisabled()
-                ? "Cannot Cancel (Within 24 hrs / or past appoinment)"
-                : "Yes, Cancel"}
+              {isLoading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Trash2 size={15} />
+              )}
+              {isLoading
+                ? "Processing..."
+                : isCancellationDisabled()
+                  ? "Cannot Cancel"
+                  : "Yes, Cancel"}
             </button>
           </div>
         </div>

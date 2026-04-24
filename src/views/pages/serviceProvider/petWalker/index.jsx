@@ -133,7 +133,7 @@ function WalkerCard({ walker, onFavorite, isFavorite, onBookWalk }) {
         <div className="mb-4">
           <p className="text-xs text-gray-500 mb-2">Consultation Fees:</p>
           <span className="px-3 py-1 bg-[#52B2AD]/10 text-[#52B2AD] text-sm rounded-lg font-semibold">
-            ₹{walker.consultationFees}
+            ${walker.consultationFees}
           </span>
         </div>
 
@@ -228,7 +228,7 @@ function Index({ location }) {
             rating: 4.8,
             reviews: 15,
             distance: item.distanceKm ? item.distanceKm.toFixed(1) : "0.0",
-            price: "₹200-500",
+            price: "$200-500",
             available: true,
             badge: item.yearsExperience > 5 ? "Expert" : "New",
             services: ["Dog Walking", "Pet Sitting"],

@@ -313,7 +313,7 @@ const Appointment = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Fees:</span>
               <span className="font-semibold text-[#52B2AD]">
-                ₹{appointment.appointmentFees}
+                ${appointment.appointmentFees}
               </span>
             </div>
           </div>

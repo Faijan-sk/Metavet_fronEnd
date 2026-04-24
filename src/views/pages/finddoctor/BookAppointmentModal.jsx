@@ -449,8 +449,8 @@ function BookAppointmentModal({ doctor, onClose, initialValues }) {
                   />
                 </svg>
                 <p className="text-sm text-amber-700 font-medium">
-                  Cancellation within 24 hours of appointment will not be
-                  eligible for a refund.
+                  Appointments cannot be canceled if they are scheduled within
+                  less than 24 hours.
                 </p>
               </div>
             </div>
